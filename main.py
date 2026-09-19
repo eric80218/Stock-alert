@@ -33,7 +33,7 @@ def load_portfolio_watchlist() -> List[dict]:
     
     try:
         res = requests.get(PORTFOLIO_SHEET_URL, timeout=10)
-        res.encoding = 'utf-8'  # 強制鎖定 UTF-8，杜絕中文亂碼
+        res.encoding = 'utf-8'  # 強制鎖定 UTF-8
         
         if res.status_code == 200:
             df = pd.read_csv(io.StringIO(res.text))
@@ -286,16 +286,11 @@ def build_morning_brief_bubble(macro: dict) -> dict:
     }
 
 # ==========================================
-# 7. 資產總覽卡片 (全面 NaN 防呆)
+# 7. 資產總覽卡片
 # ==========================================
 def build_portfolio_summary_bubble(summary: dict) -> dict:
-    usd_val = summary["usd_val"]
-    usd_pnl = summary["usd_pnl"]
-    usd_pct = summary["usd_pnl_pct"]
-
-    twd_val = summary["twd_val"]
-    twd_pnl = summary["twd_pnl"]
-    twd_pct = summary["twd_pnl_pct"]
+    usd_val, usd_pnl, usd_pct = summary["usd_val"], summary["usd_pnl"], summary["usd_pnl_pct"]
+    twd_val, twd_pnl, twd_pct = summary["twd_val"], summary["twd_pnl"], summary["twd_pnl_pct"]
 
     usd_pnl_color = "#34D399" if usd_pnl >= 0 else "#F87171"
     twd_pnl_color = "#34D399" if twd_pnl >= 0 else "#F87171"
@@ -374,7 +369,7 @@ def build_portfolio_summary_bubble(summary: dict) -> dict:
     }
 
 # ==========================================
-# 8. 專屬【🔄 智能持股輪動決策卡片】
+# 8. 智能持股輪動卡片
 # ==========================================
 def build_rotation_bubble(pair: dict) -> dict:
     from_s = pair["from_stock"]
@@ -400,7 +395,6 @@ def build_rotation_bubble(pair: dict) -> dict:
         "body": {
             "type": "box", "layout": "vertical", "backgroundColor": "#0F172A", "paddingAll": "16px", "spacing": "sm",
             "contents": [
-                # 轉出標的
                 {"type": "text", "text": "🔴 建議調節轉出：", "color": "#F87171", "weight": "bold", "size": "xs"},
                 {
                     "type": "box", "layout": "horizontal",
@@ -416,10 +410,7 @@ def build_rotation_bubble(pair: dict) -> dict:
                         {"type": "text", "text": f"預估釋出: {curr_sym}{freed_str}", "color": "#FCA5A5", "size": "xxs", "align": "end"}
                     ]
                 },
-                
                 {"type": "separator", "color": "#334155", "margin": "md"},
-                
-                # 轉進標的
                 {"type": "text", "text": "🟢 最佳換軌轉進首選：", "color": "#34D399", "weight": "bold", "size": "xs", "margin": "sm"},
                 {
                     "type": "box", "layout": "horizontal",
@@ -442,15 +433,12 @@ def build_rotation_bubble(pair: dict) -> dict:
                         {"type": "text", "text": f"風報比 1:{to_s['rr_ratio'] or '佳'}", "color": "#6EE7B7", "size": "xxs", "align": "end"}
                     ]
                 },
-
                 {"type": "separator", "color": "#334155", "margin": "md"},
-
-                # 戰略總評
                 {
                     "type": "box", "layout": "vertical", "backgroundColor": "#1E293B", "paddingAll": "12px", "cornerRadius": "8px", "margin": "md",
                     "contents": [
                         {"type": "text", "text": "🎯 戰略換軌方針：", "color": "#A78BFA", "weight": "bold", "size": "xs"},
-                        {"type": "text", "text": f"{from_s['name']} 估值偏高或跌破短期均線進入防禦期；建議將部位資金轉進折價幅度高達 {abs(to_s['diff_pct']):.1f}%、風報比絕佳的 {to_s['name']}，實現鎖利並放大潛在期望值！", "color": "#F8FAFC", "size": "xxs", "wrap": True, "margin": "xs"}
+                        {"type": "text", "text": f"{from_s['name']} 估值偏高或跌破短期均線進入防禦期；建議將部位資金轉進折價幅度高達 {abs(to_s['diff_pct']):.1f}%、風報比絕佳的 {to_s['name']}，實現鎖利並放大期望值！", "color": "#F8FAFC", "size": "xxs", "wrap": True, "margin": "xs"}
                     ]
                 }
             ]
@@ -464,7 +452,7 @@ def build_rotation_bubble(pair: dict) -> dict:
     }
 
 # ==========================================
-# 9. 技術分析與決策評估核心
+# 9. 技術分析與決策評估核心 (解除觀望續抱過濾)
 # ==========================================
 def calculate_risk_reward(price: float, fair_val: float, ma20: float, low_10d: float) -> Tuple[float, Optional[float]]:
     stop_loss = round(min(low_10d, ma20 * 0.97), 2)
@@ -570,7 +558,7 @@ def evaluate_decision(item: dict, data: dict, market_regime: dict, macro_data: d
         base_advice = "【轉弱避險防守】摜破防線或受夜盤/總經利空壓抑，建議多單部分減碼或暫停加碼。"
     else:
         signal_badge, badge_color, header_color = "⚪ 觀望續抱", "#94A3B8", "#1E293B"
-        base_advice = "【常態區間】未達顯著買賣標準，持股續抱。"
+        base_advice = "【常態區間】未達顯著買賣標準，持股續抱，耐心等待趨勢明朗。"
 
     prefix = " | ".join(macro_warnings) + "\n" if macro_warnings else ""
     final_advice = prefix + base_advice
@@ -580,8 +568,7 @@ def evaluate_decision(item: dict, data: dict, market_regime: dict, macro_data: d
         "signal_badge": signal_badge, "badge_color": badge_color,
         "header_color": header_color, "action_advice": final_advice,
         "stop_loss": stop_loss, "rr_ratio": rr_ratio,
-        "dynamic_fair": dynamic_fair, "val_source": val_source,
-        "is_active_signal": (score >= 1.0 or score <= -1.0)
+        "dynamic_fair": dynamic_fair, "val_source": val_source
     }
 
 def build_stock_bubble(data: dict, market_regime: dict) -> dict:
@@ -689,26 +676,34 @@ def build_stock_bubble(data: dict, market_regime: dict) -> dict:
     }
 
 # ==========================================
-# 10. 推播發送模組
+# 10. 推播發送模組 (自動分頁：支援超過 10 張卡片)
 # ==========================================
 def push_line_flex(token: str, user_id: str, bubbles: List[dict], alt_text: str):
     if not token or not user_id or not bubbles: return
     url = "https://api.line.me/v2/bot/message/push"
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {token}"}
+    
+    # LINE 單一 carousel 最多 10 個 bubble；單次 push 最多 5 則訊息 (上限 50 張卡片)
+    messages = []
+    chunk_size = 10
+    for i in range(0, len(bubbles), chunk_size):
+        chunk = bubbles[i:i + chunk_size]
+        messages.append({
+            "type": "flex",
+            "altText": alt_text,
+            "contents": {"type": "carousel", "contents": chunk}
+        })
+        if len(messages) >= 5:
+            break
+
     payload = {
         "to": user_id,
-        "messages": [
-            {
-                "type": "flex",
-                "altText": alt_text,
-                "contents": {"type": "carousel", "contents": bubbles[:10]}
-            }
-        ]
+        "messages": messages
     }
     try:
-        res = requests.post(url, headers=headers, json=payload, timeout=10)
+        res = requests.post(url, headers=headers, json=payload, timeout=15)
         if res.status_code == 200:
-            print(f"✅ LINE Flex 推播成功（共 {len(bubbles)} 檔卡片）！")
+            print(f"✅ LINE Flex 推播成功（共 {len(bubbles)} 檔卡片，拆分為 {len(messages)} 則訊息送達）！")
         else:
             print(f"❌ LINE 推播失敗: {res.status_code} - {res.text}")
     except Exception as e:
@@ -720,13 +715,11 @@ def push_line_flex(token: str, user_id: str, bubbles: List[dict], alt_text: str)
 def main():
     print(f"===== 啟動多源智能投研系統 (模式: {RUN_MODE} | 強制推播: {FORCE_NOTIFY}) =====")
 
-    # 1. 加載持股清單
     watchlist = load_portfolio_watchlist()
     if not watchlist:
         print("❌ 無持股監控標的，結束執行。")
         return
 
-    # 2. 全球情勢與夜盤數據
     macro_data = fetch_global_macro_snapshot()
     vix_val = macro_data.get("VIX", {}).get("price", 15.0)
 
@@ -736,7 +729,6 @@ def main():
         push_line_flex(LINE_CHANNEL_ACCESS_TOKEN, LINE_USER_ID, [morning_bubble], "☀️ 晨間全球前瞻與夜盤快報已送達！")
         return
 
-    # 3. 盤後個股估值與資產統計
     twse_data = fetch_twse_official_metrics()
     
     def check_market_regime(currency: str, vix: float) -> dict:
@@ -783,7 +775,6 @@ def main():
         shares = item["shares"]
         cost_price = item["cost_price"]
 
-        # 資產總值統計
         if pd.notna(price) and price > 0 and pd.notna(shares) and shares > 0 and pd.notna(cost_price) and cost_price > 0:
             pos_val = shares * price
             pos_cost = shares * cost_price
@@ -794,7 +785,6 @@ def main():
                 summary_stats["twd_val"] += pos_val
                 summary_stats["twd_cost"] += pos_cost
 
-        # 模式過濾
         if RUN_MODE in ["TWD", "USD"] and currency != RUN_MODE:
             continue
 
@@ -815,13 +805,13 @@ def main():
         }
         evaluated_pool.append(card_info)
 
+        # 納入觀望續抱：只要訊號轉換（包含轉為觀望），或是手動觸發 (FORCE_NOTIFY)，皆納入推播清單！
         is_state_changed = (current_signal != last_signal)
-        should_alert = decision["is_active_signal"] and (is_state_changed or FORCE_NOTIFY)
+        should_alert = is_state_changed or FORCE_NOTIFY
 
         if should_alert:
             actionable_cards.append(build_stock_bubble(card_info, market_regime))
 
-    # 計算整體投資組合損益
     if summary_stats["usd_cost"] > 0:
         summary_stats["usd_pnl"] = summary_stats["usd_val"] - summary_stats["usd_cost"]
         summary_stats["usd_pnl_pct"] = (summary_stats["usd_pnl"] / summary_stats["usd_cost"]) * 100
@@ -829,20 +819,15 @@ def main():
         summary_stats["twd_pnl"] = summary_stats["twd_val"] - summary_stats["twd_cost"]
         summary_stats["twd_pnl_pct"] = (summary_stats["twd_pnl"] / summary_stats["twd_cost"]) * 100
 
-    # ==========================================
-    # 智能持股輪動配對計算 (Capital Rotation)
-    # ==========================================
+    # 資金輪動計算
     rotation_bubbles = []
-    # 1. 轉出標的：手上有持股 (shares > 0) 且 評分轉弱 (score <= -1.0)
     sell_candidates = [s for s in evaluated_pool if s["shares"] > 0 and s["score"] <= -1.0]
-    # 2. 轉進標的：評分高 (score >= 1.5) 且 折價深
     buy_candidates = [b for b in evaluated_pool if b["score"] >= 1.5]
 
     for sell_item in sell_candidates:
         currency = sell_item["currency"]
         valid_targets = [b for b in buy_candidates if b["currency"] == currency and b["ticker"] != sell_item["ticker"]]
         if valid_targets:
-            # 依分數與折價幅度由深至淺排序，挑出最佳標的
             best_target = sorted(valid_targets, key=lambda x: (x["score"], -x["diff_pct"]), reverse=True)[0]
             pair_data = {
                 "from_stock": sell_item,
@@ -852,16 +837,13 @@ def main():
             }
             rotation_bubbles.append(build_rotation_bubble(pair_data))
 
-    # ==========================================
-    # 組裝最終發送清單
-    # 順序：資產總覽 -> 智能持股輪動卡片 -> 個股決策卡片
-    # ==========================================
+    # 組裝推播
     if actionable_cards or rotation_bubbles:
         summary_bubble = build_portfolio_summary_bubble(summary_stats)
         final_bubbles = [summary_bubble] + rotation_bubbles + actionable_cards
-        push_line_flex(LINE_CHANNEL_ACCESS_TOKEN, LINE_USER_ID, final_bubbles, f"🚨 投資資產與持股轉折報告：{len(actionable_cards)} 檔標的最新訊號！")
+        push_line_flex(LINE_CHANNEL_ACCESS_TOKEN, LINE_USER_ID, final_bubbles, f"🚨 投資資產與持股分析報告：共 {len(actionable_cards)} 檔標的最新資訊！")
     else:
-        print("💡 所有標的狀態未變動或處於觀望狀態，無須打擾。")
+        print("💡 所有標的狀態未變動，無須打擾。")
 
     save_state_cache(new_state_cache)
     print("===== 掃描流程完畢 =====")
