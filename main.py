@@ -2,20 +2,20 @@ import os
 import sys
 import json
 import requests
+import io
 import pandas as pd
 import yfinance as yf
 from typing import Dict, List, Optional, Tuple
 
 # ==========================================
-# 1. 系統設定、憑證與資料源 API Key
+# 1. 系統設定與環境變數
 # ==========================================
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN", "")
 LINE_USER_ID = os.getenv("LINE_USER_ID", "")
-
-# 外部專業數據源金鑰 (選填，未填會自動降級回退到 Yahoo/TWSE 免費數據)
 FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
+PORTFOLIO_SHEET_URL = os.getenv("PORTFOLIO_SHEET_URL", "")
 
 RUN_MODE = os.getenv("RUN_MODE", "ALL").upper()
 FORCE_NOTIFY = os.getenv("FORCE_NOTIFY", "false").lower() == "true"
@@ -23,33 +23,63 @@ FORCE_NOTIFY = os.getenv("FORCE_NOTIFY", "false").lower() == "true"
 DASHBOARD_URL = "https://eric80218.github.io/Stock-alert/"
 CACHE_FILE = "state_cache.json"
 
-# ==========================================
-# 2. 專屬持股監控清單 (配置專屬動態估值模型)
-# ==========================================
-PORTFOLIO_WATCHLIST = [
-    # --- 美股部位 (自動追蹤 Finnhub/Yahoo 華爾街投行共識目標價) ---
-    {"ticker": "AMAT", "name": "應用材料", "currency": "USD", "base_fair": 210.0, "val_model": "ANALYST", "mos_buy": 0.15, "expensive_sell": 0.25},
-    {"ticker": "NVDA", "name": "輝達", "currency": "USD", "base_fair": 135.0, "val_model": "ANALYST", "mos_buy": 0.15, "expensive_sell": 0.30},
-    {"ticker": "COST", "name": "好市多", "currency": "USD", "base_fair": 850.0, "val_model": "ANALYST", "mos_buy": 0.10, "expensive_sell": 0.20},
-    {"ticker": "BRK-B", "name": "波克夏 B", "currency": "USD", "base_fair": 450.0, "val_model": "PE_EPS", "mos_buy": 0.10, "expensive_sell": 0.20},
-    {"ticker": "LLY", "name": "禮來製藥", "currency": "USD", "base_fair": 880.0, "val_model": "ANALYST", "mos_buy": 0.15, "expensive_sell": 0.25},
-    {"ticker": "VRT", "name": "維諦技術", "currency": "USD", "base_fair": 110.0, "val_model": "ANALYST", "mos_buy": 0.20, "expensive_sell": 0.35},
-    {"ticker": "INTC", "name": "英特爾", "currency": "USD", "base_fair": 24.0, "val_model": "ANALYST", "mos_buy": 0.15, "expensive_sell": 0.25},
-
-    # --- 台股部位 (TWSE 官方殖利率評價 / 動態本益比模型) ---
-    {"ticker": "0050.TW", "name": "元大台灣50", "currency": "TWD", "base_fair": 185.0, "val_model": "BASE", "mos_buy": 0.10, "expensive_sell": 0.20},
-    {"ticker": "2337.TW", "name": "旺宏", "currency": "TWD", "base_fair": 28.0, "val_model": "PE_EPS", "mos_buy": 0.15, "expensive_sell": 0.25},
-    {"ticker": "2002.TW", "name": "中鋼", "currency": "TWD", "base_fair": 23.5, "val_model": "DIVIDEND", "mos_buy": 0.10, "expensive_sell": 0.20},
-    {"ticker": "1232.TW", "name": "大統益", "currency": "TWD", "base_fair": 155.0, "val_model": "DIVIDEND", "mos_buy": 0.10, "expensive_sell": 0.20},
-    {"ticker": "1904.TW", "name": "正隆", "currency": "TWD", "base_fair": 29.0, "val_model": "DIVIDEND", "mos_buy": 0.12, "expensive_sell": 0.25},
-    {"ticker": "2616.TW", "name": "山隆", "currency": "TWD", "base_fair": 31.0, "val_model": "DIVIDEND", "mos_buy": 0.10, "expensive_sell": 0.20}
+# 備援預設清單 (若 Google Sheet 網路斷線時自動啟用)
+FALLBACK_WATCHLIST = [
+    {"ticker": "AMAT", "name": "應用材料", "currency": "USD", "broker": "UBS (ESPP)", "shares": 19.0, "cost_price": 316.35, "base_fair": 420.0, "val_model": "ANALYST", "mos_buy": 0.15, "expensive_sell": 0.25},
+    {"ticker": "BRK-B", "name": "波克夏 B", "currency": "USD", "broker": "Firstrade", "shares": 7.0, "cost_price": 490.12, "base_fair": 510.0, "val_model": "PE_EPS", "mos_buy": 0.10, "expensive_sell": 0.20},
+    {"ticker": "COST", "name": "好市多", "currency": "USD", "broker": "Firstrade", "shares": 8.0088, "cost_price": 1044.55, "base_fair": 920.0, "val_model": "ANALYST", "mos_buy": 0.10, "expensive_sell": 0.20},
+    {"ticker": "INTC", "name": "英特爾", "currency": "USD", "broker": "Firstrade", "shares": 3.0, "cost_price": 110.69, "base_fair": 115.0, "val_model": "ANALYST", "mos_buy": 0.15, "expensive_sell": 0.25},
+    {"ticker": "LLY", "name": "禮來製藥", "currency": "USD", "broker": "Firstrade", "shares": 3.0032, "cost_price": 1128.65, "base_fair": 1150.0, "val_model": "ANALYST", "mos_buy": 0.15, "expensive_sell": 0.25},
+    {"ticker": "NVDA", "name": "輝達", "currency": "USD", "broker": "Firstrade", "shares": 6.009, "cost_price": 216.13, "base_fair": 220.0, "val_model": "ANALYST", "mos_buy": 0.15, "expensive_sell": 0.30},
+    {"ticker": "VRT", "name": "維諦技術", "currency": "USD", "broker": "Firstrade", "shares": 8.0014, "cost_price": 321.39, "base_fair": 260.0, "val_model": "ANALYST", "mos_buy": 0.20, "expensive_sell": 0.35},
+    {"ticker": "0050.TW", "name": "元大台灣50", "currency": "TWD", "broker": "國泰證券", "shares": 2000.0, "cost_price": 165.0, "base_fair": 185.0, "val_model": "BASE", "mos_buy": 0.10, "expensive_sell": 0.20},
+    {"ticker": "2337.TW", "name": "旺宏", "currency": "TWD", "broker": "國泰證券", "shares": 5000.0, "cost_price": 26.0, "base_fair": 28.0, "val_model": "PE_EPS", "mos_buy": 0.15, "expensive_sell": 0.25},
+    {"ticker": "2002.TW", "name": "中鋼", "currency": "TWD", "broker": "國泰證券", "shares": 3000.0, "cost_price": 24.5, "base_fair": 23.5, "val_model": "DIVIDEND", "mos_buy": 0.10, "expensive_sell": 0.20},
+    {"ticker": "1232.TW", "name": "大統益", "currency": "TWD", "broker": "國泰證券", "shares": 1000.0, "cost_price": 150.0, "base_fair": 155.0, "val_model": "DIVIDEND", "mos_buy": 0.10, "expensive_sell": 0.20},
+    {"ticker": "1904.TW", "name": "正隆", "currency": "TWD", "broker": "國泰證券", "shares": 4000.0, "cost_price": 27.5, "base_fair": 29.0, "val_model": "DIVIDEND", "mos_buy": 0.12, "expensive_sell": 0.25},
+    {"ticker": "2616.TW", "name": "山隆", "currency": "TWD", "broker": "國泰證券", "shares": 3000.0, "cost_price": 29.0, "base_fair": 31.0, "val_model": "DIVIDEND", "mos_buy": 0.10, "expensive_sell": 0.20}
 ]
 
 # ==========================================
-# 3. 台灣證交所 (TWSE) 官方即時權威指標快取
+# 2. Google 試算表動態同步模組
+# ==========================================
+def load_portfolio_watchlist() -> List[dict]:
+    """從 Google Sheet CSV 動態加載持股清單，若失敗則回退到預設清單"""
+    if not PORTFOLIO_SHEET_URL:
+        print("ℹ️ 未設定 PORTFOLIO_SHEET_URL，使用內建預設清單。")
+        return FALLBACK_WATCHLIST
+    
+    try:
+        res = requests.get(PORTFOLIO_SHEET_URL, timeout=8)
+        if res.status_code == 200:
+            df = pd.read_csv(io.StringIO(res.text))
+            required_cols = ["ticker", "name", "currency", "shares", "cost_price", "base_fair"]
+            if all(col in df.columns for col in required_cols):
+                portfolio = []
+                for _, r in df.iterrows():
+                    portfolio.append({
+                        "ticker": str(r["ticker"]).strip(),
+                        "name": str(r["name"]).strip(),
+                        "currency": str(r["currency"]).strip().upper(),
+                        "broker": str(r.get("broker", "一般")).strip(),
+                        "shares": float(r.get("shares", 0)),
+                        "cost_price": float(r.get("cost_price", 0)),
+                        "base_fair": float(r.get("base_fair", 100)),
+                        "val_model": str(r.get("val_model", "BASE")).strip().upper(),
+                        "mos_buy": float(r.get("mos_buy", 0.15)),
+                        "expensive_sell": float(r.get("expensive_sell", 0.25))
+                    })
+                print(f"✅ 成功從 Google 試算表同步 {len(portfolio)} 檔持股資料！")
+                return portfolio
+    except Exception as e:
+        print(f"⚠️ 讀取 Google 試算表失敗 ({e})，使用安全備援清單。")
+    
+    return FALLBACK_WATCHLIST
+
+# ==========================================
+# 3. 台灣證交所 (TWSE) 官方權威指標
 # ==========================================
 def fetch_twse_official_metrics() -> dict:
-    """從台灣證券交易所 OpenAPI 取得全市場最新個股本益比與殖利率 (免Token)"""
     url = "https://openapi.twse.com.tw/v1/exchangeReport/BWIBBU_ALL"
     twse_dict = {}
     try:
@@ -61,41 +91,28 @@ def fetch_twse_official_metrics() -> dict:
                     pe = float(row.get("PEratio", 0)) if row.get("PEratio") and row.get("PEratio") != "-" else None
                     div_yield = float(row.get("DividendYield", 0)) if row.get("DividendYield") and row.get("DividendYield") != "-" else None
                     twse_dict[code] = {"pe": pe, "yield": div_yield}
-    except Exception as e:
-        print(f"⚠️ TWSE OpenAPI 讀取略過: {e}")
+    except Exception:
+        pass
     return twse_dict
 
 # ==========================================
-# 4. 全自動動態估值引擎 (Dynamic Valuation Engine)
+# 4. 全自動動態估值引擎
 # ==========================================
 def calculate_dynamic_fair_value(item: dict, yf_info: dict, twse_data: dict, current_price: float) -> Tuple[float, str]:
-    """
-    依據股票屬性自動計算最新合理價：
-    1. ANALYST: Finnhub 華爾街共識目標價 -> 備援 Yahoo 目標價
-    2. DIVIDEND: TWSE 官方殖利率 (回推 5% 殖利率合理線) -> 備援配息折算
-    3. PE_EPS: 最新四季 EPS * 合理本益比乘數
-    4. BASE: ETF 或無顯著指標標的採用基準錨定
-    """
     ticker = item["ticker"]
     base_fair = item["base_fair"]
     model = item["val_model"]
 
-    # --- 模型 1：華爾街投行共識目標價 (美股最適用) ---
     if model == "ANALYST":
-        # A. 優先嘗試 Finnhub API
         if FINNHUB_API_KEY:
             try:
                 fh_url = f"https://finnhub.io/api/v1/stock/price-target?symbol={ticker}&token={FINNHUB_API_KEY}"
                 res = requests.get(fh_url, timeout=5).json()
                 fh_target = res.get("targetMean") or res.get("targetMedian")
-                if fh_target and fh_target > 0:
-                    # 安全護欄：偏離基準 0.5x ~ 2.0x
-                    if 0.5 * base_fair <= fh_target <= 2.0 * base_fair:
-                        return round(float(fh_target), 2), "Finnhub法人目標"
+                if fh_target and 0.5 * base_fair <= fh_target <= 2.0 * base_fair:
+                    return round(float(fh_target), 2), "Finnhub法人目標"
             except Exception:
                 pass
-        
-        # B. 備援嘗試 Yahoo Finance 內建的法人目標價
         try:
             yf_target = yf_info.get("targetMeanPrice") or yf_info.get("targetMedianPrice")
             if yf_target and 0.5 * base_fair <= yf_target <= 2.0 * base_fair:
@@ -103,43 +120,35 @@ def calculate_dynamic_fair_value(item: dict, yf_info: dict, twse_data: dict, cur
         except Exception:
             pass
 
-    # --- 模型 2：台股官方現金殖利率回推法 (5% 合理殖利率線) ---
     elif model == "DIVIDEND":
         clean_code = ticker.replace(".TW", "")
-        # A. 優先使用台灣證券交易所官方數據
         tw_metric = twse_data.get(clean_code)
         if tw_metric and tw_metric.get("yield"):
-            curr_yield = tw_metric["yield"]  # 例如 4.5 (%)
+            curr_yield = tw_metric["yield"]
             if curr_yield > 0.5 and current_price > 0:
-                annual_dividend = current_price * (curr_yield / 100.0)
-                # 以 5.0% 現金殖利率推算合理價防守線
-                calc_val = annual_dividend / 0.05
+                calc_val = (current_price * (curr_yield / 100.0)) / 0.05
                 if 0.5 * base_fair <= calc_val <= 1.8 * base_fair:
                     return round(calc_val, 2), "證交所殖利率折算"
         
-        # B. 備援使用 Yahoo 股息率折算
         div_rate = yf_info.get("dividendRate") or 0.0
         if div_rate > 0:
             calc_val = div_rate / 0.05
             if 0.5 * base_fair <= calc_val <= 1.8 * base_fair:
                 return round(calc_val, 2), "股息5%折算法"
 
-    # --- 模型 3：動態本益比與 EPS 模型 ---
     elif model == "PE_EPS":
         eps = yf_info.get("trailingEps") or yf_info.get("forwardEps")
         pe = yf_info.get("trailingPE")
         if eps and eps > 0:
-            # 限制合理本益比在 12x ~ 28x 之間
             applied_pe = min(28.0, max(12.0, pe)) if pe else (base_fair / eps)
             calc_val = eps * applied_pe
             if 0.5 * base_fair <= calc_val <= 1.8 * base_fair:
                 return round(calc_val, 2), "最新EPS本益比"
 
-    # 安全平滑退回：基準底線保護
     return base_fair, "基準錨定"
 
 # ==========================================
-# 5. 狀態記憶模組 (避免重複推播)
+# 5. 狀態記憶模組
 # ==========================================
 def load_state_cache() -> dict:
     if os.path.exists(CACHE_FILE):
@@ -158,13 +167,10 @@ def save_state_cache(cache: dict):
         print(f"⚠️ 快取儲存異常: {e}")
 
 # ==========================================
-# 6. 夜盤與全球總經數據獲取
+# 6. 夜盤與總經數據
 # ==========================================
 def fetch_global_macro_snapshot() -> dict:
-    indicators = {
-        "TSM": "TSM", "NQ_F": "NQ=F", "ES_F": "ES=F",
-        "VIX": "^VIX", "TNX": "^TNX", "DXY": "DX-Y.NYB"
-    }
+    indicators = {"TSM": "TSM", "NQ_F": "NQ=F", "ES_F": "ES=F", "VIX": "^VIX", "TNX": "^TNX", "DXY": "DX-Y.NYB"}
     data = {}
     for key, symbol in indicators.items():
         try:
@@ -201,23 +207,16 @@ def build_morning_brief_bubble(macro: dict) -> dict:
     elif vix_val <= 16: score += 1
 
     if score >= 2:
-        market_mood = "🟢 多方強勢開出"
-        mood_color = "#10B981"
-        header_bg = "#064E3B"
-        advice = "台積電 ADR 與美指期指表現亮眼，台股早盤高機率開高。持股續抱，嚴防急拉追高，逢回調支撐可分批布局。"
+        market_mood, mood_color, header_bg = "🟢 多方強勢開出", "#10B981", "#064E3B"
+        advice = "台積電 ADR 與美指期表現亮眼，台股早盤高機率開高。持股續抱，嚴防急拉追高，逢回調支撐可分批布局。"
     elif score <= -2:
-        market_mood = "🔴 恐慌偏空震盪"
-        mood_color = "#EF4444"
-        header_bg = "#7F1D1D"
-        advice = f"VIX 恐慌指數攀升至 {vix_val}，避險情緒高漲，開盤恐面臨獲利回吐賣壓。建議多看少做，保留充足現金，切忌盲目摸底。"
+        market_mood, mood_color, header_bg = "🔴 恐慌偏空震盪", "#EF4444", "#7F1D1D"
+        advice = f"VIX 恐慌指數攀升至 {vix_val}，避險情緒高漲，開盤恐面臨回吐賣壓。建議多看少做，保留充足現金。"
     else:
-        market_mood = "🟡 平衡震盪整理"
-        mood_color = "#F59E0B"
-        header_bg = "#78350F"
-        advice = "夜盤與總經指標處於多空拉鋸，預估開盤平開震盪。按既定合理價與分批紀律操作即可，無須過度反應短線波動。"
+        market_mood, mood_color, header_bg = "🟡 平衡震盪整理", "#F59E0B", "#78350F"
+        advice = "夜盤與總經指標多空拉鋸，預估開盤平開震盪。按既定合理價與分批紀律操作即可，無須過度反應。"
 
-    def fmt_chg(val):
-        return f"{val:+.2f}%" if val else "0.00%"
+    def fmt_chg(val): return f"{val:+.2f}%" if val else "0.00%"
 
     return {
         "type": "bubble", "size": "kilo",
@@ -275,13 +274,6 @@ def build_morning_brief_bubble(macro: dict) -> dict:
                         {"type": "text", "text": f"{tnx.get('price')}%", "color": "#CBD5E1", "size": "xs", "align": "end"}
                     ]
                 },
-                {
-                    "type": "box", "layout": "horizontal",
-                    "contents": [
-                        {"type": "text", "text": "美元指數 (DXY)", "color": "#94A3B8", "size": "xs"},
-                        {"type": "text", "text": f"{dxy.get('price')}", "color": "#CBD5E1", "size": "xs", "align": "end"}
-                    ]
-                },
                 {"type": "separator", "color": "#334155", "margin": "md"},
                 {
                     "type": "box", "layout": "vertical", "backgroundColor": "#1E293B", "paddingAll": "12px", "cornerRadius": "8px", "margin": "md",
@@ -301,32 +293,87 @@ def build_morning_brief_bubble(macro: dict) -> dict:
     }
 
 # ==========================================
-# 7. 大盤環境與風險濾網
+# 7. 專屬【資產庫存與未實現損益總覽卡片】
 # ==========================================
-def check_market_regime(currency: str, vix_val: float) -> dict:
-    benchmark_ticker = "SPY" if currency == "USD" else "^TWII"
-    try:
-        df = yf.Ticker(benchmark_ticker).history(period="1y")
-        if len(df) < 120:
-            return {"is_bull": True, "label": "常態多頭", "benchmark": benchmark_ticker}
-        close = df['Close']
-        curr = float(close.iloc[-1])
-        ma120 = float(close.rolling(120).mean().iloc[-1])
-        is_bull = curr >= ma120 and (vix_val < 25)
-        label = "🟢 大盤多頭" if is_bull else ("⚠️ 恐慌高壓" if vix_val >= 25 else "⚠️ 大盤偏空")
-        return {
-            "is_bull": is_bull, "label": label, "benchmark": benchmark_ticker, "price": round(curr, 2)
+def build_portfolio_summary_bubble(summary: dict) -> dict:
+    usd_pnl_color = "#34D399" if summary["usd_pnl"] >= 0 else "#F87171"
+    twd_pnl_color = "#34D399" if summary["twd_pnl"] >= 0 else "#F87171"
+
+    return {
+        "type": "bubble", "size": "kilo",
+        "header": {
+            "type": "box", "layout": "vertical", "backgroundColor": "#1E1B4B", "paddingAll": "16px",
+            "contents": [
+                {
+                    "type": "box", "layout": "horizontal",
+                    "contents": [
+                        {"type": "text", "text": "💼 資產部位與損益總覽", "weight": "bold", "color": "#FFFFFF", "size": "md", "flex": 4},
+                        {"type": "text", "text": "即時同步", "color": "#C7D2FE", "size": "xs", "align": "end", "flex": 2}
+                    ]
+                },
+                {"type": "text", "text": "Firstrade · UBS ESPP · 國泰證券", "color": "#A5B4FC", "size": "xs", "margin": "xs"}
+            ]
+        },
+        "body": {
+            "type": "box", "layout": "vertical", "backgroundColor": "#0F172A", "paddingAll": "16px", "spacing": "md",
+            "contents": [
+                # 美股總市值
+                {
+                    "type": "box", "layout": "vertical", "backgroundColor": "#1E293B", "paddingAll": "12px", "cornerRadius": "8px",
+                    "contents": [
+                        {
+                            "type": "box", "layout": "horizontal",
+                            "contents": [
+                                {"type": "text", "text": "🇺🇸 美股總市值 (USD)", "color": "#94A3B8", "size": "xs"},
+                                {"type": "text", "text": f"${summary['usd_val']:,.2f}", "color": "#FFFFFF", "weight": "bold", "size": "sm", "align": "end"}
+                            ]
+                        },
+                        {
+                            "type": "box", "layout": "horizontal", "margin": "xs",
+                            "contents": [
+                                {"type": "text", "text": "未實現損益", "color": "#64748B", "size": "xxs"},
+                                {"type": "text", "text": f"{summary['usd_pnl']:+,.2f} ({summary['usd_pnl_pct']:+.2f}%)", "color": usd_pnl_color, "weight": "bold", "size": "xs", "align": "end"}
+                            ]
+                        }
+                    ]
+                },
+                # 台股總市值
+                {
+                    "type": "box", "layout": "vertical", "backgroundColor": "#1E293B", "paddingAll": "12px", "cornerRadius": "8px",
+                    "contents": [
+                        {
+                            "type": "box", "layout": "horizontal",
+                            "contents": [
+                                {"type": "text", "text": "🇹🇼 台股總市值 (TWD)", "color": "#94A3B8", "size": "xs"},
+                                {"type": "text", "text": f"NT${summary['twd_val']:,.0f}", "color": "#FFFFFF", "weight": "bold", "size": "sm", "align": "end"}
+                            ]
+                        },
+                        {
+                            "type": "box", "layout": "horizontal", "margin": "xs",
+                            "contents": [
+                                {"type": "text", "text": "未實現損益", "color": "#64748B", "size": "xxs"},
+                                {"type": "text", "text": f"{summary['twd_pnl']:+,.0f} ({summary['twd_pnl_pct']:+.2f}%)", "color": twd_pnl_color, "weight": "bold", "size": "xs", "align": "end"}
+                            ]
+                        }
+                    ]
+                },
+                {"type": "text", "text": "💡 數據源自 Google 試算表，手機修改股數即時更新連動。", "color": "#94A3B8", "size": "xxs", "wrap": True}
+            ]
+        },
+        "footer": {
+            "type": "box", "layout": "horizontal", "backgroundColor": "#1E293B", "paddingAll": "10px",
+            "contents": [
+                {"type": "button", "style": "primary", "height": "sm", "color": "#4338CA", "action": {"type": "uri", "label": "開啟雲端儀表板", "uri": DASHBOARD_URL}}
+            ]
         }
-    except Exception:
-        return {"is_bull": True, "label": "大盤數據正常", "benchmark": benchmark_ticker}
+    }
 
 # ==========================================
-# 8. 技術分析與風控計算
+# 8. 技術分析與決策評估核心
 # ==========================================
 def calculate_risk_reward(price: float, fair_val: float, ma20: float, low_10d: float) -> Tuple[float, Optional[float]]:
     stop_loss = round(min(low_10d, ma20 * 0.97), 2)
-    if stop_loss >= price:
-        stop_loss = round(price * 0.95, 2)
+    if stop_loss >= price: stop_loss = round(price * 0.95, 2)
     risk = price - stop_loss
     reward = fair_val - price
     rr_ratio = round(reward / risk, 1) if risk > 0 and reward > 0 else None
@@ -353,11 +400,8 @@ def analyze_stock(ticker: str) -> Optional[dict]:
         rs = gain / loss.replace(0, 0.0001)
         rsi = round(float((100 - (100 / (1 + rs))).iloc[-1]), 1)
 
-        # 讀取財務資訊 (用於動態估值)
-        try:
-            info = stock.info
-        except Exception:
-            info = {}
+        try: info = stock.info
+        except Exception: info = {}
 
         return {
             "price": curr_price, "prev_price": prev_price,
@@ -367,9 +411,6 @@ def analyze_stock(ticker: str) -> Optional[dict]:
     except Exception:
         return None
 
-# ==========================================
-# 9. 決策評估核心 (結合動態合理價與夜盤總經)
-# ==========================================
 def evaluate_decision(item: dict, data: dict, market_regime: dict, macro_data: dict, dynamic_fair: float, val_source: str) -> dict:
     price = data["price"]
     fair_val = dynamic_fair
@@ -382,24 +423,19 @@ def evaluate_decision(item: dict, data: dict, market_regime: dict, macro_data: d
     tsm_chg = macro_data.get("TSM", {}).get("chg_pct", 0.0)
 
     score = 0.0
-
-    # 1. 基本面安全邊際
     if diff_pct <= buy_threshold_pct: score += 2.0
     elif diff_pct < 0: score += 0.5
     elif diff_pct >= sell_threshold_pct: score -= 2.0
     elif diff_pct > 10: score -= 0.5
 
-    # 2. 技術面 20MA
     if data["prev_price"] <= data["prev_ma20"] and price > data["ma20"]: score += 1.5
     elif price > data["ma20"]: score += 0.5
     if data["prev_price"] >= data["prev_ma20"] and price < data["ma20"]: score -= 1.5
     elif price < data["ma20"]: score -= 0.5
 
-    # 3. RSI
     if data["rsi"] <= 30: score += 1.0
     elif data["rsi"] >= 75: score -= 1.0
 
-    # 4. 夜盤與總經調節
     macro_warnings = []
     if vix_val >= 24.0 or not market_regime["is_bull"]:
         if score >= 2.0:
@@ -411,7 +447,7 @@ def evaluate_decision(item: dict, data: dict, market_regime: dict, macro_data: d
     if is_night_crash:
         if diff_pct > 10.0 or is_near_ma20:
             score -= 1.5
-            macro_warnings.append(f"⚡ [夜盤急跌避險] 期指/ADR重挫({tsm_chg:+.1f}%)，位階脆弱觸發提前減碼！")
+            macro_warnings.append(f"⚡ [夜盤急跌避險] 期指/ADR重挫({tsm_chg:+.1f}%)，觸發提前減碼！")
 
     if vix_val >= 28.0:
         if diff_pct >= 15.0:
@@ -423,29 +459,19 @@ def evaluate_decision(item: dict, data: dict, market_regime: dict, macro_data: d
     stop_loss, rr_ratio = calculate_risk_reward(price, fair_val, data["ma20"], data["low_10d"])
 
     if score >= 2.5:
-        signal_badge = "🔥 立即買進"
-        badge_color = "#10B981"
-        header_color = "#064E3B"
+        signal_badge, badge_color, header_color = "🔥 立即買進", "#10B981", "#064E3B"
         base_advice = f"【右側建倉買點】落入安全邊際且翻多。防守停損 {item['currency']=='USD' and '$' or 'NT$'}{stop_loss}，風報比 1:{rr_ratio or '優'}。"
     elif score >= 1.0:
-        signal_badge = "🟢 逢低加碼"
-        badge_color = "#34D399"
-        header_color = "#065F46"
+        signal_badge, badge_color, header_color = "🟢 逢低加碼", "#34D399", "#065F46"
         base_advice = f"【性價比充足】回測支撐有守，可分批承接。防守停損 {item['currency']=='USD' and '$' or 'NT$'}{stop_loss}。"
     elif score <= -2.5:
-        signal_badge = "🔴 立即賣出"
-        badge_color = "#EF4444"
-        header_color = "#7F1D1D"
-        base_advice = "【估值嚴重透支】價格大幅高估，強烈建議分批停利或掛設移動停利以守住利潤。"
+        signal_badge, badge_color, header_color = "🔴 立即賣出", "#EF4444", "#7F1D1D"
+        base_advice = "【估值嚴重透支】價格大幅高估，強烈建議分批停利或掛設移動停利單以鎖定獲利。"
     elif score <= -1.0:
-        signal_badge = "🟠 建議減碼"
-        badge_color = "#F97316"
-        header_color = "#7C2D12"
+        signal_badge, badge_color, header_color = "🟠 建議減碼", "#F97316", "#7C2D12"
         base_advice = "【轉弱避險防守】摜破防線或受夜盤/總經利空壓抑，建議多單部分減碼或暫停加碼。"
     else:
-        signal_badge = "⚪ 觀望續抱"
-        badge_color = "#94A3B8"
-        header_color = "#1E293B"
+        signal_badge, badge_color, header_color = "⚪ 觀望續抱", "#94A3B8", "#1E293B"
         base_advice = "【常態區間】未達顯著買賣標準，持股續抱。"
 
     prefix = " | ".join(macro_warnings) + "\n" if macro_warnings else ""
@@ -464,6 +490,34 @@ def build_stock_bubble(data: dict, market_regime: dict) -> dict:
     diff_text = f"折價 {abs(data['diff_pct']):.1f}%" if data['diff_pct'] < 0 else f"溢價 {data['diff_pct']:.1f}%"
     yahoo_chart_url = f"https://finance.yahoo.com/quote/{data['ticker']}"
     rr_text = f"1 : {data['rr_ratio']}" if data['rr_ratio'] else "N/A"
+
+    # 計算持有損益文字
+    holdings_section = []
+    if data["shares"] > 0 and data["cost_price"] > 0:
+        curr_val = data["shares"] * data["price"]
+        cost_val = data["shares"] * data["cost_price"]
+        pnl = curr_val - cost_val
+        pnl_pct = (pnl / cost_val) * 100
+        pnl_color = "#34D399" if pnl >= 0 else "#F87171"
+        pnl_str = f"{pnl:+,.1f}" if data['currency'] == "USD" else f"{pnl:+,.0f}"
+
+        holdings_section = [
+            {"type": "separator", "color": "#334155", "margin": "sm"},
+            {
+                "type": "box", "layout": "horizontal", "margin": "sm",
+                "contents": [
+                    {"type": "text", "text": f"持倉 ({data['broker']})", "color": "#94A3B8", "size": "xs"},
+                    {"type": "text", "text": f"{data['shares']} 股 @ {data['curr_symbol']}{data['cost_price']}", "color": "#CBD5E1", "size": "xs", "align": "end"}
+                ]
+            },
+            {
+                "type": "box", "layout": "horizontal",
+                "contents": [
+                    {"type": "text", "text": "未實現損益", "color": "#94A3B8", "size": "xs"},
+                    {"type": "text", "text": f"{data['curr_symbol']}{pnl_str} ({pnl_pct:+.1f}%)", "color": pnl_color, "weight": "bold", "size": "xs", "align": "end"}
+                ]
+            }
+        ]
 
     return {
         "type": "bubble", "size": "kilo",
@@ -517,6 +571,7 @@ def build_stock_bubble(data: dict, market_regime: dict) -> dict:
                         {"type": "text", "text": f"{data['curr_symbol']}{data['stop_loss']} (風報比 {rr_text})", "color": "#FCA5A5", "size": "xs", "align": "end"}
                     ]
                 },
+                *holdings_section,
                 {"type": "separator", "color": "#334155", "margin": "md"},
                 {
                     "type": "box", "layout": "vertical", "backgroundColor": "#1E293B", "paddingAll": "12px", "cornerRadius": "8px", "margin": "md",
@@ -537,7 +592,7 @@ def build_stock_bubble(data: dict, market_regime: dict) -> dict:
     }
 
 # ==========================================
-# 10. 推播發送模組
+# 9. 推播發送模組
 # ==========================================
 def push_line_flex(token: str, user_id: str, bubbles: List[dict], alt_text: str):
     if not token or not user_id or not bubbles: return
@@ -563,24 +618,39 @@ def push_line_flex(token: str, user_id: str, bubbles: List[dict], alt_text: str)
         print(f"LINE 請求異常: {e}")
 
 # ==========================================
-# 11. 主排程流程控制
+# 10. 主排程流程
 # ==========================================
 def main():
     print(f"===== 啟動多源智能投研系統 (模式: {RUN_MODE} | 強制推播: {FORCE_NOTIFY}) =====")
 
+    # 1. 動態加載持股清單 (Google Sheet)
+    watchlist = load_portfolio_watchlist()
+
+    # 2. 全球情勢與夜盤數據
     macro_data = fetch_global_macro_snapshot()
     vix_val = macro_data.get("VIX", {}).get("price", 15.0)
 
-    # 模式一：晨間全球情勢快報
+    # 模式一：晨間前瞻快報
     if RUN_MODE == "MORNING":
         print("☀️ 正在建構【晨間全球前瞻與夜盤快報】...")
         morning_bubble = build_morning_brief_bubble(macro_data)
         push_line_flex(LINE_CHANNEL_ACCESS_TOKEN, LINE_USER_ID, [morning_bubble], "☀️ 晨間全球前瞻與夜盤快報已送達！")
         return
 
-    # 模式二：盤後個股估值與操作掃描
+    # 模式二：盤後持股掃描與資產統計
     twse_data = fetch_twse_official_metrics()
-    print(f"🏛️ 台灣證交所官方指標已加載 (共 {len(twse_data)} 檔標的)")
+    
+    def check_market_regime(currency: str, vix: float) -> dict:
+        benchmark = "SPY" if currency == "USD" else "^TWII"
+        try:
+            df = yf.Ticker(benchmark).history(period="1y")
+            curr = float(df['Close'].iloc[-1])
+            ma120 = float(df['Close'].rolling(120).mean().iloc[-1])
+            is_bull = curr >= ma120 and (vix < 25)
+            label = "🟢 大盤多頭" if is_bull else ("⚠️ 恐慌高壓" if vix >= 25 else "⚠️ 大盤偏空")
+            return {"is_bull": is_bull, "label": label, "benchmark": benchmark, "price": round(curr, 2)}
+        except Exception:
+            return {"is_bull": True, "label": "大盤數據正常", "benchmark": benchmark}
 
     regimes = {
         "USD": check_market_regime("USD", vix_val),
@@ -589,13 +659,17 @@ def main():
 
     state_cache = load_state_cache()
     new_state_cache = dict(state_cache)
+    
     actionable_cards = []
+    
+    # 總資產計算統計器
+    summary_stats = {
+        "usd_val": 0.0, "usd_cost": 0.0, "usd_pnl": 0.0, "usd_pnl_pct": 0.0,
+        "twd_val": 0.0, "twd_cost": 0.0, "twd_pnl": 0.0, "twd_pnl_pct": 0.0
+    }
 
-    for item in PORTFOLIO_WATCHLIST:
+    for item in watchlist:
         currency = item["currency"]
-        if RUN_MODE in ["TWD", "USD"] and currency != RUN_MODE:
-            continue
-
         ticker = item["ticker"]
         name = item["name"]
         curr_symbol = "$" if currency == "USD" else "NT$"
@@ -603,11 +677,27 @@ def main():
         data = analyze_stock(ticker)
         if not data: continue
 
-        # 計算動態合理價
-        dynamic_fair, val_source = calculate_dynamic_fair_value(
-            item, data.get("info", {}), twse_data, data["price"]
-        )
+        price = data["price"]
+        shares = item["shares"]
+        cost_price = item["cost_price"]
 
+        # 累加資產總值與損益
+        if shares > 0 and cost_price > 0:
+            pos_val = shares * price
+            pos_cost = shares * cost_price
+            if currency == "USD":
+                summary_stats["usd_val"] += pos_val
+                summary_stats["usd_cost"] += pos_cost
+            else:
+                summary_stats["twd_val"] += pos_val
+                summary_stats["twd_cost"] += pos_cost
+
+        # 時區過濾 (盤後專門掃描)
+        if RUN_MODE in ["TWD", "USD"] and currency != RUN_MODE:
+            continue
+
+        # 動態估值與決策
+        dynamic_fair, val_source = calculate_dynamic_fair_value(item, data.get("info", {}), twse_data, price)
         market_regime = regimes[currency]
         decision = evaluate_decision(item, data, market_regime, macro_data, dynamic_fair, val_source)
 
@@ -615,20 +705,32 @@ def main():
         last_signal = state_cache.get(ticker)
         new_state_cache[ticker] = current_signal
 
-        print(f"[{name}] 市價: {curr_symbol}{data['price']} | 動態合理價: {curr_symbol}{dynamic_fair} ({val_source}) | 訊號: {current_signal}")
+        print(f"[{name}] 市價: {curr_symbol}{price} | 動態合理價: {curr_symbol}{dynamic_fair} ({val_source}) | 訊號: {current_signal}")
 
         is_state_changed = (current_signal != last_signal)
         should_alert = decision["is_active_signal"] and (is_state_changed or FORCE_NOTIFY)
 
         if should_alert:
             card_info = {
-                "name": name, "ticker": ticker, "curr_symbol": curr_symbol,
-                "price": data["price"], "ma20": data["ma20"], "rsi": data["rsi"], **decision
+                "name": name, "ticker": ticker, "currency": currency, "broker": item["broker"],
+                "shares": shares, "cost_price": cost_price, "curr_symbol": curr_symbol,
+                "price": price, "ma20": data["ma20"], "rsi": data["rsi"], **decision
             }
             actionable_cards.append(build_stock_bubble(card_info, market_regime))
 
+    # 計算整體報酬率
+    if summary_stats["usd_cost"] > 0:
+        summary_stats["usd_pnl"] = summary_stats["usd_val"] - summary_stats["usd_cost"]
+        summary_stats["usd_pnl_pct"] = (summary_stats["usd_pnl"] / summary_stats["usd_cost"]) * 100
+    if summary_stats["twd_cost"] > 0:
+        summary_stats["twd_pnl"] = summary_stats["twd_val"] - summary_stats["twd_cost"]
+        summary_stats["twd_pnl_pct"] = (summary_stats["twd_pnl"] / summary_stats["twd_cost"]) * 100
+
+    # 若有觸發通知，在最前方插入一張【資產損益總覽卡片】
     if actionable_cards:
-        push_line_flex(LINE_CHANNEL_ACCESS_TOKEN, LINE_USER_ID, actionable_cards, f"🚨 持股決策轉折通知：{len(actionable_cards)} 檔標的最新訊號！")
+        summary_bubble = build_portfolio_summary_bubble(summary_stats)
+        final_bubbles = [summary_bubble] + actionable_cards
+        push_line_flex(LINE_CHANNEL_ACCESS_TOKEN, LINE_USER_ID, final_bubbles, f"🚨 投資資產與持股轉折報告：{len(actionable_cards)} 檔標的最新訊號！")
     else:
         print("💡 所有標的狀態未變動或處於觀望狀態，無須打擾。")
 
