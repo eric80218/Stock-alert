@@ -13,11 +13,11 @@ on:
       mode:
         description: '選擇執行任務'
         required: true
-        default: 'MORNING'
+        default: 'ALL'
         type: choice
         options:
-          - MORNING
           - ALL
+          - MORNING
           - TWD
           - USD
 
@@ -63,6 +63,8 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
           LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          PORTFOLIO_SHEET_URL: ${{ secrets.PORTFOLIO_SHEET_URL }}
           RUN_MODE: ${{ steps.set-mode.outputs.mode }}
           FORCE_NOTIFY: ${{ github.event_name == 'workflow_dispatch' }}
         run: python main.py
