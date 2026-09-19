@@ -23,61 +23,55 @@ FORCE_NOTIFY = os.getenv("FORCE_NOTIFY", "false").lower() == "true"
 DASHBOARD_URL = "https://eric80218.github.io/Stock-alert/"
 CACHE_FILE = "state_cache.json"
 
-# 備援預設清單 (若 Google Sheet 網路斷線時自動啟用)
-FALLBACK_WATCHLIST = [
-    {"ticker": "AMAT", "name": "應用材料", "currency": "USD", "broker": "UBS (ESPP)", "shares": 19.0, "cost_price": 316.35, "base_fair": 420.0, "val_model": "ANALYST", "mos_buy": 0.15, "expensive_sell": 0.25},
-    {"ticker": "BRK-B", "name": "波克夏 B", "currency": "USD", "broker": "Firstrade", "shares": 7.0, "cost_price": 490.12, "base_fair": 510.0, "val_model": "PE_EPS", "mos_buy": 0.10, "expensive_sell": 0.20},
-    {"ticker": "COST", "name": "好市多", "currency": "USD", "broker": "Firstrade", "shares": 8.0088, "cost_price": 1044.55, "base_fair": 920.0, "val_model": "ANALYST", "mos_buy": 0.10, "expensive_sell": 0.20},
-    {"ticker": "INTC", "name": "英特爾", "currency": "USD", "broker": "Firstrade", "shares": 3.0, "cost_price": 110.69, "base_fair": 115.0, "val_model": "ANALYST", "mos_buy": 0.15, "expensive_sell": 0.25},
-    {"ticker": "LLY", "name": "禮來製藥", "currency": "USD", "broker": "Firstrade", "shares": 3.0032, "cost_price": 1128.65, "base_fair": 1150.0, "val_model": "ANALYST", "mos_buy": 0.15, "expensive_sell": 0.25},
-    {"ticker": "NVDA", "name": "輝達", "currency": "USD", "broker": "Firstrade", "shares": 6.009, "cost_price": 216.13, "base_fair": 220.0, "val_model": "ANALYST", "mos_buy": 0.15, "expensive_sell": 0.30},
-    {"ticker": "VRT", "name": "維諦技術", "currency": "USD", "broker": "Firstrade", "shares": 8.0014, "cost_price": 321.39, "base_fair": 260.0, "val_model": "ANALYST", "mos_buy": 0.20, "expensive_sell": 0.35},
-    {"ticker": "0050.TW", "name": "元大台灣50", "currency": "TWD", "broker": "國泰證券", "shares": 2000.0, "cost_price": 165.0, "base_fair": 185.0, "val_model": "BASE", "mos_buy": 0.10, "expensive_sell": 0.20},
-    {"ticker": "2337.TW", "name": "旺宏", "currency": "TWD", "broker": "國泰證券", "shares": 5000.0, "cost_price": 26.0, "base_fair": 28.0, "val_model": "PE_EPS", "mos_buy": 0.15, "expensive_sell": 0.25},
-    {"ticker": "2002.TW", "name": "中鋼", "currency": "TWD", "broker": "國泰證券", "shares": 3000.0, "cost_price": 24.5, "base_fair": 23.5, "val_model": "DIVIDEND", "mos_buy": 0.10, "expensive_sell": 0.20},
-    {"ticker": "1232.TW", "name": "大統益", "currency": "TWD", "broker": "國泰證券", "shares": 1000.0, "cost_price": 150.0, "base_fair": 155.0, "val_model": "DIVIDEND", "mos_buy": 0.10, "expensive_sell": 0.20},
-    {"ticker": "1904.TW", "name": "正隆", "currency": "TWD", "broker": "國泰證券", "shares": 4000.0, "cost_price": 27.5, "base_fair": 29.0, "val_model": "DIVIDEND", "mos_buy": 0.12, "expensive_sell": 0.25},
-    {"ticker": "2616.TW", "name": "山隆", "currency": "TWD", "broker": "國泰證券", "shares": 3000.0, "cost_price": 29.0, "base_fair": 31.0, "val_model": "DIVIDEND", "mos_buy": 0.10, "expensive_sell": 0.20}
-]
-
 # ==========================================
-# 2. Google 試算表動態同步模組
+# 2. Google 試算表動態同步模組 (強制 UTF-8 解碼)
 # ==========================================
 def load_portfolio_watchlist() -> List[dict]:
-    """從 Google Sheet CSV 動態加載持股清單，若失敗則回退到預設清單"""
     if not PORTFOLIO_SHEET_URL:
-        print("ℹ️ 未設定 PORTFOLIO_SHEET_URL，使用內建預設清單。")
-        return FALLBACK_WATCHLIST
+        print("⚠️ 未設定 PORTFOLIO_SHEET_URL")
+        return []
     
     try:
-        res = requests.get(PORTFOLIO_SHEET_URL, timeout=8)
+        res = requests.get(PORTFOLIO_SHEET_URL, timeout=10)
+        # 強制指定 UTF-8 編碼，徹底根除中文亂碼
+        res.encoding = 'utf-8'
+        
         if res.status_code == 200:
             df = pd.read_csv(io.StringIO(res.text))
-            required_cols = ["ticker", "name", "currency", "shares", "cost_price", "base_fair"]
-            if all(col in df.columns for col in required_cols):
-                portfolio = []
-                for _, r in df.iterrows():
-                    portfolio.append({
-                        "ticker": str(r["ticker"]).strip(),
-                        "name": str(r["name"]).strip(),
-                        "currency": str(r["currency"]).strip().upper(),
-                        "broker": str(r.get("broker", "一般")).strip(),
-                        "shares": float(r.get("shares", 0)),
-                        "cost_price": float(r.get("cost_price", 0)),
-                        "base_fair": float(r.get("base_fair", 100)),
-                        "val_model": str(r.get("val_model", "BASE")).strip().upper(),
-                        "mos_buy": float(r.get("mos_buy", 0.15)),
-                        "expensive_sell": float(r.get("expensive_sell", 0.25))
-                    })
-                print(f"✅ 成功從 Google 試算表同步 {len(portfolio)} 檔持股資料！")
-                return portfolio
+            portfolio = []
+            for _, r in df.iterrows():
+                ticker = str(r.get("ticker", "")).strip()
+                if not ticker or ticker == "nan":
+                    continue
+                
+                # 安全解析數值，防止空字元產生 NaN
+                shares = pd.to_numeric(r.get("shares"), errors='coerce')
+                cost_price = pd.to_numeric(r.get("cost_price"), errors='coerce')
+                base_fair = pd.to_numeric(r.get("base_fair"), errors='coerce')
+                mos_buy = pd.to_numeric(r.get("mos_buy"), errors='coerce')
+                expensive_sell = pd.to_numeric(r.get("expensive_sell"), errors='coerce')
+
+                portfolio.append({
+                    "ticker": ticker,
+                    "name": str(r.get("name", ticker)).strip(),
+                    "currency": str(r.get("currency", "USD")).strip().upper(),
+                    "broker": str(r.get("broker", "一般")).strip(),
+                    "shares": float(shares) if pd.notna(shares) else 0.0,
+                    "cost_price": float(cost_price) if pd.notna(cost_price) else 0.0,
+                    "base_fair": float(base_fair) if pd.notna(base_fair) else 100.0,
+                    "val_model": str(r.get("val_model", "BASE")).strip().upper(),
+                    "mos_buy": float(mos_buy) if pd.notna(mos_buy) else 0.15,
+                    "expensive_sell": float(expensive_sell) if pd.notna(expensive_sell) else 0.25
+                })
+            print(f"✅ 成功從 Google 試算表載入 {len(portfolio)} 檔持股資料！")
+            return portfolio
     except Exception as e:
-        print(f"⚠️ 讀取 Google 試算表失敗 ({e})，使用安全備援清單。")
+        print(f"❌ 讀取 Google 試算表異常: {e}")
     
-    return FALLBACK_WATCHLIST
+    return []
 
 # ==========================================
-# 3. 台灣證交所 (TWSE) 官方權威指標
+# 3. 台灣證交所 (TWSE) 官方指標
 # ==========================================
 def fetch_twse_official_metrics() -> dict:
     url = "https://openapi.twse.com.tw/v1/exchangeReport/BWIBBU_ALL"
@@ -176,9 +170,10 @@ def fetch_global_macro_snapshot() -> dict:
         try:
             t = yf.Ticker(symbol)
             hist = t.history(period="5d")
-            if len(hist) >= 2:
-                curr = float(hist['Close'].iloc[-1])
-                prev = float(hist['Close'].iloc[-2])
+            close = hist['Close'].dropna()
+            if len(close) >= 2:
+                curr = float(close.iloc[-1])
+                prev = float(close.iloc[-2])
                 chg_pct = ((curr - prev) / prev) * 100
                 data[key] = {"price": round(curr, 2), "chg_pct": round(chg_pct, 2)}
             else:
@@ -293,11 +288,25 @@ def build_morning_brief_bubble(macro: dict) -> dict:
     }
 
 # ==========================================
-# 7. 專屬【資產庫存與未實現損益總覽卡片】
+# 7. 資產總覽卡片 (全面 NaN 防呆)
 # ==========================================
 def build_portfolio_summary_bubble(summary: dict) -> dict:
-    usd_pnl_color = "#34D399" if summary["usd_pnl"] >= 0 else "#F87171"
-    twd_pnl_color = "#34D399" if summary["twd_pnl"] >= 0 else "#F87171"
+    usd_val = summary["usd_val"]
+    usd_pnl = summary["usd_pnl"]
+    usd_pct = summary["usd_pnl_pct"]
+
+    twd_val = summary["twd_val"]
+    twd_pnl = summary["twd_pnl"]
+    twd_pct = summary["twd_pnl_pct"]
+
+    usd_pnl_color = "#34D399" if usd_pnl >= 0 else "#F87171"
+    twd_pnl_color = "#34D399" if twd_pnl >= 0 else "#F87171"
+
+    usd_val_str = f"${usd_val:,.2f}"
+    usd_pnl_str = f"{usd_pnl:+,.2f} ({usd_pct:+.2f}%)" if summary["usd_cost"] > 0 else "$0.00 (0.00%)"
+
+    twd_val_str = f"NT${twd_val:,.0f}"
+    twd_pnl_str = f"{twd_pnl:+,.0f} ({twd_pct:+.2f}%)" if summary["twd_cost"] > 0 else "NT$0 (0.00%)"
 
     return {
         "type": "bubble", "size": "kilo",
@@ -317,7 +326,6 @@ def build_portfolio_summary_bubble(summary: dict) -> dict:
         "body": {
             "type": "box", "layout": "vertical", "backgroundColor": "#0F172A", "paddingAll": "16px", "spacing": "md",
             "contents": [
-                # 美股總市值
                 {
                     "type": "box", "layout": "vertical", "backgroundColor": "#1E293B", "paddingAll": "12px", "cornerRadius": "8px",
                     "contents": [
@@ -325,19 +333,18 @@ def build_portfolio_summary_bubble(summary: dict) -> dict:
                             "type": "box", "layout": "horizontal",
                             "contents": [
                                 {"type": "text", "text": "🇺🇸 美股總市值 (USD)", "color": "#94A3B8", "size": "xs"},
-                                {"type": "text", "text": f"${summary['usd_val']:,.2f}", "color": "#FFFFFF", "weight": "bold", "size": "sm", "align": "end"}
+                                {"type": "text", "text": usd_val_str, "color": "#FFFFFF", "weight": "bold", "size": "sm", "align": "end"}
                             ]
                         },
                         {
                             "type": "box", "layout": "horizontal", "margin": "xs",
                             "contents": [
                                 {"type": "text", "text": "未實現損益", "color": "#64748B", "size": "xxs"},
-                                {"type": "text", "text": f"{summary['usd_pnl']:+,.2f} ({summary['usd_pnl_pct']:+.2f}%)", "color": usd_pnl_color, "weight": "bold", "size": "xs", "align": "end"}
+                                {"type": "text", "text": usd_pnl_str, "color": usd_pnl_color, "weight": "bold", "size": "xs", "align": "end"}
                             ]
                         }
                     ]
                 },
-                # 台股總市值
                 {
                     "type": "box", "layout": "vertical", "backgroundColor": "#1E293B", "paddingAll": "12px", "cornerRadius": "8px",
                     "contents": [
@@ -345,14 +352,14 @@ def build_portfolio_summary_bubble(summary: dict) -> dict:
                             "type": "box", "layout": "horizontal",
                             "contents": [
                                 {"type": "text", "text": "🇹🇼 台股總市值 (TWD)", "color": "#94A3B8", "size": "xs"},
-                                {"type": "text", "text": f"NT${summary['twd_val']:,.0f}", "color": "#FFFFFF", "weight": "bold", "size": "sm", "align": "end"}
+                                {"type": "text", "text": twd_val_str, "color": "#FFFFFF", "weight": "bold", "size": "sm", "align": "end"}
                             ]
                         },
                         {
                             "type": "box", "layout": "horizontal", "margin": "xs",
                             "contents": [
                                 {"type": "text", "text": "未實現損益", "color": "#64748B", "size": "xxs"},
-                                {"type": "text", "text": f"{summary['twd_pnl']:+,.0f} ({summary['twd_pnl_pct']:+.2f}%)", "color": twd_pnl_color, "weight": "bold", "size": "xs", "align": "end"}
+                                {"type": "text", "text": twd_pnl_str, "color": twd_pnl_color, "weight": "bold", "size": "xs", "align": "end"}
                             ]
                         }
                     ]
@@ -369,7 +376,7 @@ def build_portfolio_summary_bubble(summary: dict) -> dict:
     }
 
 # ==========================================
-# 8. 技術分析與決策評估核心
+# 8. 技術分析與決策核心 (NaN 安全保護)
 # ==========================================
 def calculate_risk_reward(price: float, fair_val: float, ma20: float, low_10d: float) -> Tuple[float, Optional[float]]:
     stop_loss = round(min(low_10d, ma20 * 0.97), 2)
@@ -385,10 +392,13 @@ def analyze_stock(ticker: str) -> Optional[dict]:
         df = stock.history(period="1y")
         if df.empty or len(df) < 25: return None
         
-        close = df['Close']
+        close = df['Close'].dropna()
+        low = df['Low'].dropna()
+        if close.empty or len(close) < 25: return None
+
         curr_price = round(float(close.iloc[-1]), 2)
         prev_price = round(float(close.iloc[-2]), 2)
-        low_10d = round(float(df['Low'].tail(10).min()), 2)
+        low_10d = round(float(low.tail(10).min()), 2)
 
         ma20_s = close.rolling(20).mean()
         curr_ma20 = round(float(ma20_s.iloc[-1]), 2)
@@ -491,13 +501,12 @@ def build_stock_bubble(data: dict, market_regime: dict) -> dict:
     yahoo_chart_url = f"https://finance.yahoo.com/quote/{data['ticker']}"
     rr_text = f"1 : {data['rr_ratio']}" if data['rr_ratio'] else "N/A"
 
-    # 計算持有損益文字
     holdings_section = []
     if data["shares"] > 0 and data["cost_price"] > 0:
         curr_val = data["shares"] * data["price"]
         cost_val = data["shares"] * data["cost_price"]
         pnl = curr_val - cost_val
-        pnl_pct = (pnl / cost_val) * 100
+        pnl_pct = (pnl / cost_val) * 100 if cost_val > 0 else 0.0
         pnl_color = "#34D399" if pnl >= 0 else "#F87171"
         pnl_str = f"{pnl:+,.1f}" if data['currency'] == "USD" else f"{pnl:+,.0f}"
 
@@ -623,29 +632,32 @@ def push_line_flex(token: str, user_id: str, bubbles: List[dict], alt_text: str)
 def main():
     print(f"===== 啟動多源智能投研系統 (模式: {RUN_MODE} | 強制推播: {FORCE_NOTIFY}) =====")
 
-    # 1. 動態加載持股清單 (Google Sheet)
+    # 1. 動態加載持股 (UTF-8)
     watchlist = load_portfolio_watchlist()
+    if not watchlist:
+        print("❌ 無持股監控標的，結束執行。")
+        return
 
-    # 2. 全球情勢與夜盤數據
+    # 2. 全球情勢與夜盤
     macro_data = fetch_global_macro_snapshot()
     vix_val = macro_data.get("VIX", {}).get("price", 15.0)
 
-    # 模式一：晨間前瞻快報
     if RUN_MODE == "MORNING":
         print("☀️ 正在建構【晨間全球前瞻與夜盤快報】...")
         morning_bubble = build_morning_brief_bubble(macro_data)
         push_line_flex(LINE_CHANNEL_ACCESS_TOKEN, LINE_USER_ID, [morning_bubble], "☀️ 晨間全球前瞻與夜盤快報已送達！")
         return
 
-    # 模式二：盤後持股掃描與資產統計
+    # 3. 盤後個股估值與資產統計
     twse_data = fetch_twse_official_metrics()
     
     def check_market_regime(currency: str, vix: float) -> dict:
         benchmark = "SPY" if currency == "USD" else "^TWII"
         try:
             df = yf.Ticker(benchmark).history(period="1y")
-            curr = float(df['Close'].iloc[-1])
-            ma120 = float(df['Close'].rolling(120).mean().iloc[-1])
+            close = df['Close'].dropna()
+            curr = float(close.iloc[-1])
+            ma120 = float(close.rolling(120).mean().iloc[-1])
             is_bull = curr >= ma120 and (vix < 25)
             label = "🟢 大盤多頭" if is_bull else ("⚠️ 恐慌高壓" if vix >= 25 else "⚠️ 大盤偏空")
             return {"is_bull": is_bull, "label": label, "benchmark": benchmark, "price": round(curr, 2)}
@@ -662,7 +674,6 @@ def main():
     
     actionable_cards = []
     
-    # 總資產計算統計器
     summary_stats = {
         "usd_val": 0.0, "usd_cost": 0.0, "usd_pnl": 0.0, "usd_pnl_pct": 0.0,
         "twd_val": 0.0, "twd_cost": 0.0, "twd_pnl": 0.0, "twd_pnl_pct": 0.0
@@ -675,14 +686,16 @@ def main():
         curr_symbol = "$" if currency == "USD" else "NT$"
 
         data = analyze_stock(ticker)
-        if not data: continue
+        if not data:
+            print(f"⚠️ [{name} ({ticker})] 無法取得歷史行情數據，略過。")
+            continue
 
         price = data["price"]
         shares = item["shares"]
         cost_price = item["cost_price"]
 
-        # 累加資產總值與損益
-        if shares > 0 and cost_price > 0:
+        # 資產總值累加 (嚴格排除 NaN)
+        if pd.notna(price) and price > 0 and pd.notna(shares) and shares > 0 and pd.notna(cost_price) and cost_price > 0:
             pos_val = shares * price
             pos_cost = shares * cost_price
             if currency == "USD":
@@ -692,7 +705,7 @@ def main():
                 summary_stats["twd_val"] += pos_val
                 summary_stats["twd_cost"] += pos_cost
 
-        # 時區過濾 (盤後專門掃描)
+        # 模式過濾
         if RUN_MODE in ["TWD", "USD"] and currency != RUN_MODE:
             continue
 
@@ -705,7 +718,7 @@ def main():
         last_signal = state_cache.get(ticker)
         new_state_cache[ticker] = current_signal
 
-        print(f"[{name}] 市價: {curr_symbol}{price} | 動態合理價: {curr_symbol}{dynamic_fair} ({val_source}) | 訊號: {current_signal}")
+        print(f"[{name}] 市價: {curr_symbol}{price} | 合理價: {curr_symbol}{dynamic_fair} ({val_source}) | 訊號: {current_signal}")
 
         is_state_changed = (current_signal != last_signal)
         should_alert = decision["is_active_signal"] and (is_state_changed or FORCE_NOTIFY)
@@ -718,7 +731,7 @@ def main():
             }
             actionable_cards.append(build_stock_bubble(card_info, market_regime))
 
-    # 計算整體報酬率
+    # 計算報酬率
     if summary_stats["usd_cost"] > 0:
         summary_stats["usd_pnl"] = summary_stats["usd_val"] - summary_stats["usd_cost"]
         summary_stats["usd_pnl_pct"] = (summary_stats["usd_pnl"] / summary_stats["usd_cost"]) * 100
@@ -726,7 +739,7 @@ def main():
         summary_stats["twd_pnl"] = summary_stats["twd_val"] - summary_stats["twd_cost"]
         summary_stats["twd_pnl_pct"] = (summary_stats["twd_pnl"] / summary_stats["twd_cost"]) * 100
 
-    # 若有觸發通知，在最前方插入一張【資產損益總覽卡片】
+    # 發送推播
     if actionable_cards:
         summary_bubble = build_portfolio_summary_bubble(summary_stats)
         final_bubbles = [summary_bubble] + actionable_cards
