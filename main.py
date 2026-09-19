@@ -24,7 +24,7 @@ DASHBOARD_URL = "https://eric80218.github.io/Stock-alert/"
 CACHE_FILE = "state_cache.json"
 
 # ==========================================
-# 2. Google 試算表動態同步模組 (強制 UTF-8 編碼)
+# 2. Google 試算表動態同步模組 (UTF-8 編碼)
 # ==========================================
 def load_portfolio_watchlist() -> List[dict]:
     if not PORTFOLIO_SHEET_URL:
@@ -33,7 +33,7 @@ def load_portfolio_watchlist() -> List[dict]:
     
     try:
         res = requests.get(PORTFOLIO_SHEET_URL, timeout=10)
-        res.encoding = 'utf-8'  # 強制鎖定 UTF-8
+        res.encoding = 'utf-8'
         
         if res.status_code == 200:
             df = pd.read_csv(io.StringIO(res.text))
@@ -113,7 +113,7 @@ def calculate_dynamic_fair_value(item: dict, yf_info: dict, twse_data: dict, cur
             pass
 
     elif model == "DIVIDEND":
-        clean_code = ticker.replace(".TW", "")
+        clean_code = ticker.replace(".TW", "").replace(".TWO", "")
         tw_metric = twse_data.get(clean_code)
         if tw_metric and tw_metric.get("yield"):
             curr_yield = tw_metric["yield"]
@@ -429,7 +429,7 @@ def build_rotation_bubble(pair: dict) -> dict:
                 {
                     "type": "box", "layout": "horizontal",
                     "contents": [
-                        {"type": "text", "text": f"建議防守停損: {curr_sym}{to_s['stop_loss']}", "color": "#94A3B8", "size": "xxs"},
+                        {"type": "text", "text": f"動態停損: {curr_sym}{to_s['stop_loss']} (2.0×ATR)", "color": "#94A3B8", "size": "xxs"},
                         {"type": "text", "text": f"風報比 1:{to_s['rr_ratio'] or '佳'}", "color": "#6EE7B7", "size": "xxs", "align": "end"}
                     ]
                 },
@@ -438,7 +438,7 @@ def build_rotation_bubble(pair: dict) -> dict:
                     "type": "box", "layout": "vertical", "backgroundColor": "#1E293B", "paddingAll": "12px", "cornerRadius": "8px", "margin": "md",
                     "contents": [
                         {"type": "text", "text": "🎯 戰略換軌方針：", "color": "#A78BFA", "weight": "bold", "size": "xs"},
-                        {"type": "text", "text": f"{from_s['name']} 估值偏高或跌破短期均線進入防禦期；建議將部位資金轉進折價幅度高達 {abs(to_s['diff_pct']):.1f}%、風報比絕佳的 {to_s['name']}，實現鎖利並放大期望值！", "color": "#F8FAFC", "size": "xxs", "wrap": True, "margin": "xs"}
+                        {"type": "text", "text": f"{from_s['name']} 估值偏高或跌破短期均線進入防禦期；建議將部位資金轉進折價幅度達 {abs(to_s['diff_pct']):.1f}%、風報比絕佳的 {to_s['name']}，實現鎖利並放大期望值！", "color": "#F8FAFC", "size": "xxs", "wrap": True, "margin": "xs"}
                     ]
                 }
             ]
@@ -452,11 +452,24 @@ def build_rotation_bubble(pair: dict) -> dict:
     }
 
 # ==========================================
-# 9. 技術分析與決策評估核心 (解除觀望續抱過濾)
+# 9. 技術分析與【ATR 動態風控停損】核心
 # ==========================================
-def calculate_risk_reward(price: float, fair_val: float, ma20: float, low_10d: float) -> Tuple[float, Optional[float]]:
-    stop_loss = round(min(low_10d, ma20 * 0.97), 2)
-    if stop_loss >= price: stop_loss = round(price * 0.95, 2)
+def calculate_risk_reward(price: float, fair_val: float, ma20: float, low_10d: float, atr: float) -> Tuple[float, Optional[float]]:
+    """
+    專業動態波動停損 (Chandelier / ATR Volatility Stop):
+    - 依據個股 14 日真實波幅 (ATR)，動態給予 2.0 倍 ATR 的容忍緩衝區
+    - 結合近期 10 日結構低點，有效防範主力洗盤假跌破與插針
+    """
+    # 2.0 倍 ATR 基準保護位
+    volatility_stop = price - (2.0 * atr)
+    
+    # 結合 10 日低點結構防守 (取兩者中更穩健的支撐位，並避免過度貼近或過度遠離)
+    stop_loss = round(min(low_10d, volatility_stop), 2)
+    if stop_loss >= price or stop_loss <= (price * 0.75):
+        stop_loss = round(price - (2.0 * atr), 2)
+    if stop_loss >= price:
+        stop_loss = round(price * 0.95, 2)
+
     risk = price - stop_loss
     reward = fair_val - price
     rr_ratio = round(reward / risk, 1) if risk > 0 and reward > 0 else None
@@ -469,6 +482,7 @@ def analyze_stock(ticker: str) -> Optional[dict]:
         if df.empty or len(df) < 25: return None
         
         close = df['Close'].dropna()
+        high = df['High'].dropna()
         low = df['Low'].dropna()
         if close.empty or len(close) < 25: return None
 
@@ -476,15 +490,27 @@ def analyze_stock(ticker: str) -> Optional[dict]:
         prev_price = round(float(close.iloc[-2]), 2)
         low_10d = round(float(low.tail(10).min()), 2)
 
+        # 20MA
         ma20_s = close.rolling(20).mean()
         curr_ma20 = round(float(ma20_s.iloc[-1]), 2)
         prev_ma20 = round(float(ma20_s.iloc[-2]), 2)
 
+        # RSI(14)
         delta = close.diff()
         gain = delta.clip(lower=0).rolling(14).mean()
         loss = (-delta.clip(upper=0)).rolling(14).mean()
         rs = gain / loss.replace(0, 0.0001)
         rsi = round(float((100 - (100 / (1 + rs))).iloc[-1]), 1)
+
+        # ATR(14) 真實波動區間計算
+        prev_close = close.shift(1)
+        tr1 = high - low
+        tr2 = (high - prev_close).abs()
+        tr3 = (low - prev_close).abs()
+        tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+        atr_series = tr.rolling(14).mean()
+        curr_atr = round(float(atr_series.iloc[-1]), 2) if pd.notna(atr_series.iloc[-1]) else round(curr_price * 0.025, 2)
+        atr_pct = round((curr_atr / curr_price) * 100, 1) if curr_price > 0 else 2.5
 
         try: info = stock.info
         except Exception: info = {}
@@ -492,7 +518,9 @@ def analyze_stock(ticker: str) -> Optional[dict]:
         return {
             "price": curr_price, "prev_price": prev_price,
             "ma20": curr_ma20, "prev_ma20": prev_ma20,
-            "rsi": rsi, "low_10d": low_10d, "info": info
+            "rsi": rsi, "low_10d": low_10d,
+            "atr": curr_atr, "atr_pct": atr_pct,
+            "info": info
         }
     except Exception:
         return None
@@ -542,14 +570,16 @@ def evaluate_decision(item: dict, data: dict, market_regime: dict, macro_data: d
         elif diff_pct >= 0:
             score -= 1.0
 
-    stop_loss, rr_ratio = calculate_risk_reward(price, fair_val, data["ma20"], data["low_10d"])
+    # 引入 ATR 計算自適應動態停損
+    stop_loss, rr_ratio = calculate_risk_reward(price, fair_val, data["ma20"], data["low_10d"], data["atr"])
 
+    curr_sym = "$" if item["currency"] == "USD" else "NT$"
     if score >= 2.5:
         signal_badge, badge_color, header_color = "🔥 立即買進", "#10B981", "#064E3B"
-        base_advice = f"【右側建倉買點】落入安全邊際且翻多。防守停損 {item['currency']=='USD' and '$' or 'NT$'}{stop_loss}，風報比 1:{rr_ratio or '優'}。"
+        base_advice = f"【右側建倉買點】落入安全邊際且翻多。防守停損 {curr_sym}{stop_loss} (2.0×ATR動態防守)，風報比 1:{rr_ratio or '優'}。"
     elif score >= 1.0:
         signal_badge, badge_color, header_color = "🟢 逢低加碼", "#34D399", "#065F46"
-        base_advice = f"【性價比充足】回測支撐有守，可分批承接。防守停損 {item['currency']=='USD' and '$' or 'NT$'}{stop_loss}。"
+        base_advice = f"【性價比充足】回測支撐有守，可分批承接。防守停損 {curr_sym}{stop_loss} (2.0×ATR動態防守)。"
     elif score <= -2.5:
         signal_badge, badge_color, header_color = "🔴 立即賣出", "#EF4444", "#7F1D1D"
         base_advice = "【估值嚴重透支】價格大幅高估，強烈建議分批停利或掛設移動停利單以鎖定獲利。"
@@ -648,11 +678,19 @@ def build_stock_bubble(data: dict, market_regime: dict) -> dict:
                         {"type": "text", "text": f"20MA: {data['ma20']} | RSI: {data['rsi']}", "color": "#94A3B8", "size": "xs", "align": "end"}
                     ]
                 },
+                # 新增 ATR 波動度與自適應動態停損
                 {
                     "type": "box", "layout": "horizontal",
                     "contents": [
-                        {"type": "text", "text": "防守停損點", "color": "#F87171", "size": "xs"},
-                        {"type": "text", "text": f"{data['curr_symbol']}{data['stop_loss']} (風報比 {rr_text})", "color": "#FCA5A5", "size": "xs", "align": "end"}
+                        {"type": "text", "text": "14日波幅 (ATR)", "color": "#A78BFA", "size": "xs"},
+                        {"type": "text", "text": f"{data['curr_symbol']}{data['atr']} (日震幅 {data['atr_pct']}%)", "color": "#C4B5FD", "size": "xs", "align": "end"}
+                    ]
+                },
+                {
+                    "type": "box", "layout": "horizontal",
+                    "contents": [
+                        {"type": "text", "text": "動態停損 (2.0×ATR)", "color": "#F87171", "size": "xs"},
+                        {"type": "text", "text": f"{data['curr_symbol']}{data['stop_loss']} (風報比 {rr_text})", "color": "#FCA5A5", "weight": "bold", "size": "xs", "align": "end"}
                     ]
                 },
                 *holdings_section,
@@ -683,7 +721,6 @@ def push_line_flex(token: str, user_id: str, bubbles: List[dict], alt_text: str)
     url = "https://api.line.me/v2/bot/message/push"
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {token}"}
     
-    # LINE 單一 carousel 最多 10 個 bubble；單次 push 最多 5 則訊息 (上限 50 張卡片)
     messages = []
     chunk_size = 10
     for i in range(0, len(bubbles), chunk_size):
@@ -796,16 +833,17 @@ def main():
         last_signal = state_cache.get(ticker)
         new_state_cache[ticker] = current_signal
 
-        print(f"[{name}] 市價: {curr_symbol}{price} | 合理價: {curr_symbol}{dynamic_fair} ({val_source}) | 訊號: {current_signal}")
+        print(f"[{name}] 市價: {curr_symbol}{price} | ATR: {data['atr']} ({data['atr_pct']}%) | 合理價: {curr_symbol}{dynamic_fair} | 訊號: {current_signal}")
 
         card_info = {
             "name": name, "ticker": ticker, "currency": currency, "broker": item["broker"],
             "shares": shares, "cost_price": cost_price, "curr_symbol": curr_symbol,
-            "price": price, "ma20": data["ma20"], "rsi": data["rsi"], **decision
+            "price": price, "ma20": data["ma20"], "rsi": data["rsi"],
+            "atr": data["atr"], "atr_pct": data["atr_pct"],
+            **decision
         }
         evaluated_pool.append(card_info)
 
-        # 納入觀望續抱：只要訊號轉換（包含轉為觀望），或是手動觸發 (FORCE_NOTIFY)，皆納入推播清單！
         is_state_changed = (current_signal != last_signal)
         should_alert = is_state_changed or FORCE_NOTIFY
 
