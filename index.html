@@ -3,12 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>智能量化投研與資產終端 | Eric's Terminal</title>
+  <title>智能量化投研與決策儀表板 | Eric's Terminal</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
-  <!-- PapaParse CSV 自動解析器 -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
   <style>
     body { font-family: 'Noto Sans TC', sans-serif; background-color: #080C14; color: #E2E8F0; }
@@ -22,13 +20,6 @@
 </head>
 <body class="min-h-screen p-3 md:p-6 lg:p-8 space-y-6">
 
-  <script>
-    // =========================================================================
-    // ⚠️ 請在下方雙引號內貼上你的 Google 試算表 CSV 網址（未來試算表修改，網頁自動同步）
-    // =========================================================================
-    const SHEET_CSV_URL = "在此貼上你的Google試算表CSV網址";
-  </script>
-
   <!-- 頂部導航 -->
   <header class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-800 pb-5">
     <div class="flex items-center gap-3">
@@ -37,17 +28,18 @@
       </div>
       <div>
         <div class="flex items-center gap-2">
-          <h1 class="text-xl md:text-2xl font-bold tracking-tight text-white">智能量化投研與資產終端</h1>
-          <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-950/80 text-emerald-400 border border-emerald-800">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-1.5"></span> 雲端動態同步
+          <h1 class="text-xl md:text-2xl font-bold tracking-tight text-white">智能量化投研與決策終端</h1>
+          <span id="sync-status-badge" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-950/80 text-indigo-400 border border-indigo-800">
+            <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse mr-1.5"></span> 載入決策中...
           </span>
         </div>
         <p class="text-xs text-slate-400 mt-0.5">跨市場資產監控 · Firstrade · UBS ESPP · 國泰證券</p>
       </div>
     </div>
     <div class="flex flex-wrap items-center gap-2 text-xs">
-      <button onclick="loadGoogleSheetData()" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition flex items-center gap-1.5">
-        <i class="fa-solid fa-arrows-rotate"></i> 重新整理數據
+      <span id="last-update-time" class="text-slate-400 font-mono hidden md:inline"></span>
+      <button onclick="fetchDashboardData()" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition flex items-center gap-1.5">
+        <i class="fa-solid fa-arrows-rotate"></i> 重新整理
       </button>
       <a href="https://github.com/eric80218/Stock-alert/actions" target="_blank" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition">
         Actions 日誌
@@ -57,7 +49,53 @@
 
   <div class="max-w-7xl mx-auto space-y-6">
 
-    <!-- 全球總經面板 -->
+    <!-- 資產市值總覽卡片 -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="card-glass rounded-xl p-5 border-l-4 border-l-indigo-500">
+        <div class="flex justify-between items-center text-xs text-slate-400">
+          <span>🇺🇸 美股總市值 (USD)</span>
+          <span class="font-mono text-xxs px-2 py-0.5 rounded bg-slate-800 text-slate-300">Firstrade · UBS</span>
+        </div>
+        <div id="usd-total-val" class="text-2xl font-bold font-mono text-white mt-1">$0.00</div>
+        <div id="usd-total-pnl" class="text-xs font-mono font-bold text-slate-400 mt-1">未實現損益: $0.00 (0.00%)</div>
+      </div>
+      <div class="card-glass rounded-xl p-5 border-l-4 border-l-emerald-500">
+        <div class="flex justify-between items-center text-xs text-slate-400">
+          <span>🇹🇼 台股總市值 (TWD)</span>
+          <span class="font-mono text-xxs px-2 py-0.5 rounded bg-slate-800 text-slate-300">國泰證券</span>
+        </div>
+        <div id="twd-total-val" class="text-2xl font-bold font-mono text-white mt-1">NT$0</div>
+        <div id="twd-total-pnl" class="text-xs font-mono font-bold text-slate-400 mt-1">未實現損益: NT$0 (0.00%)</div>
+      </div>
+    </section>
+
+    <!-- 核心亮點：即時重點投資建議與換股專區 -->
+    <section id="actionable-advice-section" class="space-y-3 hidden">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-amber-400 flex items-center gap-2">
+          <i class="fa-solid fa-bell text-amber-400"></i> 即時戰略投資建議與操作方針
+        </h2>
+        <span class="text-xs text-slate-500 font-mono">Actionable Insights</span>
+      </div>
+      <div id="advice-cards-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- 動態渲染買賣訊號卡片 -->
+      </div>
+    </section>
+
+    <!-- 智能換股輪動卡片專區 -->
+    <section id="rotation-section" class="space-y-3 hidden">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-purple-400 flex items-center gap-2">
+          <i class="fa-solid fa-arrows-spin text-purple-400"></i> 智能資本輪動調度建議
+        </h2>
+        <span class="text-xs text-slate-500 font-mono">Capital Rotation</span>
+      </div>
+      <div id="rotation-cards-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- 動態渲染換股卡片 -->
+      </div>
+    </section>
+
+    <!-- 全球總經與夜盤面板 -->
     <section class="space-y-3">
       <div class="flex items-center justify-between">
         <h2 class="text-sm font-semibold text-slate-300 flex items-center gap-2">
@@ -68,51 +106,50 @@
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <div class="card-glass rounded-xl p-3.5">
           <div class="flex items-center justify-between text-xs text-slate-400"><span>台積電 ADR</span><span class="font-mono text-xxs px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">TSM</span></div>
-          <div class="text-sm md:text-base font-bold font-mono text-white mt-1">台股夜盤風向</div>
-          <div class="text-xs text-emerald-400 mt-0.5"><i class="fa-solid fa-arrow-trend-up"></i> 晨間前瞻定錨</div>
+          <div id="macro-tsm" class="text-base font-bold font-mono text-white mt-1">-</div>
+          <div class="text-xs text-slate-400 mt-0.5">台股夜盤風向</div>
         </div>
         <div class="card-glass rounded-xl p-3.5">
           <div class="flex items-center justify-between text-xs text-slate-400"><span>那斯達克期</span><span class="font-mono text-xxs px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">NQ=F</span></div>
-          <div class="text-sm md:text-base font-bold font-mono text-white mt-1">科技電子盤</div>
+          <div id="macro-nq" class="text-base font-bold font-mono text-white mt-1">-</div>
           <div class="text-xs text-slate-400 mt-0.5">美股夜間情緒</div>
         </div>
         <div class="card-glass rounded-xl p-3.5">
           <div class="flex items-center justify-between text-xs text-slate-400"><span>標普 500 期</span><span class="font-mono text-xxs px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">ES=F</span></div>
-          <div class="text-sm md:text-base font-bold font-mono text-white mt-1">權值期指</div>
-          <div class="text-xs text-slate-400 mt-0.5">全美大盤指標</div>
+          <div id="macro-es" class="text-base font-bold font-mono text-white mt-1">-</div>
+          <div class="text-xs text-slate-400 mt-0.5">全球大型權值</div>
         </div>
         <div class="card-glass rounded-xl p-3.5">
           <div class="flex items-center justify-between text-xs text-slate-400"><span>VIX 恐慌指數</span><span class="font-mono text-xxs px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">^VIX</span></div>
-          <div class="text-sm md:text-base font-bold font-mono text-emerald-400 mt-1">&lt; 25 常態</div>
+          <div id="macro-vix" class="text-base font-bold font-mono text-white mt-1">-</div>
           <div class="text-xs text-slate-400 mt-0.5">&gt;28 觸發恐慌停利</div>
         </div>
         <div class="card-glass rounded-xl p-3.5">
           <div class="flex items-center justify-between text-xs text-slate-400"><span>10年美債殖利率</span><span class="font-mono text-xxs px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">^TNX</span></div>
-          <div class="text-sm md:text-base font-bold font-mono text-white mt-1">無風險利率</div>
-          <div class="text-xs text-slate-400 mt-0.5">成長股本益比定錨</div>
+          <div id="macro-tnx" class="text-base font-bold font-mono text-white mt-1">-</div>
+          <div class="text-xs text-slate-400 mt-0.5">無風險利率錨點</div>
         </div>
         <div class="card-glass rounded-xl p-3.5">
           <div class="flex items-center justify-between text-xs text-slate-400"><span>美元指數</span><span class="font-mono text-xxs px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">DXY</span></div>
-          <div class="text-sm md:text-base font-bold font-mono text-white mt-1">匯率動向</div>
-          <div class="text-xs text-slate-400 mt-0.5">外資資金水位監控</div>
+          <div id="macro-dxy" class="text-base font-bold font-mono text-white mt-1">-</div>
+          <div class="text-xs text-slate-400 mt-0.5">外資水位指標</div>
         </div>
       </div>
     </section>
 
-    <!-- 即時持股與決策清單 (由 JS 動態生成) -->
-    <section class="space-y-3">
+    <!-- 持股監控與投資建議詳細表格 -->
+    <section class="space-y-4">
       <div class="flex items-center justify-between">
         <h2 class="text-sm font-semibold text-slate-300 flex items-center gap-2">
-          <i class="fa-solid fa-list-check text-indigo-400"></i> 即時持股監控與立即決策矩陣
+          <i class="fa-solid fa-table-list text-indigo-400"></i> 持股全覽、估值與操作方針矩陣
         </h2>
-        <span id="stock-count-badge" class="text-xs text-indigo-400 font-mono font-medium">讀取試算表中...</span>
+        <span id="stock-count-badge" class="text-xs text-indigo-400 font-mono font-medium">載入中...</span>
       </div>
 
       <!-- 美股列表 -->
       <div class="card-glass rounded-xl overflow-hidden">
         <div class="px-4 py-3 bg-slate-900/90 border-b border-slate-800 flex justify-between items-center">
-          <span class="text-xs font-bold text-sky-400 tracking-wider">🇺🇸 美股配置清單 (USD)</span>
-          <span class="text-xxs text-slate-500 font-mono">Live Sync from Google Sheet</span>
+          <span class="text-xs font-bold text-sky-400 tracking-wider">🇺🇸 美股配置與即時決策 (USD)</span>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">
@@ -121,15 +158,16 @@
                 <th class="p-3">標的代碼</th>
                 <th class="p-3">股票名稱</th>
                 <th class="p-3">帳戶券商</th>
-                <th class="p-3">持有股數</th>
-                <th class="p-3">每股成本</th>
-                <th class="p-3">估值模型</th>
-                <th class="p-3">安全邊際</th>
-                <th class="p-3 text-right">即時行情</th>
+                <th class="p-3">市價 / 合理價</th>
+                <th class="p-3">折溢價</th>
+                <th class="p-3">持有損益</th>
+                <th class="p-3">即時訊號</th>
+                <th class="p-3">動態停損 (2.0×ATR)</th>
+                <th class="p-3">投資操作方針</th>
               </tr>
             </thead>
             <tbody id="usd-table-body" class="divide-y divide-slate-800/60 font-mono">
-              <tr><td colspan="8" class="p-4 text-center text-slate-500">正在動態加載最新持股數據...</td></tr>
+              <tr><td colspan="9" class="p-4 text-center text-slate-500">正在讀取最新量化決策數據...</td></tr>
             </tbody>
           </table>
         </div>
@@ -138,8 +176,7 @@
       <!-- 台股列表 -->
       <div class="card-glass rounded-xl overflow-hidden">
         <div class="px-4 py-3 bg-slate-900/90 border-b border-slate-800 flex justify-between items-center">
-          <span class="text-xs font-bold text-emerald-400 tracking-wider">🇹🇼 台股配置清單 (TWD)</span>
-          <span class="text-xxs text-slate-500 font-mono">Live Sync from Google Sheet</span>
+          <span class="text-xs font-bold text-emerald-400 tracking-wider">🇹🇼 台股配置與即時決策 (TWD)</span>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">
@@ -148,15 +185,16 @@
                 <th class="p-3">標的代碼</th>
                 <th class="p-3">股票名稱</th>
                 <th class="p-3">帳戶券商</th>
-                <th class="p-3">持有股數</th>
-                <th class="p-3">每股成本</th>
-                <th class="p-3">估值模型</th>
-                <th class="p-3">安全邊際</th>
-                <th class="p-3 text-right">即時行情</th>
+                <th class="p-3">市價 / 合理價</th>
+                <th class="p-3">折溢價</th>
+                <th class="p-3">持有損益</th>
+                <th class="p-3">即時訊號</th>
+                <th class="p-3">動態停損 (2.0×ATR)</th>
+                <th class="p-3">投資操作方針</th>
               </tr>
             </thead>
             <tbody id="twd-table-body" class="divide-y divide-slate-800/60 font-mono">
-              <tr><td colspan="8" class="p-4 text-center text-slate-500">正在動態加載最新持股數據...</td></tr>
+              <tr><td colspan="9" class="p-4 text-center text-slate-500">正在讀取最新量化決策數據...</td></tr>
             </tbody>
           </table>
         </div>
@@ -165,93 +203,194 @@
 
     <!-- 底部說明 -->
     <footer class="pt-6 border-t border-slate-800 text-center text-xs text-slate-500 space-y-1">
-      <p>智能量化交易系統 · 網頁儀表板動態連動 Google 試算表</p>
-      <p class="text-xxs text-slate-600">本系統僅供個人量化研究輔助使用，投資請獨立審慎評估風險。</p>
+      <p>智能量化交易系統 · GitHub Actions 自動化管線驅動</p>
+      <p class="text-xxs text-slate-600">本儀表板僅供個人研究量化輔助使用，投資請獨立審慎評估風險。</p>
     </footer>
   </div>
 
-  <!-- 動態加載 JavaScript 腳本 -->
   <script>
-    function formatModelName(model) {
-      if (!model) return "基準固定";
-      const m = model.toUpperCase();
-      if (m === "ANALYST") return '<span class="text-sky-400 font-sans">法人目標價</span>';
-      if (m === "DIVIDEND") return '<span class="text-emerald-400 font-sans">5%殖利率折算</span>';
-      if (m === "PE_EPS") return '<span class="text-indigo-400 font-sans">動態本益比</span>';
-      if (m === "ETF_TREND") return '<span class="text-purple-400 font-sans">120MA半年通道</span>';
-      return '<span class="text-slate-400 font-sans">基準固定</span>';
-    }
-
-    function formatBroker(broker) {
-      if (broker.includes("UBS")) return `<span class="text-purple-400 font-sans">${broker}</span>`;
-      if (broker.includes("Firstrade")) return `<span class="text-sky-400 font-sans">${broker}</span>`;
-      if (broker.includes("國泰")) return `<span class="text-emerald-400 font-sans">${broker}</span>`;
-      return `<span class="text-slate-300 font-sans">${broker}</span>`;
-    }
-
-    function renderRows(items, containerId, currencySymbol) {
+    function renderTableRows(stocks, containerId, currSym) {
       const container = document.getElementById(containerId);
-      if (!items || items.length === 0) {
-        container.innerHTML = `<tr><td colspan="8" class="p-4 text-center text-slate-500">無此幣別之監控標的</td></tr>`;
+      if (!stocks || stocks.length === 0) {
+        container.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-slate-500">無此幣別之監控標的</td></tr>`;
         return;
       }
 
       let html = "";
-      items.forEach(r => {
-        const yahooUrl = `https://finance.yahoo.com/quote/${r.ticker}`;
-        const sharesText = Number(r.shares) > 0 ? `${Number(r.shares).toLocaleString()} 股` : '<span class="text-slate-500 font-sans">觀望自選</span>';
-        const costText = Number(r.cost_price) > 0 ? `${currencySymbol}${Number(r.cost_price).toLocaleString()}` : '<span class="text-slate-500 font-sans">-</span>';
-        const mosBuyPct = r.mos_buy ? (Number(r.mos_buy) * 100).toFixed(0) : 15;
+      stocks.forEach(s => {
+        const yahooUrl = `https://finance.yahoo.com/quote/${s.ticker}`;
+        const diffText = s.diff_pct < 0 ? `折價 ${Math.abs(s.diff_pct).toFixed(1)}%` : `溢價 ${s.diff_pct.toFixed(1)}%`;
+        const diffColor = s.diff_pct < 0 ? 'text-emerald-400' : 'text-amber-400';
+
+        let pnlDisplay = '<span class="text-slate-500 font-sans">觀望自選</span>';
+        if (s.shares > 0 && s.cost_price > 0) {
+          const currVal = s.shares * s.price;
+          const costVal = s.shares * s.cost_price;
+          const pnl = currVal - costVal;
+          const pnlPct = (pnl / costVal) * 100;
+          const pnlColor = pnl >= 0 ? 'text-emerald-400' : 'text-rose-400';
+          const pnlStr = s.currency === 'USD' ? pnl.toLocaleString(undefined, {minimumFractionDigits:1, maximumFractionDigits:1}) : Math.round(pnl).toLocaleString();
+          pnlDisplay = `<span class="${pnlColor}">${currSym}${pnl >= 0 ? '+' : ''}${pnlStr} (${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(1)}%)</span>`;
+        }
 
         html += `
           <tr class="hover:bg-slate-800/30 transition">
-            <td class="p-3 font-bold text-white">${r.ticker}</td>
-            <td class="p-3 font-sans text-slate-200 font-medium">${r.name}</td>
-            <td class="p-3 font-sans">${formatBroker(r.broker || "一般")}</td>
-            <td class="p-3 text-slate-200">${sharesText}</td>
-            <td class="p-3 text-slate-300">${costText}</td>
-            <td class="p-3">${formatModelName(r.val_model)}</td>
-            <td class="p-3 text-emerald-400 font-sans">折價 ${mosBuyPct}% 買</td>
-            <td class="p-3 text-right">
-              <a href="${yahooUrl}" target="_blank" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xxs font-sans transition">即時線圖</a>
-            </td>
+            <td class="p-3 font-bold text-white"><a href="${yahooUrl}" target="_blank" class="hover:text-indigo-400 underline decoration-slate-700">${s.ticker}</a></td>
+            <td class="p-3 font-sans text-slate-200 font-medium">${s.name}</td>
+            <td class="p-3 font-sans text-slate-400">${s.broker}</td>
+            <td class="p-3 text-slate-300">${currSym}${s.price} / <span class="text-sky-400">${currSym}${s.dynamic_fair}</span></td>
+            <td class="p-3 font-sans ${diffColor}">${diffText}</td>
+            <td class="p-3">${pnlDisplay}</td>
+            <td class="p-3 font-sans font-bold" style="color: ${s.badge_color};">${s.signal_badge}</td>
+            <td class="p-3 text-rose-300">${currSym}${s.stop_loss}</td>
+            <td class="p-3 font-sans text-slate-300 max-w-xs truncate" title="${s.action_advice}">${s.action_advice.replace(/\n/g, ' ')}</td>
           </tr>
         `;
       });
       container.innerHTML = html;
     }
 
-    function loadGoogleSheetData() {
-      if (!SHEET_CSV_URL || SHEET_CSV_URL.includes("在此貼上")) {
-        document.getElementById("stock-count-badge").innerText = "⚠️ 請在 index.html 第 25 行填入 CSV 網址";
+    function renderAdviceCards(stocks) {
+      const container = document.getElementById("advice-cards-container");
+      const section = document.getElementById("actionable-advice-section");
+      
+      // 挑出有重點訊號的標的 (買進、加碼、減碼、賣出)
+      const actionables = stocks.filter(s => s.signal_badge && !s.signal_badge.includes("觀望"));
+      
+      if (!actionables || actionables.length === 0) {
+        section.classList.add("hidden");
         return;
       }
 
-      document.getElementById("stock-count-badge").innerText = "正在連線 Google 試算表...";
-
-      Papa.parse(SHEET_CSV_URL, {
-        download: true,
-        header: true,
-        skipEmptyLines: true,
-        complete: function(results) {
-          const rows = results.data.filter(r => r.ticker && r.ticker.trim() !== "");
-          document.getElementById("stock-count-badge").innerText = `共 ${rows.length} 檔動態監控中`;
-
-          const usdItems = rows.filter(r => (r.currency || "").trim().toUpperCase() === "USD");
-          const twdItems = rows.filter(r => (r.currency || "").trim().toUpperCase() === "TWD");
-
-          renderRows(usdItems, "usd-table-body", "$");
-          renderRows(twdItems, "twd-table-body", "NT$");
-        },
-        error: function(err) {
-          console.error("CSV 加載失敗:", err);
-          document.getElementById("stock-count-badge").innerText = "❌ 試算表連線失敗";
-        }
+      section.classList.remove("hidden");
+      let html = "";
+      actionables.forEach(s => {
+        const currSym = s.currency === "USD" ? "$" : "NT$";
+        html += `
+          <div class="card-glass rounded-xl p-4 border-l-4" style="border-left-color: ${s.badge_color};">
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="text-xs text-slate-400 font-mono">${s.ticker} · ${s.broker}</span>
+                <div class="text-base font-bold text-white">${s.name}</div>
+              </div>
+              <span class="px-2.5 py-1 rounded text-xs font-bold" style="background-color: ${s.header_color}; color: ${s.badge_color};">
+                ${s.signal_badge}
+              </span>
+            </div>
+            <div class="mt-2 text-xs font-mono text-slate-400 flex justify-between">
+              <span>現價: ${currSym}${s.price} | 合理價: ${currSym}${s.dynamic_fair}</span>
+              <span class="text-rose-400">停損: ${currSym}${s.stop_loss}</span>
+            </div>
+            <div class="mt-3 p-2.5 rounded bg-slate-900/80 text-xs text-slate-200 font-sans leading-relaxed border border-slate-800">
+              ${s.action_advice.replace(/\n/g, '<br>')}
+            </div>
+          </div>
+        `;
       });
+      container.innerHTML = html;
     }
 
-    // 頁面載入完成後自動抓取
-    window.onload = loadGoogleSheetData;
+    function renderRotationCards(rotations) {
+      const container = document.getElementById("rotation-cards-container");
+      const section = document.getElementById("rotation-section");
+
+      if (!rotations || rotations.length === 0) {
+        section.classList.add("hidden");
+        return;
+      }
+
+      section.classList.remove("hidden");
+      let html = "";
+      rotations.forEach(r => {
+        const currSym = r.currency === "USD" ? "$" : "NT$";
+        const freedStr = r.currency === "USD" ? r.freed_capital.toLocaleString(undefined, {maximumFractionDigits:1}) : Math.round(r.freed_capital).toLocaleString();
+        html += `
+          <div class="card-glass rounded-xl p-4 border-l-4 border-l-purple-500">
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-purple-400 font-bold">🔄 資本換軌輪動 (${r.currency})</span>
+              <span class="text-slate-400">預估釋出 ${currSym}${freedStr}</span>
+            </div>
+            <div class="mt-2 grid grid-cols-2 gap-2 text-xs">
+              <div class="p-2 rounded bg-slate-900/60 border border-slate-800">
+                <span class="text-rose-400 font-medium">🔴 調節轉出</span>
+                <div class="font-bold text-white mt-0.5">${r.from_stock.name} (${r.from_stock.ticker})</div>
+                <div class="text-xxs text-slate-400 mt-1">${r.from_stock.signal_badge}</div>
+              </div>
+              <div class="p-2 rounded bg-slate-900/60 border border-slate-800">
+                <span class="text-emerald-400 font-medium">🟢 換軌轉進</span>
+                <div class="font-bold text-white mt-0.5">${r.to_stock.name} (${r.to_stock.ticker})</div>
+                <div class="text-xxs text-emerald-400 mt-1">折價 ${Math.abs(r.to_stock.diff_pct).toFixed(1)}%</div>
+              </div>
+            </div>
+            <p class="mt-2 text-xxs text-slate-400">將走弱部位轉進落入安全邊際且具備極佳風報比之標的，鎖定獲利並兼顧勝率。</p>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    function fetchDashboardData() {
+      document.getElementById("sync-status-badge").innerText = "讀取最新決策中...";
+      
+      // 加入時間戳記避免瀏覽器快取
+      fetch('./data.json?t=' + new Date().getTime())
+        .then(res => {
+          if (!res.ok) throw new Error("data.json 尚未生成");
+          return res.json();
+        })
+        .then(data => {
+          document.getElementById("sync-status-badge").innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-1.5"></span> 決策同步完成`;
+          document.getElementById("sync-status-badge").className = "inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-950/80 text-emerald-400 border border-emerald-800";
+          if (data.updated_at) {
+            document.getElementById("last-update-time").innerText = `最後覆盤: ${data.updated_at}`;
+          }
+
+          // 資產總覽
+          if (data.summary) {
+            const s = data.summary;
+            document.getElementById("usd-total-val").innerText = `$${s.usd_val.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+            const usdPnlColor = s.usd_pnl >= 0 ? "text-emerald-400" : "text-rose-400";
+            document.getElementById("usd-total-pnl").innerHTML = `<span class="${usdPnlColor}">未實現損益: ${s.usd_pnl >= 0 ? '+' : ''}$${s.usd_pnl.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})} (${s.usd_pnl_pct >= 0 ? '+' : ''}${s.usd_pnl_pct.toFixed(2)}%)</span>`;
+
+            document.getElementById("twd-total-val").innerText = `NT$${Math.round(s.twd_val).toLocaleString()}`;
+            const twdPnlColor = s.twd_pnl >= 0 ? "text-emerald-400" : "text-rose-400";
+            document.getElementById("twd-total-pnl").innerHTML = `<span class="${twdPnlColor}">未實現損益: ${s.twd_pnl >= 0 ? '+' : ''}NT$${Math.round(s.twd_pnl).toLocaleString()} (${s.twd_pnl_pct >= 0 ? '+' : ''}${s.twd_pnl_pct.toFixed(2)}%)</span>`;
+          }
+
+          // 總經夜盤
+          if (data.macro) {
+            const m = data.macro;
+            if (m.TSM) document.getElementById("macro-tsm").innerText = `$${m.TSM.price} (${m.TSM.chg_pct >= 0 ? '+' : ''}${m.TSM.chg_pct}%)`;
+            if (m.NQ_F) document.getElementById("macro-nq").innerText = `${m.NQ_F.chg_pct >= 0 ? '+' : ''}${m.NQ_F.chg_pct}%`;
+            if (m.ES_F) document.getElementById("macro-es").innerText = `${m.ES_F.chg_pct >= 0 ? '+' : ''}${m.ES_F.chg_pct}%`;
+            if (m.VIX) document.getElementById("macro-vix").innerText = `${m.VIX.price}`;
+            if (m.TNX) document.getElementById("macro-tnx").innerText = `${m.TNX.price}%`;
+            if (m.DXY) document.getElementById("macro-dxy").innerText = `${m.DXY.price}`;
+          }
+
+          // 渲染表格與投資建議
+          if (data.stocks) {
+            document.getElementById("stock-count-badge").innerText = `共 ${data.stocks.length} 檔標的實時評估`;
+            const usdStocks = data.stocks.filter(s => s.currency === "USD");
+            const twdStocks = data.stocks.filter(s => s.currency === "TWD");
+
+            renderTableRows(usdStocks, "usd-table-body", "$");
+            renderTableRows(twdStocks, "twd-table-body", "NT$");
+            renderAdviceCards(data.stocks);
+          }
+
+          // 渲染換股建議
+          if (data.rotations) {
+            renderRotationCards(data.rotations);
+          }
+        })
+        .catch(err => {
+          console.warn("尚未偵測到 data.json，請先手動執行一次 GitHub Actions:", err);
+          document.getElementById("sync-status-badge").innerText = "⚠️ 需執行一次 Actions 生成數據";
+        });
+    }
+
+    window.onload = fetchDashboardData;
   </script>
 </body>
 </html>
