@@ -1,22 +1,29 @@
 import os
+import sys
+import json
 import requests
 import pandas as pd
 import yfinance as yf
 from typing import Dict, List, Optional, Tuple
 
 # ==========================================
-# 1. 系統設定與憑證
+# 1. 系統設定、憑證與環境變數
 # ==========================================
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN", "")
 LINE_USER_ID = os.getenv("LINE_USER_ID", "")
 
-# 專屬雲端儀表板網址 (GitHub Pages)
+# 執行模式 (ALL: 全掃, TWD: 僅台股, USD: 僅美股)
+TARGET_MARKET = os.getenv("TARGET_MARKET", "ALL").upper()
+# 手動觸發時強制推播 (忽略快取)
+FORCE_NOTIFY = os.getenv("FORCE_NOTIFY", "false").lower() == "true"
+
 DASHBOARD_URL = "https://eric80218.github.io/Stock-alert/"
+CACHE_FILE = "state_cache.json"
 
 # ==========================================
-# 2. 持股監控清單 (台股與美股)
+# 2. 專屬持股監控清單
 # ==========================================
 PORTFOLIO_WATCHLIST = [
     # --- 美股部位 ---
@@ -38,9 +45,73 @@ PORTFOLIO_WATCHLIST = [
 ]
 
 # ==========================================
-# 3. AI 技術線型與趨勢操作判讀核心
+# 3. 狀態記憶模組 (防止重複警報洗版)
 # ==========================================
-def analyze_market_data(ticker: str) -> Optional[dict]:
+def load_state_cache() -> dict:
+    if os.path.exists(CACHE_FILE):
+        try:
+            with open(CACHE_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {}
+    return {}
+
+def save_state_cache(cache: dict):
+    try:
+        with open(CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(cache, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print(f"⚠️ 快取儲存異常: {e}")
+
+# ==========================================
+# 4. 大盤環境濾網 (Market Regime Filter)
+# ==========================================
+def check_market_regime(currency: str) -> dict:
+    """美股看 SPY，台股看 ^TWII；判斷指數是否處於 120MA (半年線) 之上"""
+    benchmark_ticker = "SPY" if currency == "USD" else "^TWII"
+    try:
+        df = yf.Ticker(benchmark_ticker).history(period="1y")
+        if len(df) < 120:
+            return {"is_bull": True, "label": "常態多頭", "benchmark": benchmark_ticker}
+        close = df['Close']
+        curr = float(close.iloc[-1])
+        ma120 = float(close.rolling(120).mean().iloc[-1])
+        is_bull = curr >= ma120
+        return {
+            "is_bull": is_bull,
+            "label": "🟢 大盤多頭" if is_bull else "⚠️ 大盤偏空逆風",
+            "benchmark": benchmark_ticker,
+            "ma120": round(ma120, 2),
+            "price": round(curr, 2)
+        }
+    except Exception:
+        return {"is_bull": True, "label": "大盤數據正常", "benchmark": benchmark_ticker}
+
+# ==========================================
+# 5. 量化風控計算 (停損點與風報比 R/R)
+# ==========================================
+def calculate_risk_reward(price: float, fair_val: float, ma20: float, low_10d: float) -> Tuple[float, Optional[float]]:
+    """
+    計算建議停損點：取 近10日低點 與 (20MA * 0.97) 之較小防守位
+    計算風報比 (Reward / Risk)
+    """
+    stop_loss = round(min(low_10d, ma20 * 0.97), 2)
+    if stop_loss >= price:
+        stop_loss = round(price * 0.95, 2)  # 防呆：預設 5% 防守位
+
+    risk = price - stop_loss
+    reward = fair_val - price
+
+    rr_ratio = None
+    if risk > 0 and reward > 0:
+        rr_ratio = round(reward / risk, 1)
+
+    return stop_loss, rr_ratio
+
+# ==========================================
+# 6. 技術分析與立即決策演算法
+# ==========================================
+def analyze_stock(ticker: str) -> Optional[dict]:
     try:
         stock = yf.Ticker(ticker)
         df = stock.history(period="1y")
@@ -48,80 +119,124 @@ def analyze_market_data(ticker: str) -> Optional[dict]:
             return None
         
         close = df['Close']
+        low = df['Low']
         curr_price = round(float(close.iloc[-1]), 2)
         prev_price = round(float(close.iloc[-2]), 2)
-        
-        # 20MA (月線)、60MA (季線)
-        ma20_series = close.rolling(window=20).mean()
-        curr_ma20 = round(float(ma20_series.iloc[-1]), 2)
-        prev_ma20 = round(float(ma20_series.iloc[-2]), 2)
-        curr_ma60 = round(float(close.rolling(window=60).mean().iloc[-1]), 2) if len(close) >= 60 else None
+        low_10d = round(float(low.tail(10).min()), 2)
 
-        # RSI (14)
+        ma20_s = close.rolling(20).mean()
+        curr_ma20 = round(float(ma20_s.iloc[-1]), 2)
+        prev_ma20 = round(float(ma20_s.iloc[-2]), 2)
+        curr_ma60 = round(float(close.rolling(60).mean().iloc[-1]), 2) if len(close) >= 60 else None
+
         delta = close.diff()
         gain = delta.clip(lower=0).rolling(14).mean()
         loss = (-delta.clip(upper=0)).rolling(14).mean()
         rs = gain / loss.replace(0, 0.0001)
-        rsi_val = (100 - (100 / (1 + rs))).iloc[-1]
-        curr_rsi = round(float(rsi_val), 1)
-
-        # 線型策略自動判讀
-        action_type = "HOLD"
-        action_title = "區間整理"
-        action_color = "#38BDF8"
-        strategy_reason = "股價處於均線常態波動區間，無重大突破或跌破。"
-
-        if prev_price <= prev_ma20 and curr_price > curr_ma20:
-            action_type = "BUY_SIGNAL"
-            action_title = "🟢 右側翻多：強勢站上月線"
-            action_color = "#10B981"
-            strategy_reason = f"今日股價由下往上突破 20MA (${curr_ma20})，短線動能翻多，屬絕佳右側建倉買點。"
-        elif curr_price > curr_ma20 and (curr_ma60 and curr_ma20 > curr_ma60) and ((curr_price - curr_ma20) / curr_ma20 <= 0.025):
-            action_type = "BUY_SIGNAL"
-            action_title = "🟢 多頭有守：回測月線支撐"
-            action_color = "#10B981"
-            strategy_reason = f"均線維持多頭排列，回測 20MA (${curr_ma20}) 未破，具備高盈虧比加碼優勢。"
-        elif prev_price >= prev_ma20 and curr_price < curr_ma20:
-            action_type = "WEAK_SIGNAL"
-            action_title = "🔴 短多轉弱：摜破月線防守"
-            action_color = "#EF4444"
-            strategy_reason = f"收盤失守重要防守均線 20MA (${curr_ma20})，短線進入修正期，建議多單暫停加碼或部分調節。"
-        elif curr_rsi <= 28:
-            action_type = "OVERSOLD"
-            action_title = "🟡 嚴重超賣：恐慌打底區"
-            action_color = "#F59E0B"
-            strategy_reason = f"RSI 僅 {curr_rsi} 進入極度超賣區，空方力竭隨時出現技術反彈，切忌恐慌殺低。"
-        elif curr_rsi >= 75:
-            action_type = "OVERBOUGHT"
-            action_title = "⚠️ 短線過熱：動能極端超買"
-            action_color = "#EC4899"
-            strategy_reason = f"RSI 高達 {curr_rsi}，短線指標嚴重過熱且遠離均線，慎防獲利回吐賣壓。"
+        rsi = round(float((100 - (100 / (1 + rs))).iloc[-1]), 1)
 
         return {
-            "current_price": curr_price,
+            "price": curr_price,
+            "prev_price": prev_price,
             "ma20": curr_ma20,
+            "prev_ma20": prev_ma20,
             "ma60": curr_ma60,
-            "rsi": curr_rsi,
-            "action_type": action_type,
-            "action_title": action_title,
-            "action_color": action_color,
-            "strategy_reason": strategy_reason
+            "rsi": rsi,
+            "low_10d": low_10d
         }
     except Exception as e:
-        print(f"[{ticker}] 分析出錯: {e}")
+        print(f"[{ticker}] 數據異常: {e}")
         return None
 
-# ==========================================
-# 4. LINE Flex Message 卡片生成
-# ==========================================
-def build_line_bubble(card_info: dict) -> dict:
-    """單檔標的警報卡片"""
-    is_buy = card_info["status_category"] == "BUY"
-    status_label = "🟢 進入安全邊際" if is_buy else ("🔴 估值過熱警戒" if card_info["status_category"] == "SELL" else "⚡ 線型關鍵轉折")
-    status_badge_color = "#10B981" if is_buy else ("#EF4444" if card_info["status_category"] == "SELL" else "#38BDF8")
+def evaluate_decision(item: dict, data: dict, market_regime: dict) -> dict:
+    price = data["price"]
+    fair_val = item["fair_value"]
+    diff_pct = ((price - fair_val) / fair_val) * 100
+    buy_threshold_pct = - (item["mos_buy"] * 100)
+    sell_threshold_pct = item["expensive_sell"] * 100
+
+    score = 0.0
+
+    # 1. 基本面安全邊際得分
+    if diff_pct <= buy_threshold_pct:
+        score += 2.0
+    elif diff_pct < 0:
+        score += 0.5
+    elif diff_pct >= sell_threshold_pct:
+        score -= 2.0
+    elif diff_pct > 10:
+        score -= 0.5
+
+    # 2. 均線位階得分
+    if data["prev_price"] <= data["prev_ma20"] and price > data["ma20"]:
+        score += 1.5  # 突破月線翻多
+    elif price > data["ma20"]:
+        score += 0.5
     
-    diff_text = f"折價 {abs(card_info['diff_pct']):.1f}%" if card_info['diff_pct'] < 0 else f"溢價 {card_info['diff_pct']:.1f}%"
-    yahoo_chart_url = f"https://finance.yahoo.com/quote/{card_info['ticker']}"
+    if data["prev_price"] >= data["prev_ma20"] and price < data["ma20"]:
+        score -= 1.5  # 摜破月線
+    elif price < data["ma20"]:
+        score -= 0.5
+
+    # 3. RSI 動能
+    if data["rsi"] <= 30:
+        score += 1.0
+    elif data["rsi"] >= 75:
+        score -= 1.0
+
+    # 4. 大盤環境濾網修正 (若大盤走空，下修強烈買進訊號)
+    if not market_regime["is_bull"] and score >= 2.0:
+        score = 1.2  # 降級為逢低微量加碼，避免在系統性暴跌中接重倉
+
+    # 計算風報比與防守停損點
+    stop_loss, rr_ratio = calculate_risk_reward(price, fair_val, data["ma20"], data["low_10d"])
+
+    # 決定立即指標
+    if score >= 2.5:
+        signal_badge = "🔥 立即買進"
+        badge_color = "#10B981"
+        header_color = "#064E3B"
+        action_advice = f"【右側建倉買點】估值落入安全邊際，且技術面翻多。建議停損設於 {item['currency']=='USD' and '$' or 'NT$'}{stop_loss}，潛在風報比 1:{rr_ratio or '佳'}。"
+    elif score >= 1.0:
+        signal_badge = "🟢 逢低加碼"
+        badge_color = "#34D399"
+        header_color = "#065F46"
+        action_advice = f"【具性價比優勢】回測支撐有守，可採定期定額或掛單分批承接。防守停損線 {item['currency']=='USD' and '$' or 'NT$'}{stop_loss}。"
+    elif score <= -2.5:
+        signal_badge = "🔴 立即賣出"
+        badge_color = "#EF4444"
+        header_color = "#7F1D1D"
+        action_advice = "【估值嚴重透支】價格大幅偏離內在價值，強烈建議獲利了結或啟動移動停利（Trailing Stop）。"
+    elif score <= -1.0:
+        signal_badge = "🟠 建議減碼"
+        badge_color = "#F97316"
+        header_color = "#7C2D12"
+        action_advice = "【跌破短線支撐】失守 20MA 防守均線，短線進入修正期，建議多單部分減碼或暫停買進。"
+    else:
+        signal_badge = "⚪ 觀望續抱"
+        badge_color = "#94A3B8"
+        header_color = "#1E293B"
+        action_advice = "【常態區間】未達顯著買賣標準，持股續抱，耐心等待趨勢明朗。"
+
+    return {
+        "score": round(score, 1),
+        "diff_pct": diff_pct,
+        "signal_badge": signal_badge,
+        "badge_color": badge_color,
+        "header_color": header_color,
+        "action_advice": action_advice,
+        "stop_loss": stop_loss,
+        "rr_ratio": rr_ratio,
+        "is_active_signal": (score >= 1.0 or score <= -1.0)
+    }
+
+# ==========================================
+# 7. LINE Flex Message 卡片建構
+# ==========================================
+def build_line_bubble(data: dict, market_regime: dict) -> dict:
+    diff_text = f"折價 {abs(data['diff_pct']):.1f}%" if data['diff_pct'] < 0 else f"溢價 {data['diff_pct']:.1f}%"
+    yahoo_chart_url = f"https://finance.yahoo.com/quote/{data['ticker']}"
+    rr_text = f"1 : {data['rr_ratio']}" if data['rr_ratio'] else "N/A"
 
     return {
         "type": "bubble",
@@ -129,18 +244,26 @@ def build_line_bubble(card_info: dict) -> dict:
         "header": {
             "type": "box",
             "layout": "vertical",
-            "backgroundColor": "#1E293B",
+            "backgroundColor": data["header_color"],
             "paddingAll": "16px",
             "contents": [
                 {
                     "type": "box",
                     "layout": "horizontal",
                     "contents": [
-                        {"type": "text", "text": card_info["name"], "weight": "bold", "color": "#FFFFFF", "size": "md", "flex": 3},
-                        {"type": "text", "text": status_label, "weight": "bold", "color": status_badge_color, "size": "xs", "align": "end", "flex": 2}
+                        {"type": "text", "text": data["name"], "weight": "bold", "color": "#FFFFFF", "size": "md", "flex": 3},
+                        {"type": "text", "text": data["signal_badge"], "weight": "bold", "color": data["badge_color"], "size": "sm", "align": "end", "flex": 3}
                     ]
                 },
-                {"type": "text", "text": f"{card_info['ticker']} · {diff_text}", "color": "#94A3B8", "size": "xs", "margin": "xs"}
+                {
+                    "type": "box",
+                    "layout": "horizontal",
+                    "margin": "xs",
+                    "contents": [
+                        {"type": "text", "text": f"{data['ticker']} · {diff_text}", "color": "#CBD5E1", "size": "xs", "flex": 3},
+                        {"type": "text", "text": market_regime["label"], "color": market_regime["is_bull"] and "#A7F3D0" or "#FCA5A5", "size": "xxs", "align": "end", "flex": 2}
+                    ]
+                }
             ]
         },
         "body": {
@@ -154,16 +277,16 @@ def build_line_bubble(card_info: dict) -> dict:
                     "type": "box",
                     "layout": "horizontal",
                     "contents": [
-                        {"type": "text", "text": "當前股價", "color": "#94A3B8", "size": "xs"},
-                        {"type": "text", "text": f"{card_info['curr_symbol']}{card_info['price']}", "color": "#FFFFFF", "weight": "bold", "size": "sm", "align": "end"}
+                        {"type": "text", "text": "當前市價", "color": "#94A3B8", "size": "xs"},
+                        {"type": "text", "text": f"{data['curr_symbol']}{data['price']}", "color": "#FFFFFF", "weight": "bold", "size": "sm", "align": "end"}
                     ]
                 },
                 {
                     "type": "box",
                     "layout": "horizontal",
                     "contents": [
-                        {"type": "text", "text": "合理價值", "color": "#94A3B8", "size": "xs"},
-                        {"type": "text", "text": f"{card_info['curr_symbol']}{card_info['fair_val']}", "color": "#CBD5E1", "size": "xs", "align": "end"}
+                        {"type": "text", "text": "內在合理價", "color": "#94A3B8", "size": "xs"},
+                        {"type": "text", "text": f"{data['curr_symbol']}{data['fair_val']}", "color": "#94A3B8", "size": "xs", "align": "end"}
                     ]
                 },
                 {
@@ -171,7 +294,15 @@ def build_line_bubble(card_info: dict) -> dict:
                     "layout": "horizontal",
                     "contents": [
                         {"type": "text", "text": "均線與指標", "color": "#94A3B8", "size": "xs"},
-                        {"type": "text", "text": f"20MA: {card_info['ma20']} | RSI: {card_info['rsi']}", "color": "#CBD5E1", "size": "xs", "align": "end"}
+                        {"type": "text", "text": f"20MA: {data['ma20']} | RSI: {data['rsi']}", "color": "#94A3B8", "size": "xs", "align": "end"}
+                    ]
+                },
+                {
+                    "type": "box",
+                    "layout": "horizontal",
+                    "contents": [
+                        {"type": "text", "text": "建議防守停損", "color": "#F87171", "size": "xs"},
+                        {"type": "text", "text": f"{data['curr_symbol']}{data['stop_loss']} (風報比 {rr_text})", "color": "#FCA5A5", "size": "xs", "align": "end"}
                     ]
                 },
                 {"type": "separator", "color": "#334155", "margin": "md"},
@@ -183,8 +314,8 @@ def build_line_bubble(card_info: dict) -> dict:
                     "cornerRadius": "8px",
                     "margin": "md",
                     "contents": [
-                        {"type": "text", "text": card_info["action_title"], "color": card_info["action_color"], "weight": "bold", "size": "xs"},
-                        {"type": "text", "text": card_info["strategy_reason"], "color": "#E2E8F0", "size": "xxs", "wrap": True, "margin": "xs"}
+                        {"type": "text", "text": "🎯 立即行動方針：", "color": "#38BDF8", "weight": "bold", "size": "xs"},
+                        {"type": "text", "text": data["action_advice"], "color": "#F8FAFC", "size": "xxs", "wrap": True, "margin": "xs"}
                     ]
                 }
             ]
@@ -214,105 +345,6 @@ def build_line_bubble(card_info: dict) -> dict:
         }
     }
 
-def build_rotation_bubble(from_item: dict, to_item: dict, spread: float) -> dict:
-    """專屬【持股轉換 / 資金輪動建議】卡片"""
-    return {
-        "type": "bubble",
-        "size": "kilo",
-        "header": {
-            "type": "box",
-            "layout": "vertical",
-            "backgroundColor": "#312E81",  # 沉穩靛藍色
-            "paddingAll": "16px",
-            "contents": [
-                {
-                    "type": "box",
-                    "layout": "horizontal",
-                    "contents": [
-                        {"type": "text", "text": "🔄 資金輪動再平衡", "weight": "bold", "color": "#FFFFFF", "size": "md", "flex": 3},
-                        {"type": "text", "text": f"{from_item['currency']} 部位", "color": "#A5B4FC", "size": "xs", "align": "end", "flex": 2}
-                    ]
-                },
-                {"type": "text", "text": f"估值性價比差距達 {spread:.1f}%", "color": "#C7D2FE", "size": "xs", "margin": "xs"}
-            ]
-        },
-        "body": {
-            "type": "box",
-            "layout": "vertical",
-            "backgroundColor": "#0F172A",
-            "paddingAll": "16px",
-            "spacing": "md",
-            "contents": [
-                # 轉出標的
-                {
-                    "type": "box",
-                    "layout": "vertical",
-                    "backgroundColor": "#1E293B",
-                    "paddingAll": "10px",
-                    "cornerRadius": "8px",
-                    "contents": [
-                        {
-                            "type": "box",
-                            "layout": "horizontal",
-                            "contents": [
-                                {"type": "text", "text": f"📤 調節轉出：{from_item['name']}", "weight": "bold", "color": "#F87171", "size": "xs"},
-                                {"type": "text", "text": f"溢價 {from_item['diff_pct']:+.1f}%", "color": "#FCA5A5", "size": "xs", "align": "end"}
-                            ]
-                        },
-                        {"type": "text", "text": f"市價 {from_item['curr_symbol']}{from_item['price']} (估值透支/高檔轉弱，鎖定獲利)", "color": "#94A3B8", "size": "xxs", "margin": "xs"}
-                    ]
-                },
-                # 箭頭分隔
-                {
-                    "type": "box",
-                    "layout": "horizontal",
-                    "contents": [
-                        {"type": "text", "text": "⬇️ 資金換手轉進", "color": "#38BDF8", "size": "xs", "align": "center", "weight": "bold"}
-                    ]
-                },
-                # 轉進標的
-                {
-                    "type": "box",
-                    "layout": "vertical",
-                    "backgroundColor": "#1E293B",
-                    "paddingAll": "10px",
-                    "cornerRadius": "8px",
-                    "contents": [
-                        {
-                            "type": "box",
-                            "layout": "horizontal",
-                            "contents": [
-                                {"type": "text", "text": f"📥 潛力轉進：{to_item['name']}", "weight": "bold", "color": "#34D399", "size": "xs"},
-                                {"type": "text", "text": f"折價 {abs(to_item['diff_pct']):.1f}%", "color": "#6EE7B7", "size": "xs", "align": "end"}
-                            ]
-                        },
-                        {"type": "text", "text": f"市價 {to_item['curr_symbol']}{to_item['price']} (落入安全邊際，具高勝率保護)", "color": "#94A3B8", "size": "xxs", "margin": "xs"}
-                    ]
-                },
-                {"type": "separator", "color": "#334155"},
-                {"type": "text", "text": "💡 策略效益：此操作能有效落袋高位浮盈，將籌碼轉移至高安全邊際標的，提升總投組抗震力。", "color": "#E2E8F0", "size": "xxs", "wrap": True}
-            ]
-        },
-        "footer": {
-            "type": "box",
-            "layout": "horizontal",
-            "backgroundColor": "#1E293B",
-            "paddingAll": "10px",
-            "contents": [
-                {
-                    "type": "button",
-                    "style": "primary",
-                    "height": "sm",
-                    "color": "#4F46E5",
-                    "action": {"type": "uri", "label": "開啟估值儀表板試算", "uri": DASHBOARD_URL}
-                }
-            ]
-        }
-    }
-
-# ==========================================
-# 5. 推播發送模組
-# ==========================================
 def push_line_flex(token: str, user_id: str, bubbles: List[dict]):
     if not token or not user_id or not bubbles:
         return
@@ -323,10 +355,10 @@ def push_line_flex(token: str, user_id: str, bubbles: List[dict]):
         "messages": [
             {
                 "type": "flex",
-                "altText": f"📊 投資決策報告：{len(bubbles)} 張重要分析卡片已生成！",
+                "altText": f"🚨 持股決策轉折通知：{len(bubbles)} 檔標的出現最新訊號！",
                 "contents": {
                     "type": "carousel",
-                    "contents": bubbles[:12]
+                    "contents": bubbles[:10]
                 }
             }
         ]
@@ -334,116 +366,82 @@ def push_line_flex(token: str, user_id: str, bubbles: List[dict]):
     try:
         res = requests.post(url, headers=headers, json=payload, timeout=10)
         if res.status_code == 200:
-            print(f"✅ LINE Flex 輪動決策推播成功（共 {len(bubbles)} 張卡片，僅計 1 則額度）！")
+            print(f"✅ LINE Flex 推播成功（共 {len(bubbles)} 檔卡片）！")
         else:
             print(f"❌ LINE 推播失敗: {res.status_code} - {res.text}")
     except Exception as e:
         print(f"LINE 請求異常: {e}")
 
-def push_telegram_digest(token: str, chat_id: str, alerts: List[dict], rotations: List[dict]):
-    if not token or not chat_id:
-        return
-    url = f"https://api.telegram.org/bot{token}/sendMessage"
-    lines = [f"📊 *【台美股線型、估值與換股決策日報】*", "---------------------------"]
-    for a in alerts:
-        lines.append(f"*{a['name']} ({a['ticker']})* · `{a['curr_symbol']}{a['price']}`\n• {a['action_title']}\n• 指標：`20MA: {a['ma20']} | RSI: {a['rsi']}`\n")
-    if rotations:
-        lines.append("🔄 *【換股輪動建議】*")
-        for r in rotations:
-            lines.append(f"• 調節 `{r['from']['name']}` (溢價 {r['from']['diff_pct']:+.1f}%)\n  ➡️ 轉進 `{r['to']['name']}` (折價 {abs(r['to']['diff_pct']):.1f}%) | 差距: `{r['spread']:.1f}%`\n")
-    
-    payload = {"chat_id": chat_id, "text": "\n".join(lines), "parse_mode": "Markdown"}
-    try:
-        requests.post(url, json=payload, timeout=10)
-        print("✓ Telegram 摘要推播完成。")
-    except Exception as e:
-        print(f"Telegram 發送異常: {e}")
-
 # ==========================================
-# 6. 主執行流程
+# 8. 主流程
 # ==========================================
 def main():
-    print("===== 開始持股【估值 + 線型 + 換股再平衡】智能掃描 =====")
-    all_evaluated = []
-    triggered_cards = []
-    telegram_items = []
+    print(f"===== 啟動持股監控系統 (目標市場: {TARGET_MARKET} | 強制推播: {FORCE_NOTIFY}) =====")
+    
+    # 預載大盤環境
+    regimes = {
+        "USD": check_market_regime("USD"),
+        "TWD": check_market_regime("TWD")
+    }
+    print(f"🏛️ 美股大盤狀態: {regimes['USD']['label']} (SPY: {regimes['USD'].get('price')})")
+    print(f"🏛️ 台股大盤狀態: {regimes['TWD']['label']} (^TWII: {regimes['TWD'].get('price')})")
 
-    # 1. 遍歷並評估每檔股票
+    # 讀取狀態快取
+    state_cache = load_state_cache()
+    new_state_cache = dict(state_cache)
+
+    actionable_cards = []
+
     for item in PORTFOLIO_WATCHLIST:
-        ticker = item["ticker"]
-        name = item["name"]
-        fair_val = item["fair_value"]
         currency = item["currency"]
-        curr_symbol = "$" if currency == "USD" else "NT$"
-        
-        buy_target = round(fair_val * (1 - item["mos_buy"]), 2)
-        sell_target = round(fair_val * (1 + item["expensive_sell"]), 2)
-
-        tech = analyze_market_data(ticker)
-        if not tech:
+        # 時區市場過濾
+        if TARGET_MARKET != "ALL" and currency != TARGET_MARKET:
             continue
 
-        price = tech["current_price"]
-        diff_pct = ((price - fair_val) / fair_val) * 100
-        print(f"[{name}] 市價: {curr_symbol}{price} | 偏離: {diff_pct:+.1f}% | 行動: {tech['action_title']}")
+        ticker = item["ticker"]
+        name = item["name"]
+        curr_symbol = "$" if currency == "USD" else "NT$"
 
-        status_category = "NORMAL"
-        if price <= buy_target:
-            status_category = "BUY"
-        elif price >= sell_target:
-            status_category = "SELL"
-        elif tech["action_type"] in ["BUY_SIGNAL", "WEAK_SIGNAL"]:
-            status_category = "TECH"
+        data = analyze_stock(ticker)
+        if not data:
+            continue
 
-        data = {
-            "name": name,
-            "ticker": ticker,
-            "currency": currency,
-            "curr_symbol": curr_symbol,
-            "price": price,
-            "fair_val": fair_val,
-            "diff_pct": diff_pct,
-            "ma20": tech["ma20"],
-            "rsi": tech["rsi"],
-            "action_type": tech["action_type"],
-            "action_title": tech["action_title"],
-            "action_color": tech["action_color"],
-            "strategy_reason": tech["strategy_reason"],
-            "status_category": status_category
-        }
-        all_evaluated.append(data)
+        market_regime = regimes[currency]
+        decision = evaluate_decision(item, data, market_regime)
 
-        # 若符合警報條件，加入單檔卡片
-        if status_category != "NORMAL":
-            triggered_cards.append(build_line_bubble(data))
-            telegram_items.append(data)
+        current_signal = decision["signal_badge"]
+        last_signal = state_cache.get(ticker)
+        new_state_cache[ticker] = current_signal
 
-    # 2. 智慧換股配對引擎 (分台股與美股獨立計算)
-    rotation_records = []
-    for cur in ["USD", "TWD"]:
-        cur_stocks = [s for s in all_evaluated if s["currency"] == cur]
-        # 尋找高估/轉弱的賣出候選 (溢價最高者)
-        sell_candidates = sorted([s for s in cur_stocks if s["diff_pct"] >= 20.0 or s["action_type"] == "WEAK_SIGNAL"], key=lambda x: x["diff_pct"], reverse=True)
-        # 尋找具備深厚安全邊際的買進候選 (折價最多者)
-        buy_candidates = sorted([s for s in cur_stocks if s["diff_pct"] <= -8.0], key=lambda x: x["diff_pct"])
+        print(f"[{name}] 當前: {current_signal} | 上次: {last_signal or '無紀錄'} | 市價: {curr_symbol}{data['price']}")
 
-        if sell_candidates and buy_candidates:
-            top_sell = sell_candidates[0]
-            top_buy = buy_candidates[0]
-            spread = top_sell["diff_pct"] - top_buy["diff_pct"]
-            
-            # 若性價比差距達標 (>= 28%)，產生換股建議卡片
-            if spread >= 28.0:
-                print(f"💡 發現【{cur}】高性價比換股機會：{top_sell['name']} ➡️ {top_buy['name']} (差距 {spread:.1f}%)")
-                triggered_cards.append(build_rotation_bubble(top_sell, top_buy, spread))
-                rotation_records.append({"from": top_sell, "to": top_buy, "spread": spread})
+        # 判定是否推播：
+        # 條件 1：處於重要訊號狀態 (非觀望)
+        # 條件 2：訊號「發生狀態實質改變」OR「使用者手動執行 (FORCE_NOTIFY)」
+        is_state_changed = (current_signal != last_signal)
+        should_alert = decision["is_active_signal"] and (is_state_changed or FORCE_NOTIFY)
 
-    # 3. 執行推播
-    if triggered_cards:
-        push_line_flex(LINE_CHANNEL_ACCESS_TOKEN, LINE_USER_ID, triggered_cards)
-        push_telegram_digest(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, telegram_items, rotation_records)
+        if should_alert:
+            card_info = {
+                "name": name,
+                "ticker": ticker,
+                "curr_symbol": curr_symbol,
+                "price": data["price"],
+                "fair_val": item["fair_value"],
+                "ma20": data["ma20"],
+                "rsi": data["rsi"],
+                **decision
+            }
+            actionable_cards.append(build_line_bubble(card_info, market_regime))
+
+    # 執行推播並更新快取檔
+    if actionable_cards:
+        push_line_flex(LINE_CHANNEL_ACCESS_TOKEN, LINE_USER_ID, actionable_cards)
     else:
-        print("💡 目前所有標的處於合理區間，且無顯著性價比換股機會。")
+        print("💡 所有標的狀態未變動或處於觀望狀態，無須打擾。")
+
+    save_state_cache(new_state_cache)
+    print("===== 掃描流程完畢 =====")
 
 if __name__ == "__main__":
     main()
