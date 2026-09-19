@@ -73,6 +73,6 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add state_cache.json || true
-          git commit -m "Auto-update stock state cache [skip ci]" || exit 0
+          git add state_cache.json data.json || true
+          git commit -m "Auto-update stock state & dashboard data [skip ci]" || exit 0
           git push
