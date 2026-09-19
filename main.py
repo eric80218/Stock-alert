@@ -3,6 +3,7 @@ import sys
 import json
 import requests
 import io
+import datetime
 import pandas as pd
 import yfinance as yf
 from typing import Dict, List, Optional, Tuple
@@ -22,6 +23,7 @@ FORCE_NOTIFY = os.getenv("FORCE_NOTIFY", "false").lower() == "true"
 
 DASHBOARD_URL = "https://eric80218.github.io/Stock-alert/"
 CACHE_FILE = "state_cache.json"
+DATA_EXPORT_FILE = "data.json"
 
 # ==========================================
 # 2. Google 試算表動態同步模組 (UTF-8 編碼)
@@ -95,14 +97,12 @@ def calculate_dynamic_fair_value(item: dict, yf_info: dict, twse_data: dict, cur
     base_fair = item["base_fair"]
     model = item["val_model"]
 
-    # 1. 指數型 ETF 動態通道模型 (半年線定錨)
     if model == "ETF_TREND":
         ma120 = extra_data.get("ma120")
         if ma120 and ma120 > 0:
             return round(float(ma120), 2), "120MA半年通道"
         return base_fair, "基準固定"
 
-    # 2. 法人共識目標價
     elif model == "ANALYST":
         if FINNHUB_API_KEY:
             try:
@@ -120,7 +120,6 @@ def calculate_dynamic_fair_value(item: dict, yf_info: dict, twse_data: dict, cur
         except Exception:
             pass
 
-    # 3. 官方殖利率折算模型
     elif model == "DIVIDEND":
         clean_code = ticker.replace(".TW", "").replace(".TWO", "")
         tw_metric = twse_data.get(clean_code)
@@ -137,7 +136,6 @@ def calculate_dynamic_fair_value(item: dict, yf_info: dict, twse_data: dict, cur
             if 0.5 * base_fair <= calc_val <= 1.8 * base_fair:
                 return round(calc_val, 2), "股息5%折算法"
 
-    # 4. 本益比 EPS 模型
     elif model == "PE_EPS":
         eps = yf_info.get("trailingEps") or yf_info.get("forwardEps")
         pe = yf_info.get("trailingPE")
@@ -492,23 +490,19 @@ def analyze_stock(ticker: str) -> Optional[dict]:
         prev_price = round(float(close.iloc[-2]), 2)
         low_10d = round(float(low.tail(10).min()), 2)
 
-        # 20MA
         ma20_s = close.rolling(20).mean()
         curr_ma20 = round(float(ma20_s.iloc[-1]), 2)
         prev_ma20 = round(float(ma20_s.iloc[-2]), 2)
 
-        # 120MA (半年線動態通道)
         ma120_s = close.rolling(120).mean()
         curr_ma120 = round(float(ma120_s.iloc[-1]), 2) if len(close) >= 120 and pd.notna(ma120_s.iloc[-1]) else curr_ma20
 
-        # RSI(14)
         delta = close.diff()
         gain = delta.clip(lower=0).rolling(14).mean()
         loss = (-delta.clip(upper=0)).rolling(14).mean()
         rs = gain / loss.replace(0, 0.0001)
         rsi = round(float((100 - (100 / (1 + rs))).iloc[-1]), 1)
 
-        # ATR(14)
         prev_close = close.shift(1)
         tr1 = high - low
         tr2 = (high - prev_close).abs()
@@ -577,17 +571,13 @@ def evaluate_decision(item: dict, data: dict, market_regime: dict, macro_data: d
         elif diff_pct >= 0:
             score -= 1.0
 
-    # ==========================================
-    # 核心：黑天鵝與斷崖暴跌防護閘門 (Falling Knife Guard)
-    # ==========================================
-    # 條件 1：破線下彎 (市價跌破月線 且 月線趨勢向下)
+    # 黑天鵝防接刀閘門
     is_falling_knife = (price < data["ma20"]) and (data["ma20"] < data["prev_ma20"])
-    # 條件 2：單日極端崩跌熔斷 (單日跌破 2.5 倍 ATR)
     is_extreme_crash = (data["prev_price"] - price) >= (2.5 * data["atr"])
 
     if is_falling_knife or is_extreme_crash:
         if score >= 1.0:
-            score = 0.0  # 強制將買進/加碼訊號降級為觀望
+            score = 0.0
             if is_extreme_crash:
                 macro_warnings.append(f"🚨 [黑天鵝異動] 單日崩跌逾 2.5×ATR ({data['atr']})，估值恐滯後失真，嚴禁徒手接刀！")
             else:
@@ -735,7 +725,7 @@ def build_stock_bubble(data: dict, market_regime: dict) -> dict:
     }
 
 # ==========================================
-# 10. 推播發送模組 (自動分頁：支援超過 10 張卡片)
+# 10. 推播發送模組
 # ==========================================
 def push_line_flex(token: str, user_id: str, bubbles: List[dict], alt_text: str):
     if not token or not user_id or not bubbles: return
@@ -754,14 +744,11 @@ def push_line_flex(token: str, user_id: str, bubbles: List[dict], alt_text: str)
         if len(messages) >= 5:
             break
 
-    payload = {
-        "to": user_id,
-        "messages": messages
-    }
+    payload = {"to": user_id, "messages": messages}
     try:
         res = requests.post(url, headers=headers, json=payload, timeout=15)
         if res.status_code == 200:
-            print(f"✅ LINE Flex 推播成功（共 {len(bubbles)} 檔卡片，拆分為 {len(messages)} 則訊息送達）！")
+            print(f"✅ LINE Flex 推播成功（共 {len(bubbles)} 檔卡片）！")
         else:
             print(f"❌ LINE 推播失敗: {res.status_code} - {res.text}")
     except Exception as e:
@@ -854,7 +841,7 @@ def main():
         last_signal = state_cache.get(ticker)
         new_state_cache[ticker] = current_signal
 
-        print(f"[{name}] 市價: {curr_symbol}{price} | ATR: {data['atr']} ({data['atr_pct']}%) | 合理價: {curr_symbol}{dynamic_fair} ({val_source}) | 訊號: {current_signal}")
+        print(f"[{name}] 市價: {curr_symbol}{price} | 合理價: {curr_symbol}{dynamic_fair} ({val_source}) | 訊號: {current_signal}")
 
         card_info = {
             "name": name, "ticker": ticker, "currency": currency, "broker": item["broker"],
@@ -880,6 +867,7 @@ def main():
 
     # 資金輪動計算
     rotation_bubbles = []
+    rotation_export_data = []
     sell_candidates = [s for s in evaluated_pool if s["shares"] > 0 and s["score"] <= -1.0]
     buy_candidates = [b for b in evaluated_pool if b["score"] >= 1.5]
 
@@ -895,6 +883,7 @@ def main():
                 "currency": currency
             }
             rotation_bubbles.append(build_rotation_bubble(pair_data))
+            rotation_export_data.append(pair_data)
 
     # 組裝推播
     if actionable_cards or rotation_bubbles:
@@ -905,6 +894,25 @@ def main():
         print("💡 所有標的狀態未變動，無須打擾。")
 
     save_state_cache(new_state_cache)
+
+    # ==========================================
+    # 核心：匯出完整決策數據至 data.json (供網頁儀表板讀取)
+    # ==========================================
+    try:
+        now_str = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S")
+        dashboard_payload = {
+            "updated_at": now_str,
+            "macro": macro_data,
+            "summary": summary_stats,
+            "rotations": rotation_export_data,
+            "stocks": evaluated_pool
+        }
+        with open(DATA_EXPORT_FILE, "w", encoding="utf-8") as f:
+            json.dump(dashboard_payload, f, ensure_ascii=False, indent=2)
+        print(f"✅ 成功匯出最新投資建議與資產數據至 {DATA_EXPORT_FILE}！")
+    except Exception as e:
+        print(f"⚠️ 匯出 dashboard 數據失敗: {e}")
+
     print("===== 掃描流程完畢 =====")
 
 if __name__ == "__main__":
