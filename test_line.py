@@ -1,8 +1,8 @@
 import requests
 
 # 填入你剛剛取得的兩串資料
-LINE_CHANNEL_ACCESS_TOKEN = "你的_CHANNEL_ACCESS_TOKEN"
-LINE_USER_ID = "你的_U開頭_USER_ID"
+LINE_CHANNEL_ACCESS_TOKEN = "M/jRCnZn9BKDcXbWtyWQMX30rYEduFHNTFfuPfjK/Y58AH5s5JtoD3lKgFFjYej/LQ6a8ak+QNl3lyf9wjBL+Noc0UgcmDfl8wvgUvZqSwJyEfVMw8acKLAvyDOn7YJwW6mQmhre8MYVYqUhogrUkwdB04t89/1O/w1cDnyilFU="
+LINE_USER_ID = "U19fd3b1462644d9ae7f0840077c1f52b"
 
 def send_test_message():
     url = "https://api.line.me/v2/bot/message/push"
