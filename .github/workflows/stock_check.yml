@@ -1,0 +1,26 @@
+name: Global Stock Alerts
+
+on:
+  schedule:
+    # GitHub 使用 UTC 時間 (UTC+8 為台灣時間)
+    - cron: '45 5 * * 1-5'   # 台灣時間 13:45 (台股盤後檢核)
+    - cron: '15 21 * * 1-5'  # 台灣時間 05:15 (美股夏令收盤檢核)
+  workflow_dispatch:         # 支援在網頁上隨時按按鈕手動執行
+
+jobs:
+  run-tracker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Libs
+        run: pip install yfinance requests
+      - name: Run Script
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python stock_tracker.py
