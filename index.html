@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我的持股內在價值與安全邊際儀表板</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen py-6 px-3 sm:px-6 font-sans">
+  <div class="max-w-5xl mx-auto space-y-6">
+    <!-- Header -->
+    <header class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-xl flex flex-col md:flex-row justify-between items-center gap-4">
+      <div>
+        <h1 class="text-xl font-bold text-white flex items-center gap-2">
+          <span>📊</span> 個人專屬台美股估值決策系統
+        </h1>
+        <p class="text-xs text-slate-400 mt-1">即時綜合估值計算 · 安全邊際檢核 · 倉位紀律判讀</p>
+      </div>
+      <!-- 快速切換按鈕 -->
+      <div class="flex flex-wrap gap-1.5" id="stockTabs"></div>
+    </header>
+
+    <!-- Main Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+      <!-- 參數設定與體質檢核 -->
+      <div class="md:col-span-7 space-y-5">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 space-y-4">
+          <h2 class="text-sm font-semibold text-sky-400 uppercase tracking-wider">1. 估值核心參數</h2>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">標的代碼</label>
+              <input id="tickerInput" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" readonly>
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">目前市價</label>
+              <input id="priceInput" type="number" step="0.1" oninput="calculate()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-bold">
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">近四季 EPS</label>
+              <input id="epsInput" type="number" step="0.1" oninput="calculate()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">預估年成長率 (%)</label>
+              <input id="growthInput" type="number" step="0.5" oninput="calculate()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">目標本益比 (PE)</label>
+              <input id="peInput" type="number" step="1" oninput="calculate()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">每股自由現金流 (FCF)</label>
+              <input id="fcfInput" type="number" step="0.1" oninput="calculate()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
+            </div>
+          </div>
+        </div>
+
+        <!-- 護城河與財務檢核 -->
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5">
+          <div class="flex justify-between items-center mb-3">
+            <h2 class="text-sm font-semibold text-sky-400 uppercase tracking-wider">2. 基本面與護城河</h2>
+            <span id="qualityBadge" class="text-xs px-2.5 py-0.5 rounded-full bg-sky-900 text-sky-300 font-bold">體質分: 80</span>
+          </div>
+          <div class="space-y-2 text-xs">
+            <label class="flex items-center gap-2 p-2 rounded bg-slate-900/50 cursor-pointer">
+              <input type="checkbox" checked value="25" onchange="calculate()" class="check-item rounded border-slate-700 text-sky-500">
+              <span>具備定價權與技術專利（毛利率可抗通膨）</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 rounded bg-slate-900/50 cursor-pointer">
+              <input type="checkbox" checked value="25" onchange="calculate()" class="check-item rounded border-slate-700 text-sky-500">
+              <span>營業現金流常年充沛（FCF > 淨利）</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 rounded bg-slate-900/50 cursor-pointer">
+              <input type="checkbox" checked value="25" onchange="calculate()" class="check-item rounded border-slate-700 text-sky-500">
+              <span>資產負債結構健康（利息保障倍數充裕）</span>
+            </label>
+            <label class="flex items-center gap-2 p-2 rounded bg-slate-900/50 cursor-pointer">
+              <input type="checkbox" checked value="25" onchange="calculate()" class="check-item rounded border-slate-700 text-sky-500">
+              <span>長期處於結構性成長軌道</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- 判定卡與估值結果 -->
+      <div class="md:col-span-5 space-y-5">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 space-y-4">
+          <h2 class="text-sm font-semibold text-sky-400 uppercase tracking-wider">3. 內在價值綜合推算</h2>
+          <div class="flex justify-between items-end pt-1">
+            <span class="text-xs text-slate-400">綜合內在價值</span>
+            <span id="fairValueDisplay" class="text-2xl font-black text-amber-400">$0.00</span>
+          </div>
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-slate-400">安全邊際偏離度</span>
+            <span id="mosDisplay" class="font-bold text-sm">0%</span>
+          </div>
+          <div class="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden border border-slate-700">
+            <div id="mosProgress" class="h-2.5 bg-emerald-500 transition-all duration-300" style="width: 50%"></div>
+          </div>
+          <div class="grid grid-cols-2 gap-2 text-center text-xs pt-2">
+            <div class="p-2.5 bg-slate-900 rounded-xl border border-slate-700">
+              <span class="text-slate-400 block text-xxs mb-1">分批買進防守線</span>
+              <span id="buyTargetDisplay" class="font-bold text-emerald-400 text-sm">$0.00</span>
+            </div>
+            <div class="p-2.5 bg-slate-900 rounded-xl border border-slate-700">
+              <span class="text-slate-400 block text-xxs mb-1">估值過熱警戒線</span>
+              <span id="sellTargetDisplay" class="font-bold text-rose-400 text-sm">$0.00</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="decisionCard" class="bg-slate-800 border border-slate-700 rounded-2xl p-5 space-y-2">
+          <div class="flex justify-between items-center">
+            <span class="text-xs text-slate-400">策略判讀</span>
+            <span id="decisionBadge" class="text-xs font-bold px-2 py-0.5 rounded">判定中</span>
+          </div>
+          <div id="decisionText" class="text-sm font-bold text-white mt-1">計算中...</div>
+          <p id="decisionDesc" class="text-xs text-slate-300 mt-1 leading-relaxed bg-slate-900/60 p-2.5 rounded-lg border border-slate-700/60"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const MY_STOCKS = [
+      { ticker: "AMAT", name: "應用材料", price: 205, eps: 8.6, growth: 16, pe: 24, fcf: 8.2 },
+      { ticker: "NVDA", name: "輝達", price: 130, eps: 2.9, growth: 38, pe: 42, fcf: 3.1 },
+      { ticker: "COST", name: "好市多", price: 880, eps: 16.5, growth: 11, pe: 48, fcf: 18.0 },
+      { ticker: "BRK-B", name: "波克夏", price: 440, eps: 18.0, growth: 9, pe: 22, fcf: 22.0 },
+      { ticker: "0050.TW", name: "元大台灣50", price: 188, eps: 6.5, growth: 12, pe: 25, fcf: 6.0 },
+      { ticker: "2337.TW", name: "旺宏", price: 27.5, eps: 1.2, growth: 8, pe: 18, fcf: 1.5 }
+    ];
+
+    function initTabs() {
+      const container = document.getElementById('stockTabs');
+      MY_STOCKS.forEach((stock, idx) => {
+        const btn = document.createElement('button');
+        btn.className = "px-2.5 py-1 bg-slate-700 hover:bg-sky-600 text-xs font-medium rounded-lg transition";
+        btn.innerText = stock.ticker;
+        btn.onclick = () => selectStock(idx);
+        container.appendChild(btn);
+      });
+      selectStock(0);
+    }
+
+    function selectStock(index) {
+      const s = MY_STOCKS[index];
+      document.getElementById('tickerInput').value = `${s.name} (${s.ticker})`;
+      document.getElementById('priceInput').value = s.price;
+      document.getElementById('epsInput').value = s.eps;
+      document.getElementById('growthInput').value = s.growth;
+      document.getElementById('peInput').value = s.pe;
+      document.getElementById('fcfInput').value = s.fcf;
+      calculate();
+    }
+
+    function calculate() {
+      const price = Math.max(0.01, parseFloat(document.getElementById('priceInput').value) || 0);
+      const eps = Math.max(0.01, parseFloat(document.getElementById('epsInput').value) || 0);
+      const growth = Math.max(1, parseFloat(document.getElementById('growthInput').value) || 0);
+      const pe = Math.max(1, parseFloat(document.getElementById('peInput').value) || 0);
+      const fcf = Math.max(0.01, parseFloat(document.getElementById('fcfInput').value) || 0);
+
+      let quality = 0;
+      document.querySelectorAll('.check-item').forEach(c => { if(c.checked) quality += parseInt(c.value); });
+      document.getElementById('qualityBadge').innerText = `體質分: ${quality}`;
+
+      // 綜合估值計算 (PEG法 + 目標PE法 + 簡化現金流)
+      const valPeg = eps * Math.min(35, growth);
+      const valPe = (eps * (1 + growth/100)) * pe;
+      const valDcf = fcf * (1 + growth/100) / (0.09 - 0.025);
+      const fairVal = (valPeg * 0.3) + (valPe * 0.4) + (valDcf * 0.3);
+
+      const mos = ((fairVal - price) / fairVal) * 100;
+      const buyLine = fairVal * 0.85;
+      const sellLine = fairVal * 1.25;
+
+      document.getElementById('fairValueDisplay').innerText = `$${fairVal.toFixed(2)}`;
+      document.getElementById('buyTargetDisplay').innerText = `$${buyLine.toFixed(2)}`;
+      document.getElementById('sellTargetDisplay').innerText = `$${sellLine.toFixed(2)}`;
+
+      const mosEl = document.getElementById('mosDisplay');
+      mosEl.innerText = `${mos > 0 ? '+' : ''}${mos.toFixed(1)}% (${mos >= 0 ? '低估' : '高估'})`;
+      mosEl.className = `font-bold text-sm ${mos >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+      const pct = Math.min(100, Math.max(5, ((mos + 50) / 100) * 100));
+      const bar = document.getElementById('mosProgress');
+      bar.style.width = `${pct}%`;
+      bar.className = `h-2.5 transition-all duration-300 ${mos >= 15 ? 'bg-emerald-500' : (mos <= -15 ? 'bg-rose-500' : 'bg-sky-500')}`;
+
+      // 判定卡更新
+      const badge = document.getElementById('decisionBadge');
+      const text = document.getElementById('decisionText');
+      const desc = document.getElementById('decisionDesc');
+      if (mos >= 15 && quality >= 75) {
+        badge.className = "text-xs font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500";
+        badge.innerText = "安全邊際充足";
+        text.innerText = "🟢 價值顯著低估，建議分批佈局";
+        desc.innerText = `目前市價相較內在價值折價達 ${mos.toFixed(1)}%，且護城河得分高，符合右側或左側建倉防守標準。`;
+      } else if (mos <= -20) {
+        badge.className = "text-xs font-bold px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500";
+        badge.innerText = "過熱警戒";
+        text.innerText = "🔴 估值嚴重透支，留意回檔風險";
+        desc.innerText = `市價已高出內在價值 ${Math.abs(mos).toFixed(1)}%，建議啟動移動停利（Trailing Stop）或進行部位再平衡。`;
+      } else {
+        badge.className = "text-xs font-bold px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500";
+        badge.innerText = "合理區間";
+        text.innerText = "🔵 價格處於合理常態，維持既有策略";
+        desc.innerText = "未達極端買賣門檻，定期定額投資者可維持原扣款計畫，無須頻繁交易。";
+      }
+    }
+
+    window.onload = initTabs;
+  </script>
+</body>
+</html>
