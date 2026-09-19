@@ -3,213 +3,416 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>我的持股內在價值與安全邊際儀表板</title>
+  <title>智能量化投研與資產儀表板 | Eric's Terminal</title>
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background-color: #080C14;
+      color: #E2E8F0;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .card-glass {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(51, 65, 85, 0.6);
+    }
+    .card-glass:hover {
+      border-color: rgba(99, 102, 241, 0.5);
+      transition: all 0.2s ease-in-out;
+    }
+    /* 自訂捲軸 */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0F172A; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+  </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen py-6 px-3 sm:px-6 font-sans">
-  <div class="max-w-5xl mx-auto space-y-6">
-    <!-- Header -->
-    <header class="bg-slate-800 border border-slate-700 rounded-2xl p-5 shadow-xl flex flex-col md:flex-row justify-between items-center gap-4">
+<body class="min-h-screen p-3 md:p-6 lg:p-8 space-y-6">
+
+  <!-- ================= 頂部導航列 ================= -->
+  <header class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-800 pb-5">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+        <i class="fa-solid fa-chart-line text-white text-lg"></i>
+      </div>
       <div>
-        <h1 class="text-xl font-bold text-white flex items-center gap-2">
-          <span>📊</span> 個人專屬台美股估值決策系統
-        </h1>
-        <p class="text-xs text-slate-400 mt-1">即時綜合估值計算 · 安全邊際檢核 · 倉位紀律判讀</p>
-      </div>
-      <!-- 快速切換按鈕 -->
-      <div class="flex flex-wrap gap-1.5" id="stockTabs"></div>
-    </header>
-
-    <!-- Main Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
-      <!-- 參數設定與體質檢核 -->
-      <div class="md:col-span-7 space-y-5">
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 space-y-4">
-          <h2 class="text-sm font-semibold text-sky-400 uppercase tracking-wider">1. 估值核心參數</h2>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs text-slate-400 mb-1">標的代碼</label>
-              <input id="tickerInput" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white" readonly>
-            </div>
-            <div>
-              <label class="block text-xs text-slate-400 mb-1">目前市價</label>
-              <input id="priceInput" type="number" step="0.1" oninput="calculate()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white font-bold">
-            </div>
-            <div>
-              <label class="block text-xs text-slate-400 mb-1">近四季 EPS</label>
-              <input id="epsInput" type="number" step="0.1" oninput="calculate()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
-            </div>
-            <div>
-              <label class="block text-xs text-slate-400 mb-1">預估年成長率 (%)</label>
-              <input id="growthInput" type="number" step="0.5" oninput="calculate()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
-            </div>
-            <div>
-              <label class="block text-xs text-slate-400 mb-1">目標本益比 (PE)</label>
-              <input id="peInput" type="number" step="1" oninput="calculate()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
-            </div>
-            <div>
-              <label class="block text-xs text-slate-400 mb-1">每股自由現金流 (FCF)</label>
-              <input id="fcfInput" type="number" step="0.1" oninput="calculate()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white">
-            </div>
-          </div>
+        <div class="flex items-center gap-2">
+          <h1 class="text-xl md:text-2xl font-bold tracking-tight text-white">智能量化投研與資產終端</h1>
+          <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-950/80 text-emerald-400 border border-emerald-800">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-1.5"></span> 即時雲端排程中
+          </span>
         </div>
-
-        <!-- 護城河與財務檢核 -->
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5">
-          <div class="flex justify-between items-center mb-3">
-            <h2 class="text-sm font-semibold text-sky-400 uppercase tracking-wider">2. 基本面與護城河</h2>
-            <span id="qualityBadge" class="text-xs px-2.5 py-0.5 rounded-full bg-sky-900 text-sky-300 font-bold">體質分: 80</span>
-          </div>
-          <div class="space-y-2 text-xs">
-            <label class="flex items-center gap-2 p-2 rounded bg-slate-900/50 cursor-pointer">
-              <input type="checkbox" checked value="25" onchange="calculate()" class="check-item rounded border-slate-700 text-sky-500">
-              <span>具備定價權與技術專利（毛利率可抗通膨）</span>
-            </label>
-            <label class="flex items-center gap-2 p-2 rounded bg-slate-900/50 cursor-pointer">
-              <input type="checkbox" checked value="25" onchange="calculate()" class="check-item rounded border-slate-700 text-sky-500">
-              <span>營業現金流常年充沛（FCF > 淨利）</span>
-            </label>
-            <label class="flex items-center gap-2 p-2 rounded bg-slate-900/50 cursor-pointer">
-              <input type="checkbox" checked value="25" onchange="calculate()" class="check-item rounded border-slate-700 text-sky-500">
-              <span>資產負債結構健康（利息保障倍數充裕）</span>
-            </label>
-            <label class="flex items-center gap-2 p-2 rounded bg-slate-900/50 cursor-pointer">
-              <input type="checkbox" checked value="25" onchange="calculate()" class="check-item rounded border-slate-700 text-sky-500">
-              <span>長期處於結構性成長軌道</span>
-            </label>
-          </div>
-        </div>
-      </div>
-
-      <!-- 判定卡與估值結果 -->
-      <div class="md:col-span-5 space-y-5">
-        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-5 space-y-4">
-          <h2 class="text-sm font-semibold text-sky-400 uppercase tracking-wider">3. 內在價值綜合推算</h2>
-          <div class="flex justify-between items-end pt-1">
-            <span class="text-xs text-slate-400">綜合內在價值</span>
-            <span id="fairValueDisplay" class="text-2xl font-black text-amber-400">$0.00</span>
-          </div>
-          <div class="flex justify-between items-center text-xs">
-            <span class="text-slate-400">安全邊際偏離度</span>
-            <span id="mosDisplay" class="font-bold text-sm">0%</span>
-          </div>
-          <div class="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden border border-slate-700">
-            <div id="mosProgress" class="h-2.5 bg-emerald-500 transition-all duration-300" style="width: 50%"></div>
-          </div>
-          <div class="grid grid-cols-2 gap-2 text-center text-xs pt-2">
-            <div class="p-2.5 bg-slate-900 rounded-xl border border-slate-700">
-              <span class="text-slate-400 block text-xxs mb-1">分批買進防守線</span>
-              <span id="buyTargetDisplay" class="font-bold text-emerald-400 text-sm">$0.00</span>
-            </div>
-            <div class="p-2.5 bg-slate-900 rounded-xl border border-slate-700">
-              <span class="text-slate-400 block text-xxs mb-1">估值過熱警戒線</span>
-              <span id="sellTargetDisplay" class="font-bold text-rose-400 text-sm">$0.00</span>
-            </div>
-          </div>
-        </div>
-
-        <div id="decisionCard" class="bg-slate-800 border border-slate-700 rounded-2xl p-5 space-y-2">
-          <div class="flex justify-between items-center">
-            <span class="text-xs text-slate-400">策略判讀</span>
-            <span id="decisionBadge" class="text-xs font-bold px-2 py-0.5 rounded">判定中</span>
-          </div>
-          <div id="decisionText" class="text-sm font-bold text-white mt-1">計算中...</div>
-          <p id="decisionDesc" class="text-xs text-slate-300 mt-1 leading-relaxed bg-slate-900/60 p-2.5 rounded-lg border border-slate-700/60"></p>
-        </div>
+        <p class="text-xs text-slate-400 mt-0.5">跨市場資產監控 · Firstrade · UBS ESPP · 國泰證券</p>
       </div>
     </div>
+
+    <!-- 快捷功能按鈕 -->
+    <div class="flex flex-wrap items-center gap-2 text-xs">
+      <span class="text-slate-400 hidden lg:inline mr-1">每日排程：08:30 晨報 | 13:45 台股 | 05:15 美股</span>
+      <a href="https://github.com/eric80218/Stock-alert/actions" target="_blank" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition flex items-center gap-1.5">
+        <i class="fa-solid fa-play text-indigo-400"></i> Actions 日誌
+      </a>
+      <a href="https://github.com/eric80218/Stock-alert" target="_blank" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition flex items-center gap-1.5">
+        <i class="fa-brands fa-github text-slate-400"></i> 儲存庫
+      </a>
+    </div>
+  </header>
+
+  <div class="max-w-7xl mx-auto space-y-6">
+
+    <!-- ================= 核心戰情：全球總經與夜盤風向 ================= -->
+    <section class="space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-slate-300 flex items-center gap-2">
+          <i class="fa-solid fa-earth-americas text-sky-400"></i> 全球情勢、夜盤期指與避險雷達
+        </h2>
+        <span class="text-xs text-slate-500 font-mono">Macro & Night Sentiment</span>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <!-- 台積電 ADR -->
+        <div class="card-glass rounded-xl p-3.5">
+          <div class="flex items-center justify-between text-xs text-slate-400">
+            <span>台積電 ADR</span>
+            <span class="font-mono text-xxs px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">TSM</span>
+          </div>
+          <div class="text-base md:text-lg font-bold font-mono text-white mt-1">台股夜盤照妖鏡</div>
+          <div class="text-xs text-emerald-400 mt-0.5 flex items-center gap-1">
+            <i class="fa-solid fa-arrow-trend-up"></i> 主導隔日開盤
+          </div>
+        </div>
+
+        <!-- 那斯達克期貨 -->
+        <div class="card-glass rounded-xl p-3.5">
+          <div class="flex items-center justify-between text-xs text-slate-400">
+            <span>那斯達克期</span>
+            <span class="font-mono text-xxs px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">NQ=F</span>
+          </div>
+          <div class="text-base md:text-lg font-bold font-mono text-white mt-1">科技電子盤</div>
+          <div class="text-xs text-slate-400 mt-0.5">美股夜間情緒前哨站</div>
+        </div>
+
+        <!-- 標普 500 期貨 -->
+        <div class="card-glass rounded-xl p-3.5">
+          <div class="flex items-center justify-between text-xs text-slate-400">
+            <span>標普 500 期</span>
+            <span class="font-mono text-xxs px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">ES=F</span>
+          </div>
+          <div class="text-base md:text-lg font-bold font-mono text-white mt-1">權值股夜盤</div>
+          <div class="text-xs text-slate-400 mt-0.5">全球大型股情緒基準</div>
+        </div>
+
+        <!-- VIX 恐慌指數 -->
+        <div class="card-glass rounded-xl p-3.5">
+          <div class="flex items-center justify-between text-xs text-slate-400">
+            <span>VIX 恐慌指數</span>
+            <span class="font-mono text-xxs px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">^VIX</span>
+          </div>
+          <div class="text-base md:text-lg font-bold font-mono text-emerald-400 mt-1">&lt; 25 常態</div>
+          <div class="text-xs text-slate-400 mt-0.5">若 &gt; 28 啟動避險停利</div>
+        </div>
+
+        <!-- 10 年美債殖利率 -->
+        <div class="card-glass rounded-xl p-3.5">
+          <div class="flex items-center justify-between text-xs text-slate-400">
+            <span>10年美債殖利率</span>
+            <span class="font-mono text-xxs px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">^TNX</span>
+          </div>
+          <div class="text-base md:text-lg font-bold font-mono text-white mt-1">無風險利率</div>
+          <div class="text-xs text-slate-400 mt-0.5">高本益比成長股錨點</div>
+        </div>
+
+        <!-- 美元指數 -->
+        <div class="card-glass rounded-xl p-3.5">
+          <div class="flex items-center justify-between text-xs text-slate-400">
+            <span>美元指數</span>
+            <span class="font-mono text-xxs px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">DXY</span>
+          </div>
+          <div class="text-base md:text-lg font-bold font-mono text-white mt-1">外資資金流向</div>
+          <div class="text-xs text-slate-400 mt-0.5">新興市場抽資防護</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 跨券商投資部位總覽 ================= -->
+    <section class="space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-slate-300 flex items-center gap-2">
+          <i class="fa-solid fa-briefcase text-indigo-400"></i> 多帳戶跨市場資產配置矩陣
+        </h2>
+        <span class="text-xs text-slate-500">Firstrade / UBS / Cathay</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Firstrade 卡片 -->
+        <div class="card-glass rounded-xl p-5 border-l-4 border-l-sky-500">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="text-xs font-medium text-sky-400">美股自主配置帳戶</span>
+              <div class="text-lg font-bold text-white mt-0.5">Firstrade Securities</div>
+            </div>
+            <span class="px-2 py-1 rounded bg-slate-800 text-slate-300 font-mono text-xs">6 檔持股</span>
+          </div>
+          <p class="text-xs text-slate-400 mt-3">核心配置：NVDA, COST, BRK-B, LLY, VRT, INTC</p>
+          <div class="mt-4 pt-3 border-t border-slate-800/80 flex justify-between items-center text-xs">
+            <span class="text-slate-500">自動估值模型</span>
+            <span class="text-slate-300 font-medium">Finnhub 投行共識目標價</span>
+          </div>
+        </div>
+
+        <!-- UBS ESPP 卡片 -->
+        <div class="card-glass rounded-xl p-5 border-l-4 border-l-purple-500">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="text-xs font-medium text-purple-400">員工認股現股帳戶</span>
+              <div class="text-lg font-bold text-white mt-0.5">UBS (AMAT ESPP)</div>
+            </div>
+            <span class="px-2 py-1 rounded bg-purple-950/60 text-purple-300 font-mono text-xs">19 股可動用</span>
+          </div>
+          <p class="text-xs text-slate-400 mt-3">持股成本：$316.35 | 4年獎勵股23股另外隔離</p>
+          <div class="mt-4 pt-3 border-t border-slate-800/80 flex justify-between items-center text-xs">
+            <span class="text-slate-500">戰略地位</span>
+            <span class="text-emerald-400 font-medium">高額未實現獲利 (防守鎖利)</span>
+          </div>
+        </div>
+
+        <!-- 國泰證券卡片 -->
+        <div class="card-glass rounded-xl p-5 border-l-4 border-l-emerald-500">
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="text-xs font-medium text-emerald-400">台股資產部位</span>
+              <div class="text-lg font-bold text-white mt-0.5">國泰證券 (Cathay)</div>
+            </div>
+            <span class="px-2 py-1 rounded bg-slate-800 text-slate-300 font-mono text-xs">6 檔持股</span>
+          </div>
+          <p class="text-xs text-slate-400 mt-3">配置核心：0050.TW、旺宏、中鋼、大統益、正隆、山隆</p>
+          <div class="mt-4 pt-3 border-t border-slate-800/80 flex justify-between items-center text-xs">
+            <span class="text-slate-500">防守機制</span>
+            <span class="text-slate-300 font-medium">TWSE 官方 5% 殖利率折算</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 監控標的估值與決策清單 ================= -->
+    <section class="space-y-3">
+      <div class="flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-slate-300 flex items-center gap-2">
+          <i class="fa-solid fa-list-check text-indigo-400"></i> 即時持股監控與立即決策矩陣
+        </h2>
+        <span class="text-xs text-slate-500">共 13 檔監控標的</span>
+      </div>
+
+      <!-- 美股列表 -->
+      <div class="card-glass rounded-xl overflow-hidden">
+        <div class="px-4 py-3 bg-slate-900/90 border-b border-slate-800 flex justify-between items-center">
+          <span class="text-xs font-bold text-sky-400 tracking-wider">🇺🇸 美股配置清單 (USD)</span>
+          <span class="text-xxs text-slate-500 font-mono">Updated via Yahoo & Finnhub</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-950/50 text-slate-400 font-medium border-b border-slate-800">
+              <tr>
+                <th class="p-3">標的名稱</th>
+                <th class="p-3">帳戶券商</th>
+                <th class="p-3">持有股數</th>
+                <th class="p-3">買入成本</th>
+                <th class="p-3">估值模型</th>
+                <th class="p-3">安全邊際</th>
+                <th class="p-3 text-right">操作</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/60 font-mono">
+              <tr class="hover:bg-slate-800/30">
+                <td class="p-3 font-bold text-white">AMAT <span class="font-normal text-slate-400 text-xxs font-sans">應用材料</span></td>
+                <td class="p-3 text-purple-400 font-sans">UBS (ESPP)</td>
+                <td class="p-3 text-slate-200">19 股</td>
+                <td class="p-3 text-slate-300">$316.35</td>
+                <td class="p-3 text-sky-400 font-sans">法人目標價</td>
+                <td class="p-3 text-emerald-400">折價 15% 買</td>
+                <td class="p-3 text-right">
+                  <a href="https://finance.yahoo.com/quote/AMAT" target="_blank" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xxs font-sans">線圖</a>
+                </td>
+              </tr>
+              <tr class="hover:bg-slate-800/30">
+                <td class="p-3 font-bold text-white">NVDA <span class="font-normal text-slate-400 text-xxs font-sans">輝達</span></td>
+                <td class="p-3 text-sky-400 font-sans">Firstrade</td>
+                <td class="p-3 text-slate-200">6.009 股</td>
+                <td class="p-3 text-slate-300">$216.13</td>
+                <td class="p-3 text-sky-400 font-sans">法人目標價</td>
+                <td class="p-3 text-emerald-400">折價 15% 買</td>
+                <td class="p-3 text-right">
+                  <a href="https://finance.yahoo.com/quote/NVDA" target="_blank" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xxs font-sans">線圖</a>
+                </td>
+              </tr>
+              <tr class="hover:bg-slate-800/30">
+                <td class="p-3 font-bold text-white">COST <span class="font-normal text-slate-400 text-xxs font-sans">好市多</span></td>
+                <td class="p-3 text-sky-400 font-sans">Firstrade</td>
+                <td class="p-3 text-slate-200">8.0088 股</td>
+                <td class="p-3 text-slate-300">$1,044.55</td>
+                <td class="p-3 text-sky-400 font-sans">法人目標價</td>
+                <td class="p-3 text-emerald-400">折價 10% 買</td>
+                <td class="p-3 text-right">
+                  <a href="https://finance.yahoo.com/quote/COST" target="_blank" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xxs font-sans">線圖</a>
+                </td>
+              </tr>
+              <tr class="hover:bg-slate-800/30">
+                <td class="p-3 font-bold text-white">BRK-B <span class="font-normal text-slate-400 text-xxs font-sans">波克夏 B</span></td>
+                <td class="p-3 text-sky-400 font-sans">Firstrade</td>
+                <td class="p-3 text-slate-200">7 股</td>
+                <td class="p-3 text-slate-300">$490.12</td>
+                <td class="p-3 text-indigo-400 font-sans">歷史本益比</td>
+                <td class="p-3 text-emerald-400">折價 10% 買</td>
+                <td class="p-3 text-right">
+                  <a href="https://finance.yahoo.com/quote/BRK-B" target="_blank" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xxs font-sans">線圖</a>
+                </td>
+              </tr>
+              <tr class="hover:bg-slate-800/30">
+                <td class="p-3 font-bold text-white">LLY <span class="font-normal text-slate-400 text-xxs font-sans">禮來製藥</span></td>
+                <td class="p-3 text-sky-400 font-sans">Firstrade</td>
+                <td class="p-3 text-slate-200">3.0032 股</td>
+                <td class="p-3 text-slate-300">$1,128.65</td>
+                <td class="p-3 text-sky-400 font-sans">法人目標價</td>
+                <td class="p-3 text-emerald-400">折價 15% 買</td>
+                <td class="p-3 text-right">
+                  <a href="https://finance.yahoo.com/quote/LLY" target="_blank" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xxs font-sans">線圖</a>
+                </td>
+              </tr>
+              <tr class="hover:bg-slate-800/30">
+                <td class="p-3 font-bold text-white">VRT <span class="font-normal text-slate-400 text-xxs font-sans">維諦技術</span></td>
+                <td class="p-3 text-sky-400 font-sans">Firstrade</td>
+                <td class="p-3 text-slate-200">8.0014 股</td>
+                <td class="p-3 text-slate-300">$321.39</td>
+                <td class="p-3 text-sky-400 font-sans">法人目標價</td>
+                <td class="p-3 text-emerald-400">折價 20% 買</td>
+                <td class="p-3 text-right">
+                  <a href="https://finance.yahoo.com/quote/VRT" target="_blank" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xxs font-sans">線圖</a>
+                </td>
+              </tr>
+              <tr class="hover:bg-slate-800/30">
+                <td class="p-3 font-bold text-white">INTC <span class="font-normal text-slate-400 text-xxs font-sans">英特爾</span></td>
+                <td class="p-3 text-sky-400 font-sans">Firstrade</td>
+                <td class="p-3 text-slate-200">3 股</td>
+                <td class="p-3 text-slate-300">$110.69</td>
+                <td class="p-3 text-sky-400 font-sans">法人目標價</td>
+                <td class="p-3 text-emerald-400">折價 15% 買</td>
+                <td class="p-3 text-right">
+                  <a href="https://finance.yahoo.com/quote/INTC" target="_blank" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xxs font-sans">線圖</a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 台股列表 -->
+      <div class="card-glass rounded-xl overflow-hidden">
+        <div class="px-4 py-3 bg-slate-900/90 border-b border-slate-800 flex justify-between items-center">
+          <span class="text-xs font-bold text-emerald-400 tracking-wider">🇹🇼 台股配置清單 (TWD)</span>
+          <span class="text-xxs text-slate-500 font-mono">Updated via TWSE OpenAPI</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-950/50 text-slate-400 font-medium border-b border-slate-800">
+              <tr>
+                <th class="p-3">標的名稱</th>
+                <th class="p-3">帳戶券商</th>
+                <th class="p-3">持有股數</th>
+                <th class="p-3">買入成本</th>
+                <th class="p-3">估值模型</th>
+                <th class="p-3">安全邊際</th>
+                <th class="p-3 text-right">操作</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800/60 font-mono">
+              <tr class="hover:bg-slate-800/30">
+                <td class="p-3 font-bold text-white">0050.TW <span class="font-normal text-slate-400 text-xxs font-sans">元大台灣50</span></td>
+                <td class="p-3 text-emerald-400 font-sans">國泰證券</td>
+                <td class="p-3 text-slate-200">2,000 股</td>
+                <td class="p-3 text-slate-300">NT$165.0</td>
+                <td class="p-3 text-slate-400 font-sans">基準錨定</td>
+                <td class="p-3 text-emerald-400">折價 10% 買</td>
+                <td class="p-3 text-right">
+                  <a href="https://finance.yahoo.com/quote/0050.TW" target="_blank" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xxs font-sans">線圖</a>
+                </td>
+              </tr>
+              <tr class="hover:bg-slate-800/30">
+                <td class="p-3 font-bold text-white">2337.TW <span class="font-normal text-slate-400 text-xxs font-sans">旺宏</span></td>
+                <td class="p-3 text-emerald-400 font-sans">國泰證券</td>
+                <td class="p-3 text-slate-200">5,000 股</td>
+                <td class="p-3 text-slate-300">NT$26.0</td>
+                <td class="p-3 text-indigo-400 font-sans">動態本益比</td>
+                <td class="p-3 text-emerald-400">折價 15% 買</td>
+                <td class="p-3 text-right">
+                  <a href="https://finance.yahoo.com/quote/2337.TW" target="_blank" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xxs font-sans">線圖</a>
+                </td>
+              </tr>
+              <tr class="hover:bg-slate-800/30">
+                <td class="p-3 font-bold text-white">2002.TW <span class="font-normal text-slate-400 text-xxs font-sans">中鋼</span></td>
+                <td class="p-3 text-emerald-400 font-sans">國泰證券</td>
+                <td class="p-3 text-slate-200">3,000 股</td>
+                <td class="p-3 text-slate-300">NT$24.5</td>
+                <td class="p-3 text-emerald-400 font-sans">5%殖利率折算</td>
+                <td class="p-3 text-emerald-400">折價 10% 買</td>
+                <td class="p-3 text-right">
+                  <a href="https://finance.yahoo.com/quote/2002.TW" target="_blank" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xxs font-sans">線圖</a>
+                </td>
+              </tr>
+              <tr class="hover:bg-slate-800/30">
+                <td class="p-3 font-bold text-white">1232.TW <span class="font-normal text-slate-400 text-xxs font-sans">大統益</span></td>
+                <td class="p-3 text-emerald-400 font-sans">國泰證券</td>
+                <td class="p-3 text-slate-200">1,000 股</td>
+                <td class="p-3 text-slate-300">NT$150.0</td>
+                <td class="p-3 text-emerald-400 font-sans">5%殖利率折算</td>
+                <td class="p-3 text-emerald-400">折價 10% 買</td>
+                <td class="p-3 text-right">
+                  <a href="https://finance.yahoo.com/quote/1232.TW" target="_blank" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xxs font-sans">線圖</a>
+                </td>
+              </tr>
+              <tr class="hover:bg-slate-800/30">
+                <td class="p-3 font-bold text-white">1904.TW <span class="font-normal text-slate-400 text-xxs font-sans">正隆</span></td>
+                <td class="p-3 text-emerald-400 font-sans">國泰證券</td>
+                <td class="p-3 text-slate-200">4,000 股</td>
+                <td class="p-3 text-slate-300">NT$27.5</td>
+                <td class="p-3 text-emerald-400 font-sans">5%殖利率折算</td>
+                <td class="p-3 text-emerald-400">折價 12% 買</td>
+                <td class="p-3 text-right">
+                  <a href="https://finance.yahoo.com/quote/1904.TW" target="_blank" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xxs font-sans">線圖</a>
+                </td>
+              </tr>
+              <tr class="hover:bg-slate-800/30">
+                <td class="p-3 font-bold text-white">2616.TW <span class="font-normal text-slate-400 text-xxs font-sans">山隆</span></td>
+                <td class="p-3 text-emerald-400 font-sans">國泰證券</td>
+                <td class="p-3 text-slate-200">3,000 股</td>
+                <td class="p-3 text-slate-300">NT$29.0</td>
+                <td class="p-3 text-emerald-400 font-sans">5%殖利率折算</td>
+                <td class="p-3 text-emerald-400">折價 10% 買</td>
+                <td class="p-3 text-right">
+                  <a href="https://finance.yahoo.com/quote/2616.TW" target="_blank" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xxs font-sans">線圖</a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 底部說明 ================= -->
+    <footer class="pt-6 border-t border-slate-800 text-center text-xs text-slate-500 space-y-1">
+      <p>智能量化交易系統 · GitHub Actions 自動化排程運行中</p>
+      <p class="text-xxs text-slate-600">本儀表板僅供個人量化輔助研究使用，投資請獨立審慎評估風險。</p>
+    </footer>
+
   </div>
 
-  <script>
-    const MY_STOCKS = [
-      { ticker: "AMAT", name: "應用材料", price: 205, eps: 8.6, growth: 16, pe: 24, fcf: 8.2 },
-      { ticker: "NVDA", name: "輝達", price: 130, eps: 2.9, growth: 38, pe: 42, fcf: 3.1 },
-      { ticker: "COST", name: "好市多", price: 880, eps: 16.5, growth: 11, pe: 48, fcf: 18.0 },
-      { ticker: "BRK-B", name: "波克夏", price: 440, eps: 18.0, growth: 9, pe: 22, fcf: 22.0 },
-      { ticker: "0050.TW", name: "元大台灣50", price: 188, eps: 6.5, growth: 12, pe: 25, fcf: 6.0 },
-      { ticker: "2337.TW", name: "旺宏", price: 27.5, eps: 1.2, growth: 8, pe: 18, fcf: 1.5 }
-    ];
-
-    function initTabs() {
-      const container = document.getElementById('stockTabs');
-      MY_STOCKS.forEach((stock, idx) => {
-        const btn = document.createElement('button');
-        btn.className = "px-2.5 py-1 bg-slate-700 hover:bg-sky-600 text-xs font-medium rounded-lg transition";
-        btn.innerText = stock.ticker;
-        btn.onclick = () => selectStock(idx);
-        container.appendChild(btn);
-      });
-      selectStock(0);
-    }
-
-    function selectStock(index) {
-      const s = MY_STOCKS[index];
-      document.getElementById('tickerInput').value = `${s.name} (${s.ticker})`;
-      document.getElementById('priceInput').value = s.price;
-      document.getElementById('epsInput').value = s.eps;
-      document.getElementById('growthInput').value = s.growth;
-      document.getElementById('peInput').value = s.pe;
-      document.getElementById('fcfInput').value = s.fcf;
-      calculate();
-    }
-
-    function calculate() {
-      const price = Math.max(0.01, parseFloat(document.getElementById('priceInput').value) || 0);
-      const eps = Math.max(0.01, parseFloat(document.getElementById('epsInput').value) || 0);
-      const growth = Math.max(1, parseFloat(document.getElementById('growthInput').value) || 0);
-      const pe = Math.max(1, parseFloat(document.getElementById('peInput').value) || 0);
-      const fcf = Math.max(0.01, parseFloat(document.getElementById('fcfInput').value) || 0);
-
-      let quality = 0;
-      document.querySelectorAll('.check-item').forEach(c => { if(c.checked) quality += parseInt(c.value); });
-      document.getElementById('qualityBadge').innerText = `體質分: ${quality}`;
-
-      // 綜合估值計算 (PEG法 + 目標PE法 + 簡化現金流)
-      const valPeg = eps * Math.min(35, growth);
-      const valPe = (eps * (1 + growth/100)) * pe;
-      const valDcf = fcf * (1 + growth/100) / (0.09 - 0.025);
-      const fairVal = (valPeg * 0.3) + (valPe * 0.4) + (valDcf * 0.3);
-
-      const mos = ((fairVal - price) / fairVal) * 100;
-      const buyLine = fairVal * 0.85;
-      const sellLine = fairVal * 1.25;
-
-      document.getElementById('fairValueDisplay').innerText = `$${fairVal.toFixed(2)}`;
-      document.getElementById('buyTargetDisplay').innerText = `$${buyLine.toFixed(2)}`;
-      document.getElementById('sellTargetDisplay').innerText = `$${sellLine.toFixed(2)}`;
-
-      const mosEl = document.getElementById('mosDisplay');
-      mosEl.innerText = `${mos > 0 ? '+' : ''}${mos.toFixed(1)}% (${mos >= 0 ? '低估' : '高估'})`;
-      mosEl.className = `font-bold text-sm ${mos >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
-
-      const pct = Math.min(100, Math.max(5, ((mos + 50) / 100) * 100));
-      const bar = document.getElementById('mosProgress');
-      bar.style.width = `${pct}%`;
-      bar.className = `h-2.5 transition-all duration-300 ${mos >= 15 ? 'bg-emerald-500' : (mos <= -15 ? 'bg-rose-500' : 'bg-sky-500')}`;
-
-      // 判定卡更新
-      const badge = document.getElementById('decisionBadge');
-      const text = document.getElementById('decisionText');
-      const desc = document.getElementById('decisionDesc');
-      if (mos >= 15 && quality >= 75) {
-        badge.className = "text-xs font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500";
-        badge.innerText = "安全邊際充足";
-        text.innerText = "🟢 價值顯著低估，建議分批佈局";
-        desc.innerText = `目前市價相較內在價值折價達 ${mos.toFixed(1)}%，且護城河得分高，符合右側或左側建倉防守標準。`;
-      } else if (mos <= -20) {
-        badge.className = "text-xs font-bold px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500";
-        badge.innerText = "過熱警戒";
-        text.innerText = "🔴 估值嚴重透支，留意回檔風險";
-        desc.innerText = `市價已高出內在價值 ${Math.abs(mos).toFixed(1)}%，建議啟動移動停利（Trailing Stop）或進行部位再平衡。`;
-      } else {
-        badge.className = "text-xs font-bold px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500";
-        badge.innerText = "合理區間";
-        text.innerText = "🔵 價格處於合理常態，維持既有策略";
-        desc.innerText = "未達極端買賣門檻，定期定額投資者可維持原扣款計畫，無須頻繁交易。";
-      }
-    }
-
-    window.onload = initTabs;
-  </script>
 </body>
 </html>
