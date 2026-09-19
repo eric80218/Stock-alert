@@ -2,27 +2,58 @@ name: Global Stock Alerts
 
 on:
   schedule:
-    # GitHub 使用 UTC 時間 (UTC+8 為台灣時間)
-    - cron: '45 5 * * 1-5'   # 台灣時間 13:45 (台股盤後檢核)
-    - cron: '15 21 * * 1-5'  # 台灣時間 05:15 (美股夏令收盤檢核)
-  workflow_dispatch:         # 支援在網頁上隨時按按鈕手動執行
+    # 1. 台股盤後掃描：週一至週五 UTC 05:45 (台灣時間 13:45)
+    - cron: '45 5 * * 1-5'
+    # 2. 美股盤後掃描：週一至週五 UTC 21:15 (台灣時間 週二至週六 05:15)
+    - cron: '15 21 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      market:
+        description: '選擇掃描市場'
+        required: true
+        default: 'ALL'
+        type: choice
+        options:
+          - ALL
+          - TWD
+          - USD
+
+permissions:
+  contents: write
 
 jobs:
   run-tracker:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout Repository
         uses: actions/checkout@v4
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
       - name: Install Libs
-        run: pip install yfinance requests
+        run: |
+          pip install yfinance pandas requests
+
       - name: Run Script
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
           LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
+          # 若手動執行則依據選擇，定時排程則預設 ALL (Python 會依據時區自動判定)
+          TARGET_MARKET: ${{ github.event.inputs.market || 'ALL' }}
+          # 手動點擊執行時強制推播卡片，定時排程時只在狀態改變才推播
+          FORCE_NOTIFY: ${{ github.event_name == 'workflow_dispatch' }}
         run: python main.py
+
+      - name: Auto-commit state cache
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add state_cache.json || true
+          git commit -m "Auto-update stock state cache [skip ci]" || exit 0
+          git push
