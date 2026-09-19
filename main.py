@@ -88,14 +88,22 @@ def fetch_twse_official_metrics() -> dict:
     return twse_dict
 
 # ==========================================
-# 4. 全自動動態估值引擎
+# 4. 全自動動態估值引擎 (支援 ETF_TREND)
 # ==========================================
-def calculate_dynamic_fair_value(item: dict, yf_info: dict, twse_data: dict, current_price: float) -> Tuple[float, str]:
+def calculate_dynamic_fair_value(item: dict, yf_info: dict, twse_data: dict, current_price: float, extra_data: dict) -> Tuple[float, str]:
     ticker = item["ticker"]
     base_fair = item["base_fair"]
     model = item["val_model"]
 
-    if model == "ANALYST":
+    # 1. 指數型 ETF 動態通道模型 (半年線定錨)
+    if model == "ETF_TREND":
+        ma120 = extra_data.get("ma120")
+        if ma120 and ma120 > 0:
+            return round(float(ma120), 2), "120MA半年通道"
+        return base_fair, "基準固定"
+
+    # 2. 法人共識目標價
+    elif model == "ANALYST":
         if FINNHUB_API_KEY:
             try:
                 fh_url = f"https://finnhub.io/api/v1/stock/price-target?symbol={ticker}&token={FINNHUB_API_KEY}"
@@ -112,6 +120,7 @@ def calculate_dynamic_fair_value(item: dict, yf_info: dict, twse_data: dict, cur
         except Exception:
             pass
 
+    # 3. 官方殖利率折算模型
     elif model == "DIVIDEND":
         clean_code = ticker.replace(".TW", "").replace(".TWO", "")
         tw_metric = twse_data.get(clean_code)
@@ -128,6 +137,7 @@ def calculate_dynamic_fair_value(item: dict, yf_info: dict, twse_data: dict, cur
             if 0.5 * base_fair <= calc_val <= 1.8 * base_fair:
                 return round(calc_val, 2), "股息5%折算法"
 
+    # 4. 本益比 EPS 模型
     elif model == "PE_EPS":
         eps = yf_info.get("trailingEps") or yf_info.get("forwardEps")
         pe = yf_info.get("trailingPE")
@@ -452,18 +462,10 @@ def build_rotation_bubble(pair: dict) -> dict:
     }
 
 # ==========================================
-# 9. 技術分析與【ATR 動態風控停損】核心
+# 9. 技術分析與【黑天鵝防接刀 + ATR 風控】核心
 # ==========================================
 def calculate_risk_reward(price: float, fair_val: float, ma20: float, low_10d: float, atr: float) -> Tuple[float, Optional[float]]:
-    """
-    專業動態波動停損 (Chandelier / ATR Volatility Stop):
-    - 依據個股 14 日真實波幅 (ATR)，動態給予 2.0 倍 ATR 的容忍緩衝區
-    - 結合近期 10 日結構低點，有效防範主力洗盤假跌破與插針
-    """
-    # 2.0 倍 ATR 基準保護位
     volatility_stop = price - (2.0 * atr)
-    
-    # 結合 10 日低點結構防守 (取兩者中更穩健的支撐位，並避免過度貼近或過度遠離)
     stop_loss = round(min(low_10d, volatility_stop), 2)
     if stop_loss >= price or stop_loss <= (price * 0.75):
         stop_loss = round(price - (2.0 * atr), 2)
@@ -495,6 +497,10 @@ def analyze_stock(ticker: str) -> Optional[dict]:
         curr_ma20 = round(float(ma20_s.iloc[-1]), 2)
         prev_ma20 = round(float(ma20_s.iloc[-2]), 2)
 
+        # 120MA (半年線動態通道)
+        ma120_s = close.rolling(120).mean()
+        curr_ma120 = round(float(ma120_s.iloc[-1]), 2) if len(close) >= 120 and pd.notna(ma120_s.iloc[-1]) else curr_ma20
+
         # RSI(14)
         delta = close.diff()
         gain = delta.clip(lower=0).rolling(14).mean()
@@ -502,7 +508,7 @@ def analyze_stock(ticker: str) -> Optional[dict]:
         rs = gain / loss.replace(0, 0.0001)
         rsi = round(float((100 - (100 / (1 + rs))).iloc[-1]), 1)
 
-        # ATR(14) 真實波動區間計算
+        # ATR(14)
         prev_close = close.shift(1)
         tr1 = high - low
         tr2 = (high - prev_close).abs()
@@ -518,6 +524,7 @@ def analyze_stock(ticker: str) -> Optional[dict]:
         return {
             "price": curr_price, "prev_price": prev_price,
             "ma20": curr_ma20, "prev_ma20": prev_ma20,
+            "ma120": curr_ma120,
             "rsi": rsi, "low_10d": low_10d,
             "atr": curr_atr, "atr_pct": atr_pct,
             "info": info
@@ -570,7 +577,22 @@ def evaluate_decision(item: dict, data: dict, market_regime: dict, macro_data: d
         elif diff_pct >= 0:
             score -= 1.0
 
-    # 引入 ATR 計算自適應動態停損
+    # ==========================================
+    # 核心：黑天鵝與斷崖暴跌防護閘門 (Falling Knife Guard)
+    # ==========================================
+    # 條件 1：破線下彎 (市價跌破月線 且 月線趨勢向下)
+    is_falling_knife = (price < data["ma20"]) and (data["ma20"] < data["prev_ma20"])
+    # 條件 2：單日極端崩跌熔斷 (單日跌破 2.5 倍 ATR)
+    is_extreme_crash = (data["prev_price"] - price) >= (2.5 * data["atr"])
+
+    if is_falling_knife or is_extreme_crash:
+        if score >= 1.0:
+            score = 0.0  # 強制將買進/加碼訊號降級為觀望
+            if is_extreme_crash:
+                macro_warnings.append(f"🚨 [黑天鵝異動] 單日崩跌逾 2.5×ATR ({data['atr']})，估值恐滯後失真，嚴禁徒手接刀！")
+            else:
+                macro_warnings.append("⚠️ [防接刀保護] 股價跌破月線且20MA下彎，左側跌勢未止，強制等待右側站回！")
+
     stop_loss, rr_ratio = calculate_risk_reward(price, fair_val, data["ma20"], data["low_10d"], data["atr"])
 
     curr_sym = "$" if item["currency"] == "USD" else "NT$"
@@ -678,7 +700,6 @@ def build_stock_bubble(data: dict, market_regime: dict) -> dict:
                         {"type": "text", "text": f"20MA: {data['ma20']} | RSI: {data['rsi']}", "color": "#94A3B8", "size": "xs", "align": "end"}
                     ]
                 },
-                # 新增 ATR 波動度與自適應動態停損
                 {
                     "type": "box", "layout": "horizontal",
                     "contents": [
@@ -825,7 +846,7 @@ def main():
         if RUN_MODE in ["TWD", "USD"] and currency != RUN_MODE:
             continue
 
-        dynamic_fair, val_source = calculate_dynamic_fair_value(item, data.get("info", {}), twse_data, price)
+        dynamic_fair, val_source = calculate_dynamic_fair_value(item, data.get("info", {}), twse_data, price, data)
         market_regime = regimes[currency]
         decision = evaluate_decision(item, data, market_regime, macro_data, dynamic_fair, val_source)
 
@@ -833,7 +854,7 @@ def main():
         last_signal = state_cache.get(ticker)
         new_state_cache[ticker] = current_signal
 
-        print(f"[{name}] 市價: {curr_symbol}{price} | ATR: {data['atr']} ({data['atr_pct']}%) | 合理價: {curr_symbol}{dynamic_fair} | 訊號: {current_signal}")
+        print(f"[{name}] 市價: {curr_symbol}{price} | ATR: {data['atr']} ({data['atr_pct']}%) | 合理價: {curr_symbol}{dynamic_fair} ({val_source}) | 訊號: {current_signal}")
 
         card_info = {
             "name": name, "ticker": ticker, "currency": currency, "broker": item["broker"],
