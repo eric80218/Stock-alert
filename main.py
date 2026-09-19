@@ -66,7 +66,7 @@ def save_state_cache(cache: dict):
 # 4. 夜盤與國際情勢數據獲取
 # ==========================================
 def fetch_global_macro_snapshot() -> dict:
-    """獲取台積電 ADR、美指期貨、VIX、美債、美元指數"""
+    """獲取台積電 ADR、美指期貨、VIX、美債、美元指數最新數據"""
     indicators = {
         "TSM": "TSM",          # 台積電 ADR
         "NQ_F": "NQ=F",        # 那斯達克期貨
@@ -92,7 +92,6 @@ def fetch_global_macro_snapshot() -> dict:
     return data
 
 def build_morning_brief_bubble(macro: dict) -> dict:
-    """生成早晨 08:30 專屬的國際情勢戰情報告卡片"""
     tsm = macro.get("TSM", {})
     nq = macro.get("NQ_F", {})
     es = macro.get("ES_F", {})
@@ -100,7 +99,6 @@ def build_morning_brief_bubble(macro: dict) -> dict:
     tnx = macro.get("TNX", {})
     dxy = macro.get("DXY", {})
 
-    # 情勢綜合判斷得分
     score = 0
     if tsm.get("chg_pct", 0) > 1.0: score += 1
     elif tsm.get("chg_pct", 0) < -1.0: score -= 1
@@ -132,17 +130,12 @@ def build_morning_brief_bubble(macro: dict) -> dict:
         return f"{val:+.2f}%" if val else "0.00%"
 
     return {
-        "type": "bubble",
-        "size": "kilo",
+        "type": "bubble", "size": "kilo",
         "header": {
-            "type": "box",
-            "layout": "vertical",
-            "backgroundColor": header_bg,
-            "paddingAll": "16px",
+            "type": "box", "layout": "vertical", "backgroundColor": header_bg, "paddingAll": "16px",
             "contents": [
                 {
-                    "type": "box",
-                    "layout": "horizontal",
+                    "type": "box", "layout": "horizontal",
                     "contents": [
                         {"type": "text", "text": "☀️ 全球晨間前瞻", "weight": "bold", "color": "#FFFFFF", "size": "md", "flex": 3},
                         {"type": "text", "text": market_mood, "weight": "bold", "color": mood_color, "size": "sm", "align": "end", "flex": 3}
@@ -152,32 +145,25 @@ def build_morning_brief_bubble(macro: dict) -> dict:
             ]
         },
         "body": {
-            "type": "box",
-            "layout": "vertical",
-            "backgroundColor": "#0F172A",
-            "paddingAll": "16px",
-            "spacing": "sm",
+            "type": "box", "layout": "vertical", "backgroundColor": "#0F172A", "paddingAll": "16px", "spacing": "sm",
             "contents": [
                 {"type": "text", "text": "⚡ 夜盤期指動向", "color": "#38BDF8", "weight": "bold", "size": "xs"},
                 {
-                    "type": "box",
-                    "layout": "horizontal",
+                    "type": "box", "layout": "horizontal",
                     "contents": [
                         {"type": "text", "text": "台積電 ADR (TSM)", "color": "#94A3B8", "size": "xs"},
                         {"type": "text", "text": f"${tsm.get('price')} ({fmt_chg(tsm.get('chg_pct'))})", "color": tsm.get('chg_pct',0)>=0 and "#34D399" or "#F87171", "weight": "bold", "size": "xs", "align": "end"}
                     ]
                 },
                 {
-                    "type": "box",
-                    "layout": "horizontal",
+                    "type": "box", "layout": "horizontal",
                     "contents": [
                         {"type": "text", "text": "那斯達克期 (NQ)", "color": "#94A3B8", "size": "xs"},
                         {"type": "text", "text": f"{fmt_chg(nq.get('chg_pct'))}", "color": nq.get('chg_pct',0)>=0 and "#34D399" or "#F87171", "weight": "bold", "size": "xs", "align": "end"}
                     ]
                 },
                 {
-                    "type": "box",
-                    "layout": "horizontal",
+                    "type": "box", "layout": "horizontal",
                     "contents": [
                         {"type": "text", "text": "標普 500 期 (ES)", "color": "#94A3B8", "size": "xs"},
                         {"type": "text", "text": f"{fmt_chg(es.get('chg_pct'))}", "color": es.get('chg_pct',0)>=0 and "#34D399" or "#F87171", "weight": "bold", "size": "xs", "align": "end"}
@@ -186,24 +172,21 @@ def build_morning_brief_bubble(macro: dict) -> dict:
                 {"type": "separator", "color": "#334155", "margin": "sm"},
                 {"type": "text", "text": "🌐 國際情勢與總經風險", "color": "#38BDF8", "weight": "bold", "size": "xs", "margin": "sm"},
                 {
-                    "type": "box",
-                    "layout": "horizontal",
+                    "type": "box", "layout": "horizontal",
                     "contents": [
                         {"type": "text", "text": "VIX 恐慌指數", "color": "#94A3B8", "size": "xs"},
                         {"type": "text", "text": f"{vix.get('price')} ({vix_val>=25 and '恐慌警戒' or '常態平穩'})", "color": vix_val>=25 and "#EF4444" or "#CBD5E1", "weight": "bold", "size": "xs", "align": "end"}
                     ]
                 },
                 {
-                    "type": "box",
-                    "layout": "horizontal",
+                    "type": "box", "layout": "horizontal",
                     "contents": [
                         {"type": "text", "text": "10年美債殖利率", "color": "#94A3B8", "size": "xs"},
                         {"type": "text", "text": f"{tnx.get('price')}%", "color": "#CBD5E1", "size": "xs", "align": "end"}
                     ]
                 },
                 {
-                    "type": "box",
-                    "layout": "horizontal",
+                    "type": "box", "layout": "horizontal",
                     "contents": [
                         {"type": "text", "text": "美元指數 (DXY)", "color": "#94A3B8", "size": "xs"},
                         {"type": "text", "text": f"{dxy.get('price')}", "color": "#CBD5E1", "size": "xs", "align": "end"}
@@ -211,12 +194,7 @@ def build_morning_brief_bubble(macro: dict) -> dict:
                 },
                 {"type": "separator", "color": "#334155", "margin": "md"},
                 {
-                    "type": "box",
-                    "layout": "vertical",
-                    "backgroundColor": "#1E293B",
-                    "paddingAll": "12px",
-                    "cornerRadius": "8px",
-                    "margin": "md",
+                    "type": "box", "layout": "vertical", "backgroundColor": "#1E293B", "paddingAll": "12px", "cornerRadius": "8px", "margin": "md",
                     "contents": [
                         {"type": "text", "text": "💡 今日盤前作戰方針：", "color": "#38BDF8", "weight": "bold", "size": "xs"},
                         {"type": "text", "text": advice, "color": "#F8FAFC", "size": "xxs", "wrap": True, "margin": "xs"}
@@ -225,18 +203,9 @@ def build_morning_brief_bubble(macro: dict) -> dict:
             ]
         },
         "footer": {
-            "type": "box",
-            "layout": "horizontal",
-            "backgroundColor": "#1E293B",
-            "paddingAll": "10px",
+            "type": "box", "layout": "horizontal", "backgroundColor": "#1E293B", "paddingAll": "10px",
             "contents": [
-                {
-                    "type": "button",
-                    "style": "primary",
-                    "height": "sm",
-                    "color": "#0284C7",
-                    "action": {"type": "uri", "label": "開啟估值儀表板", "uri": DASHBOARD_URL}
-                }
+                {"type": "button", "style": "primary", "height": "sm", "color": "#0284C7", "action": {"type": "uri", "label": "開啟估值儀表板", "uri": DASHBOARD_URL}}
             ]
         }
     }
@@ -305,63 +274,101 @@ def analyze_stock(ticker: str) -> Optional[dict]:
     except Exception:
         return None
 
-def evaluate_decision(item: dict, data: dict, market_regime: dict, vix_val: float) -> dict:
+# ==========================================
+# 7. 全方位決策核心 (含夜盤/國際情勢主動調節)
+# ==========================================
+def evaluate_decision(item: dict, data: dict, market_regime: dict, macro_data: dict) -> dict:
     price = data["price"]
     fair_val = item["fair_value"]
     diff_pct = ((price - fair_val) / fair_val) * 100
     buy_threshold_pct = - (item["mos_buy"] * 100)
     sell_threshold_pct = item["expensive_sell"] * 100
 
+    vix_val = macro_data.get("VIX", {}).get("price", 15.0)
+    nq_chg = macro_data.get("NQ_F", {}).get("chg_pct", 0.0)
+    tsm_chg = macro_data.get("TSM", {}).get("chg_pct", 0.0)
+
     score = 0.0
+
+    # 1. 基本面安全邊際
     if diff_pct <= buy_threshold_pct: score += 2.0
     elif diff_pct < 0: score += 0.5
     elif diff_pct >= sell_threshold_pct: score -= 2.0
     elif diff_pct > 10: score -= 0.5
 
+    # 2. 技術面 20MA
     if data["prev_price"] <= data["prev_ma20"] and price > data["ma20"]: score += 1.5
     elif price > data["ma20"]: score += 0.5
     if data["prev_price"] >= data["prev_ma20"] and price < data["ma20"]: score -= 1.5
     elif price < data["ma20"]: score -= 0.5
 
+    # 3. RSI
     if data["rsi"] <= 30: score += 1.0
     elif data["rsi"] >= 75: score -= 1.0
 
-    # 恐慌與大盤懲罰
-    if vix_val >= 25 or not market_regime["is_bull"]:
-        if score >= 2.0: score = 1.2  # 避險下修
+    # 4. 夜盤與國際情勢【主動調節與風控連動】
+    macro_warnings = []
+
+    # (A) 買進煞車：大盤走空或 VIX 偏高時，防止重倉接刀
+    if vix_val >= 24.0 or not market_regime["is_bull"]:
+        if score >= 2.0:
+            score = 1.2  # 降級為分批微量試單
+            macro_warnings.append("⚠️ [大盤/國際偏空防禦] 買進降級為少量分批試單")
+
+    # (B) 主動調節 1：夜盤急跌避險 (那指期或 ADR 重挫)
+    is_night_crash = (nq_chg <= -1.5) or (item["currency"] == "TWD" and tsm_chg <= -2.0)
+    is_near_ma20 = (price - data["ma20"]) / data["ma20"] <= 0.015  # 距月線不足 1.5% 或已破線
+    if is_night_crash:
+        if diff_pct > 10.0 or is_near_ma20:
+            score -= 1.5  # 扣分強推為減碼
+            macro_warnings.append(f"⚡ [夜盤急跌避險] 昨夜期指/ADR重挫({tsm_chg:+.1f}%)，位階脆弱觸發提前減碼！")
+
+    # (C) 主動調節 2：國際黑天鵝 / VIX 飆升 (VIX >= 28)
+    if vix_val >= 28.0:
+        if diff_pct >= 15.0:
+            score -= 1.8  # 高估值標的在恐慌時強制獲利了結
+            macro_warnings.append(f"🚨 [國際恐慌警報] VIX飆升至{vix_val}，高估值部位強制分批停利減碼！")
+        elif diff_pct >= 0:
+            score -= 1.0
 
     stop_loss, rr_ratio = calculate_risk_reward(price, fair_val, data["ma20"], data["low_10d"])
 
+    # 決定指示狀態
     if score >= 2.5:
         signal_badge = "🔥 立即買進"
         badge_color = "#10B981"
         header_color = "#064E3B"
-        action_advice = f"【右側建倉買點】落入安全邊際且翻多。防守停損 {item['currency']=='USD' and '$' or 'NT$'}{stop_loss}，風報比 1:{rr_ratio or '優'}。"
+        base_advice = f"【右側建倉買點】落入安全邊際且翻多。防守停損 {item['currency']=='USD' and '$' or 'NT$'}{stop_loss}，風報比 1:{rr_ratio or '優'}。"
     elif score >= 1.0:
         signal_badge = "🟢 逢低加碼"
         badge_color = "#34D399"
         header_color = "#065F46"
-        action_advice = f"【性價比充足】回測支撐有守，可分批承接。防守停損 {item['currency']=='USD' and '$' or 'NT$'}{stop_loss}。"
+        base_advice = f"【性價比充足】回測支撐有守，可分批承接。防守停損 {item['currency']=='USD' and '$' or 'NT$'}{stop_loss}。"
     elif score <= -2.5:
         signal_badge = "🔴 立即賣出"
         badge_color = "#EF4444"
         header_color = "#7F1D1D"
-        action_advice = "【估值嚴重透支】價格偏離過大，強烈建議分批停利或掛設移動停利單。"
+        base_advice = "【估值嚴重透支】價格大幅高估，強烈建議分批停利或掛設移動停利單以鎖定獲利。"
     elif score <= -1.0:
         signal_badge = "🟠 建議減碼"
         badge_color = "#F97316"
         header_color = "#7C2D12"
-        action_advice = "【短線轉弱】摜破 20MA 防守線，建議多單減碼防守。"
+        base_advice = "【轉弱避險防守】摜破防線或受夜盤/總經利空壓抑，建議多單部分減碼或暫停加碼。"
     else:
         signal_badge = "⚪ 觀望續抱"
         badge_color = "#94A3B8"
         header_color = "#1E293B"
         action_advice = "【常態區間】未達顯著買賣標準，持股續抱。"
+        base_advice = "【常態區間】未達顯著買賣標準，持股續抱。"
+
+    # 將宏觀警告置於操作建議最前方
+    prefix = " | ".join(macro_warnings) + "\n" if macro_warnings else ""
+    final_advice = prefix + base_advice
 
     return {
         "score": round(score, 1), "diff_pct": diff_pct,
         "signal_badge": signal_badge, "badge_color": badge_color,
-        "header_color": header_color, "action_advice": action_advice,
+        "header_color": header_color, "action_advice": final_advice,
         "stop_loss": stop_loss, "rr_ratio": rr_ratio,
         "is_active_signal": (score >= 1.0 or score <= -1.0)
     }
@@ -443,7 +450,7 @@ def build_stock_bubble(data: dict, market_regime: dict) -> dict:
     }
 
 # ==========================================
-# 7. 推播發送
+# 8. 推播發送
 # ==========================================
 def push_line_flex(token: str, user_id: str, bubbles: List[dict], alt_text: str):
     if not token or not user_id or not bubbles: return
@@ -469,7 +476,7 @@ def push_line_flex(token: str, user_id: str, bubbles: List[dict], alt_text: str)
         print(f"LINE 請求異常: {e}")
 
 # ==========================================
-# 8. 主排程流程控制
+# 9. 主流程
 # ==========================================
 def main():
     print(f"===== 啟動智能投研系統 (模式: {RUN_MODE} | 強制推播: {FORCE_NOTIFY}) =====")
@@ -485,7 +492,7 @@ def main():
         push_line_flex(LINE_CHANNEL_ACCESS_TOKEN, LINE_USER_ID, [morning_bubble], "☀️ 晨間全球前瞻與夜盤快報已送達！")
         return
 
-    # 模式二：盤後持股掃描 (台股 13:45 / 美股 05:15 / 全掃)
+    # 模式二：盤後持股掃描 (台股 13:45 / 美股 05:15 / ALL)
     regimes = {
         "USD": check_market_regime("USD", vix_val),
         "TWD": check_market_regime("TWD", vix_val)
@@ -508,7 +515,8 @@ def main():
         if not data: continue
 
         market_regime = regimes[currency]
-        decision = evaluate_decision(item, data, market_regime, vix_val)
+        # 傳入 macro_data，啟動夜盤與總經調節連動
+        decision = evaluate_decision(item, data, market_regime, macro_data)
 
         current_signal = decision["signal_badge"]
         last_signal = state_cache.get(ticker)
