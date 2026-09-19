@@ -24,7 +24,7 @@ DASHBOARD_URL = "https://eric80218.github.io/Stock-alert/"
 CACHE_FILE = "state_cache.json"
 
 # ==========================================
-# 2. Google 試算表動態同步模組 (強制 UTF-8 解碼)
+# 2. Google 試算表動態同步模組 (強制 UTF-8 編碼)
 # ==========================================
 def load_portfolio_watchlist() -> List[dict]:
     if not PORTFOLIO_SHEET_URL:
@@ -33,8 +33,7 @@ def load_portfolio_watchlist() -> List[dict]:
     
     try:
         res = requests.get(PORTFOLIO_SHEET_URL, timeout=10)
-        # 強制指定 UTF-8 編碼，徹底根除中文亂碼
-        res.encoding = 'utf-8'
+        res.encoding = 'utf-8'  # 強制鎖定 UTF-8，杜絕中文亂碼
         
         if res.status_code == 200:
             df = pd.read_csv(io.StringIO(res.text))
@@ -44,7 +43,6 @@ def load_portfolio_watchlist() -> List[dict]:
                 if not ticker or ticker == "nan":
                     continue
                 
-                # 安全解析數值，防止空字元產生 NaN
                 shares = pd.to_numeric(r.get("shares"), errors='coerce')
                 cost_price = pd.to_numeric(r.get("cost_price"), errors='coerce')
                 base_fair = pd.to_numeric(r.get("base_fair"), errors='coerce')
@@ -71,7 +69,7 @@ def load_portfolio_watchlist() -> List[dict]:
     return []
 
 # ==========================================
-# 3. 台灣證交所 (TWSE) 官方指標
+# 3. 台灣證交所 (TWSE) 官方權威指標
 # ==========================================
 def fetch_twse_official_metrics() -> dict:
     url = "https://openapi.twse.com.tw/v1/exchangeReport/BWIBBU_ALL"
@@ -376,7 +374,97 @@ def build_portfolio_summary_bubble(summary: dict) -> dict:
     }
 
 # ==========================================
-# 8. 技術分析與決策核心 (NaN 安全保護)
+# 8. 專屬【🔄 智能持股輪動決策卡片】
+# ==========================================
+def build_rotation_bubble(pair: dict) -> dict:
+    from_s = pair["from_stock"]
+    to_s = pair["to_stock"]
+    curr_sym = "$" if pair["currency"] == "USD" else "NT$"
+    freed_str = f"{pair['freed_capital']:,.1f}" if pair["currency"] == "USD" else f"{pair['freed_capital']:,.0f}"
+
+    return {
+        "type": "bubble", "size": "kilo",
+        "header": {
+            "type": "box", "layout": "vertical", "backgroundColor": "#4C1D95", "paddingAll": "16px",
+            "contents": [
+                {
+                    "type": "box", "layout": "horizontal",
+                    "contents": [
+                        {"type": "text", "text": "🔄 智能資金輪動建議", "weight": "bold", "color": "#FFFFFF", "size": "md", "flex": 4},
+                        {"type": "text", "text": f"{pair['currency']}部位", "color": "#DDD6FE", "size": "xs", "align": "end", "flex": 2}
+                    ]
+                },
+                {"type": "text", "text": "汰弱留強 · 鎖定利潤換軌高性價比標的", "color": "#C4B5FD", "size": "xs", "margin": "xs"}
+            ]
+        },
+        "body": {
+            "type": "box", "layout": "vertical", "backgroundColor": "#0F172A", "paddingAll": "16px", "spacing": "sm",
+            "contents": [
+                # 轉出標的
+                {"type": "text", "text": "🔴 建議調節轉出：", "color": "#F87171", "weight": "bold", "size": "xs"},
+                {
+                    "type": "box", "layout": "horizontal",
+                    "contents": [
+                        {"type": "text", "text": f"{from_s['name']} ({from_s['ticker']})", "color": "#FFFFFF", "weight": "bold", "size": "sm"},
+                        {"type": "text", "text": from_s["signal_badge"], "color": from_s["badge_color"], "size": "xs", "align": "end"}
+                    ]
+                },
+                {
+                    "type": "box", "layout": "horizontal",
+                    "contents": [
+                        {"type": "text", "text": f"持倉: {from_s['shares']} 股 ({from_s['broker']})", "color": "#94A3B8", "size": "xxs"},
+                        {"type": "text", "text": f"預估釋出: {curr_sym}{freed_str}", "color": "#FCA5A5", "size": "xxs", "align": "end"}
+                    ]
+                },
+                
+                {"type": "separator", "color": "#334155", "margin": "md"},
+                
+                # 轉進標的
+                {"type": "text", "text": "🟢 最佳換軌轉進首選：", "color": "#34D399", "weight": "bold", "size": "xs", "margin": "sm"},
+                {
+                    "type": "box", "layout": "horizontal",
+                    "contents": [
+                        {"type": "text", "text": f"{to_s['name']} ({to_s['ticker']})", "color": "#FFFFFF", "weight": "bold", "size": "sm"},
+                        {"type": "text", "text": to_s["signal_badge"], "color": to_s["badge_color"], "size": "xs", "align": "end"}
+                    ]
+                },
+                {
+                    "type": "box", "layout": "horizontal",
+                    "contents": [
+                        {"type": "text", "text": f"現價: {curr_sym}{to_s['price']} | 估值: {curr_sym}{to_s['dynamic_fair']}", "color": "#94A3B8", "size": "xxs"},
+                        {"type": "text", "text": f"折價 {abs(to_s['diff_pct']):.1f}%", "color": "#6EE7B7", "weight": "bold", "size": "xxs", "align": "end"}
+                    ]
+                },
+                {
+                    "type": "box", "layout": "horizontal",
+                    "contents": [
+                        {"type": "text", "text": f"建議防守停損: {curr_sym}{to_s['stop_loss']}", "color": "#94A3B8", "size": "xxs"},
+                        {"type": "text", "text": f"風報比 1:{to_s['rr_ratio'] or '佳'}", "color": "#6EE7B7", "size": "xxs", "align": "end"}
+                    ]
+                },
+
+                {"type": "separator", "color": "#334155", "margin": "md"},
+
+                # 戰略總評
+                {
+                    "type": "box", "layout": "vertical", "backgroundColor": "#1E293B", "paddingAll": "12px", "cornerRadius": "8px", "margin": "md",
+                    "contents": [
+                        {"type": "text", "text": "🎯 戰略換軌方針：", "color": "#A78BFA", "weight": "bold", "size": "xs"},
+                        {"type": "text", "text": f"{from_s['name']} 估值偏高或跌破短期均線進入防禦期；建議將部位資金轉進折價幅度高達 {abs(to_s['diff_pct']):.1f}%、風報比絕佳的 {to_s['name']}，實現鎖利並放大潛在期望值！", "color": "#F8FAFC", "size": "xxs", "wrap": True, "margin": "xs"}
+                    ]
+                }
+            ]
+        },
+        "footer": {
+            "type": "box", "layout": "horizontal", "backgroundColor": "#1E293B", "paddingAll": "10px",
+            "contents": [
+                {"type": "button", "style": "primary", "height": "sm", "color": "#6D28D9", "action": {"type": "uri", "label": "開啟估值儀表板", "uri": DASHBOARD_URL}}
+            ]
+        }
+    }
+
+# ==========================================
+# 9. 技術分析與決策評估核心
 # ==========================================
 def calculate_risk_reward(price: float, fair_val: float, ma20: float, low_10d: float) -> Tuple[float, Optional[float]]:
     stop_loss = round(min(low_10d, ma20 * 0.97), 2)
@@ -601,7 +689,7 @@ def build_stock_bubble(data: dict, market_regime: dict) -> dict:
     }
 
 # ==========================================
-# 9. 推播發送模組
+# 10. 推播發送模組
 # ==========================================
 def push_line_flex(token: str, user_id: str, bubbles: List[dict], alt_text: str):
     if not token or not user_id or not bubbles: return
@@ -627,18 +715,18 @@ def push_line_flex(token: str, user_id: str, bubbles: List[dict], alt_text: str)
         print(f"LINE 請求異常: {e}")
 
 # ==========================================
-# 10. 主排程流程
+# 11. 主排程流程
 # ==========================================
 def main():
     print(f"===== 啟動多源智能投研系統 (模式: {RUN_MODE} | 強制推播: {FORCE_NOTIFY}) =====")
 
-    # 1. 動態加載持股 (UTF-8)
+    # 1. 加載持股清單
     watchlist = load_portfolio_watchlist()
     if not watchlist:
         print("❌ 無持股監控標的，結束執行。")
         return
 
-    # 2. 全球情勢與夜盤
+    # 2. 全球情勢與夜盤數據
     macro_data = fetch_global_macro_snapshot()
     vix_val = macro_data.get("VIX", {}).get("price", 15.0)
 
@@ -673,6 +761,7 @@ def main():
     new_state_cache = dict(state_cache)
     
     actionable_cards = []
+    evaluated_pool = []
     
     summary_stats = {
         "usd_val": 0.0, "usd_cost": 0.0, "usd_pnl": 0.0, "usd_pnl_pct": 0.0,
@@ -694,7 +783,7 @@ def main():
         shares = item["shares"]
         cost_price = item["cost_price"]
 
-        # 資產總值累加 (嚴格排除 NaN)
+        # 資產總值統計
         if pd.notna(price) and price > 0 and pd.notna(shares) and shares > 0 and pd.notna(cost_price) and cost_price > 0:
             pos_val = shares * price
             pos_cost = shares * cost_price
@@ -709,7 +798,6 @@ def main():
         if RUN_MODE in ["TWD", "USD"] and currency != RUN_MODE:
             continue
 
-        # 動態估值與決策
         dynamic_fair, val_source = calculate_dynamic_fair_value(item, data.get("info", {}), twse_data, price)
         market_regime = regimes[currency]
         decision = evaluate_decision(item, data, market_regime, macro_data, dynamic_fair, val_source)
@@ -720,18 +808,20 @@ def main():
 
         print(f"[{name}] 市價: {curr_symbol}{price} | 合理價: {curr_symbol}{dynamic_fair} ({val_source}) | 訊號: {current_signal}")
 
+        card_info = {
+            "name": name, "ticker": ticker, "currency": currency, "broker": item["broker"],
+            "shares": shares, "cost_price": cost_price, "curr_symbol": curr_symbol,
+            "price": price, "ma20": data["ma20"], "rsi": data["rsi"], **decision
+        }
+        evaluated_pool.append(card_info)
+
         is_state_changed = (current_signal != last_signal)
         should_alert = decision["is_active_signal"] and (is_state_changed or FORCE_NOTIFY)
 
         if should_alert:
-            card_info = {
-                "name": name, "ticker": ticker, "currency": currency, "broker": item["broker"],
-                "shares": shares, "cost_price": cost_price, "curr_symbol": curr_symbol,
-                "price": price, "ma20": data["ma20"], "rsi": data["rsi"], **decision
-            }
             actionable_cards.append(build_stock_bubble(card_info, market_regime))
 
-    # 計算報酬率
+    # 計算整體投資組合損益
     if summary_stats["usd_cost"] > 0:
         summary_stats["usd_pnl"] = summary_stats["usd_val"] - summary_stats["usd_cost"]
         summary_stats["usd_pnl_pct"] = (summary_stats["usd_pnl"] / summary_stats["usd_cost"]) * 100
@@ -739,10 +829,36 @@ def main():
         summary_stats["twd_pnl"] = summary_stats["twd_val"] - summary_stats["twd_cost"]
         summary_stats["twd_pnl_pct"] = (summary_stats["twd_pnl"] / summary_stats["twd_cost"]) * 100
 
-    # 發送推播
-    if actionable_cards:
+    # ==========================================
+    # 智能持股輪動配對計算 (Capital Rotation)
+    # ==========================================
+    rotation_bubbles = []
+    # 1. 轉出標的：手上有持股 (shares > 0) 且 評分轉弱 (score <= -1.0)
+    sell_candidates = [s for s in evaluated_pool if s["shares"] > 0 and s["score"] <= -1.0]
+    # 2. 轉進標的：評分高 (score >= 1.5) 且 折價深
+    buy_candidates = [b for b in evaluated_pool if b["score"] >= 1.5]
+
+    for sell_item in sell_candidates:
+        currency = sell_item["currency"]
+        valid_targets = [b for b in buy_candidates if b["currency"] == currency and b["ticker"] != sell_item["ticker"]]
+        if valid_targets:
+            # 依分數與折價幅度由深至淺排序，挑出最佳標的
+            best_target = sorted(valid_targets, key=lambda x: (x["score"], -x["diff_pct"]), reverse=True)[0]
+            pair_data = {
+                "from_stock": sell_item,
+                "to_stock": best_target,
+                "freed_capital": sell_item["shares"] * sell_item["price"],
+                "currency": currency
+            }
+            rotation_bubbles.append(build_rotation_bubble(pair_data))
+
+    # ==========================================
+    # 組裝最終發送清單
+    # 順序：資產總覽 -> 智能持股輪動卡片 -> 個股決策卡片
+    # ==========================================
+    if actionable_cards or rotation_bubbles:
         summary_bubble = build_portfolio_summary_bubble(summary_stats)
-        final_bubbles = [summary_bubble] + actionable_cards
+        final_bubbles = [summary_bubble] + rotation_bubbles + actionable_cards
         push_line_flex(LINE_CHANNEL_ACCESS_TOKEN, LINE_USER_ID, final_bubbles, f"🚨 投資資產與持股轉折報告：{len(actionable_cards)} 檔標的最新訊號！")
     else:
         print("💡 所有標的狀態未變動或處於觀望狀態，無須打擾。")
