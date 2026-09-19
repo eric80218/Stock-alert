@@ -2,18 +2,21 @@ name: Global Stock Alerts
 
 on:
   schedule:
-    # 1. 台股盤後掃描：週一至週五 UTC 05:45 (台灣時間 13:45)
+    # 1. 晨間全球情勢快報：週一至週五 UTC 00:30 (台灣時間 08:30)
+    - cron: '30 0 * * 1-5'
+    # 2. 台股盤後掃描：週一至週五 UTC 05:45 (台灣時間 13:45)
     - cron: '45 5 * * 1-5'
-    # 2. 美股盤後掃描：週一至週五 UTC 21:15 (台灣時間 週二至週六 05:15)
+    # 3. 美股盤後掃描：週一至週五 UTC 21:15 (台灣時間 週二至週六 05:15)
     - cron: '15 21 * * 1-5'
   workflow_dispatch:
     inputs:
-      market:
-        description: '選擇掃描市場'
+      mode:
+        description: '選擇執行任務'
         required: true
-        default: 'ALL'
+        default: 'MORNING'
         type: choice
         options:
+          - MORNING
           - ALL
           - TWD
           - USD
@@ -38,15 +41,29 @@ jobs:
         run: |
           pip install yfinance pandas requests
 
+      - name: Determine Run Mode
+        id: set-mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "mode=${{ github.event.inputs.mode }}" >> $GITHUB_OUTPUT
+          else
+            HOUR=$(date -u +%H)
+            if [ "$HOUR" -eq 0 ]; then
+              echo "mode=MORNING" >> $GITHUB_OUTPUT
+            elif [ "$HOUR" -eq 5 ]; then
+              echo "mode=TWD" >> $GITHUB_OUTPUT
+            else
+              echo "mode=USD" >> $GITHUB_OUTPUT
+            fi
+          fi
+
       - name: Run Script
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
           LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
-          # 若手動執行則依據選擇，定時排程則預設 ALL (Python 會依據時區自動判定)
-          TARGET_MARKET: ${{ github.event.inputs.market || 'ALL' }}
-          # 手動點擊執行時強制推播卡片，定時排程時只在狀態改變才推播
+          RUN_MODE: ${{ steps.set-mode.outputs.mode }}
           FORCE_NOTIFY: ${{ github.event_name == 'workflow_dispatch' }}
         run: python main.py
 
