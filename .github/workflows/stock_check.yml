@@ -1,65 +1,38 @@
-name: Global Stock Alerts
+name: Stock Quantitative Check
 
 on:
   schedule:
-    # ── 🇹🇼 台股時段 (週一至週五) ──
-    # 1. 08:30 CST (UTC 00:30) - 晨間盤前定錨
-    - cron: '30 0 * * 1-5'
-    # 2. 10:30 CST (UTC 02:30) - 台股盤中早盤消化檢查
-    - cron: '30 2 * * 1-5'
-    # 3. 12:30 CST (UTC 04:30) - 台股盤中尾盤前風險掃描
-    - cron: '30 4 * * 1-5'
+    # 1. 台股收盤後檢驗 (週一至週五 台灣時間 14:00 -> UTC 06:00)
+    - cron: '0 6 * * 1-5'
+    # 2. 美股收盤後檢驗 (週二至週六 台灣時間 05:00 -> UTC 21:00)
+    - cron: '0 21 * * 1-5'
+  workflow_dispatch: # 保留手動測試按鈕
 
-    # ── 🇺🇸 美股時段 (週一至週五) ──
-    # 4. 21:00 CST (UTC 13:00) - 美股盤前戰略前瞻
-    - cron: '0 13 * * 1-5'
-    # 5. 23:30 CST (UTC 15:30) - 美股盤中開盤波動檢查
-    - cron: '30 15 * * 1-5'
-    # 6. 02:00 CST (UTC 18:00) - 美股中盤深度風險掃描
-    - cron: '0 18 * * 1-5'
-
-  workflow_dispatch:
-    inputs:
-      run_mode:
-        description: '選擇執行模式 (ALL / TWD / USD)'
-        required: true
-        default: 'ALL'
-        type: choice
-        options:
-          - ALL
-          - TWD
-          - USD
-      force_notify:
-        description: '強制推播 LINE (不論有無異常)'
-        required: true
-        default: false
-        type: boolean
+permissions:
+  contents: write
 
 jobs:
   check-stocks:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
+          cache: 'pip'
 
       - name: Install Dependencies
         run: |
-          pip install requests pandas yfinance
+          python -m pip install --upgrade pip
+          pip install yfinance requests
 
       - name: Run Quantitative Engine
         env:
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
           LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
-          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
-          PORTFOLIO_SHEET_URL: ${{ secrets.PORTFOLIO_SHEET_URL }}
-          RUN_MODE: ${{ github.event.inputs.run_mode || 'ALL' }}
-          FORCE_NOTIFY: ${{ github.event.inputs.force_notify || 'false' }}
         run: |
           python main.py
 
@@ -67,6 +40,6 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add state_cache.json data.json || true
-          git commit -m "Auto-update stock state & dashboard data [skip ci]" || exit 0
+          git add state.json index.html
+          git diff-index --quiet HEAD || git commit -m "chore: auto-update quant state [skip ci]"
           git push
