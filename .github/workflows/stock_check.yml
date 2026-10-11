@@ -4,12 +4,12 @@ on:
   schedule:
     # 1. 台股收盤後檢驗 (週一至週五 台灣時間 14:00 -> UTC 06:00)
     - cron: '0 6 * * 1-5'
-    # 2. 美股收盤後檢驗 (週二至週六 台灣時間 05:00 -> UTC 21:00)
+    # 2. 美股收盤後檢驗 (週二至週六 台灣時間 05:00 -> UTC 21:00 週一至週五)
     - cron: '0 21 * * 1-5'
-  workflow_dispatch: # 保留手動測試按鈕
+  workflow_dispatch: # 保留 GitHub 網頁上的手動「Run workflow」按鈕
 
 permissions:
-  contents: write
+  contents: write # 確保 Actions 有權限將 state.json 與 index.html push 回倉庫
 
 jobs:
   check-stocks:
@@ -22,7 +22,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
+          # 已移除 cache: 'pip'，不再要求根目錄必須存在 requirements.txt
 
       - name: Install Dependencies
         run: |
@@ -41,5 +41,10 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add state.json index.html
-          git diff-index --quiet HEAD || git commit -m "chore: auto-update quant state [skip ci]"
-          git push
+          # 檢查是否有實際變更，避免無異動時 commit 失敗拋錯
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: auto-update quant state [skip ci]"
+            git push
+          else
+            echo "檔案內容無異動，略過 commit 與 push。"
+          fi
