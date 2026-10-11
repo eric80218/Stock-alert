@@ -1,0 +1,23 @@
+{
+  "updated_at": "2026-10-11 22:09:15",
+  "stocks": {
+    "NVDA": {
+      "risk_level": "高風險 (嚴重昂貴)",
+      "current_price": 229.28,
+      "peak_price": 229.28,
+      "updated_at": "2026-10-11 22:09:14"
+    },
+    "AMAT": {
+      "risk_level": "高風險 (嚴重昂貴)",
+      "current_price": 507.03,
+      "peak_price": 507.03,
+      "updated_at": "2026-10-11 22:09:15"
+    },
+    "0050.TW": {
+      "risk_level": "停損警戒",
+      "current_price": 114.95,
+      "peak_price": 114.95,
+      "updated_at": "2026-10-11 22:09:15"
+    }
+  }
+}
