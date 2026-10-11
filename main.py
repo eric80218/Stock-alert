@@ -11,8 +11,6 @@ from typing import Dict, List, Optional, Tuple
 # ==========================================
 # 1. 系統設定與環境變數
 # ==========================================
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN", "")
 LINE_USER_ID = os.getenv("LINE_USER_ID", "")
 FINNHUB_API_KEY = os.getenv("FINNHUB_API_KEY", "")
@@ -26,7 +24,7 @@ CACHE_FILE = "state_cache.json"
 DATA_EXPORT_FILE = "data.json"
 
 # ==========================================
-# 2. Google 試算表動態同步模組 (UTF-8 編碼)
+# 2. Google 試算表動態同步模組
 # ==========================================
 def load_portfolio_watchlist() -> List[dict]:
     if not PORTFOLIO_SHEET_URL:
@@ -71,7 +69,7 @@ def load_portfolio_watchlist() -> List[dict]:
     return []
 
 # ==========================================
-# 3. 台灣證交所 (TWSE) 官方權威指標
+# 3. 台灣證交所 (TWSE) 官方指標
 # ==========================================
 def fetch_twse_official_metrics() -> dict:
     url = "https://openapi.twse.com.tw/v1/exchangeReport/BWIBBU_ALL"
@@ -90,7 +88,7 @@ def fetch_twse_official_metrics() -> dict:
     return twse_dict
 
 # ==========================================
-# 4. 全自動動態估值引擎 (支援 ETF_TREND)
+# 4. 全自動動態估值引擎
 # ==========================================
 def calculate_dynamic_fair_value(item: dict, yf_info: dict, twse_data: dict, current_price: float, extra_data: dict) -> Tuple[float, str]:
     ticker = item["ticker"]
@@ -148,7 +146,7 @@ def calculate_dynamic_fair_value(item: dict, yf_info: dict, twse_data: dict, cur
     return base_fair, "基準錨定"
 
 # ==========================================
-# 5. 狀態記憶模組
+# 5. 狀態快取記憶
 # ==========================================
 def load_state_cache() -> dict:
     if os.path.exists(CACHE_FILE):
@@ -167,10 +165,14 @@ def save_state_cache(cache: dict):
         print(f"⚠️ 快取儲存異常: {e}")
 
 # ==========================================
-# 6. 夜盤與總經數據
+# 6. 夜盤、總經與【黃金避險雷達】
 # ==========================================
 def fetch_global_macro_snapshot() -> dict:
-    indicators = {"TSM": "TSM", "NQ_F": "NQ=F", "ES_F": "ES=F", "VIX": "^VIX", "TNX": "^TNX", "DXY": "DX-Y.NYB"}
+    # 納入 GC=F (黃金期貨) 作為終極避險監控
+    indicators = {
+        "TSM": "TSM", "NQ_F": "NQ=F", "ES_F": "ES=F",
+        "GOLD": "GC=F", "VIX": "^VIX", "TNX": "^TNX", "DXY": "DX-Y.NYB"
+    }
     data = {}
     for key, symbol in indicators.items():
         try:
@@ -188,36 +190,29 @@ def fetch_global_macro_snapshot() -> dict:
             data[key] = {"price": 0.0, "chg_pct": 0.0}
     return data
 
-def build_morning_brief_bubble(macro: dict) -> dict:
+def build_morning_brief_bubble(macro: dict, is_gold_panic: bool) -> dict:
     tsm = macro.get("TSM", {})
     nq = macro.get("NQ_F", {})
     es = macro.get("ES_F", {})
+    gold = macro.get("GOLD", {})
     vix = macro.get("VIX", {})
     tnx = macro.get("TNX", {})
-    dxy = macro.get("DXY", {})
-
-    score = 0
-    if tsm.get("chg_pct", 0) > 1.0: score += 1
-    elif tsm.get("chg_pct", 0) < -1.0: score -= 1
-
-    if nq.get("chg_pct", 0) > 0.5: score += 1
-    elif nq.get("chg_pct", 0) < -0.5: score -= 1
 
     vix_val = vix.get("price", 15)
-    if vix_val >= 25: score -= 2
-    elif vix_val <= 16: score += 1
-
-    if score >= 2:
-        market_mood, mood_color, header_bg = "🟢 多方強勢開出", "#10B981", "#064E3B"
-        advice = "台積電 ADR 與美指期表現亮眼，台股早盤高機率開高。持股續抱，嚴防急拉追高，逢回調支撐可分批布局。"
-    elif score <= -2:
-        market_mood, mood_color, header_bg = "🔴 恐慌偏空震盪", "#EF4444", "#7F1D1D"
-        advice = f"VIX 恐慌指數攀升至 {vix_val}，避險情緒高漲，開盤恐面臨回吐賣壓。建議多看少做，保留充足現金。"
-    else:
-        market_mood, mood_color, header_bg = "🟡 平衡震盪整理", "#F59E0B", "#78350F"
-        advice = "夜盤與總經指標多空拉鋸，預估開盤平開震盪。按既定合理價與分批紀律操作即可，無須過度反應。"
-
     def fmt_chg(val): return f"{val:+.2f}%" if val else "0.00%"
+
+    if is_gold_panic:
+        market_mood, mood_color, header_bg = "🚨 避險警報(搶購黃金)", "#EF4444", "#7F1D1D"
+        advice = f"【華爾街避險暴衝】黃金期貨暴漲 {fmt_chg(gold.get('chg_pct'))} 且期指走跌、VIX達{vix_val}！機構資金正全面自風險資產撤退，嚴禁抄底追高，防範系統性回檔！"
+    elif tsm.get("chg_pct", 0) > 1.0 and nq.get("chg_pct", 0) > 0.5:
+        market_mood, mood_color, header_bg = "🟢 多方偏多開出", "#10B981", "#064E3B"
+        advice = "台積電 ADR 與美指期走勢平穩偏多，預期開盤情緒穩定。持股續抱，無須受盤中微幅震盪影響情緒。"
+    elif vix_val >= 25 or nq.get("chg_pct", 0) < -1.0:
+        market_mood, mood_color, header_bg = "🔴 震盪避險防禦", "#EF4444", "#7F1D1D"
+        advice = f"期指受壓且恐慌指數達 {vix_val}，早盤預料承壓。維持紀律觀望，不隨意加碼攤平。"
+    else:
+        market_mood, mood_color, header_bg = "🟡 常態區間整理", "#F59E0B", "#78350F"
+        advice = "全球資產與黃金處於常態整理，市場多空平衡。照既定計畫安心持股，今日無須手動操盤。"
 
     return {
         "type": "bubble", "size": "kilo",
@@ -227,17 +222,24 @@ def build_morning_brief_bubble(macro: dict) -> dict:
                 {
                     "type": "box", "layout": "horizontal",
                     "contents": [
-                        {"type": "text", "text": "☀️ 全球晨間前瞻", "weight": "bold", "color": "#FFFFFF", "size": "md", "flex": 3},
+                        {"type": "text", "text": "☀️ 盤前戰略快報", "weight": "bold", "color": "#FFFFFF", "size": "md", "flex": 3},
                         {"type": "text", "text": market_mood, "weight": "bold", "color": mood_color, "size": "sm", "align": "end", "flex": 3}
                     ]
                 },
-                {"type": "text", "text": "台美夜盤期指 · VIX 恐慌 · 總經避險總覽", "color": "#CBD5E1", "size": "xs", "margin": "xs"}
+                {"type": "text", "text": "夜盤期指 · 黃金避險 · 總經定錨總覽", "color": "#CBD5E1", "size": "xs", "margin": "xs"}
             ]
         },
         "body": {
             "type": "box", "layout": "vertical", "backgroundColor": "#0F172A", "paddingAll": "16px", "spacing": "sm",
             "contents": [
-                {"type": "text", "text": "⚡ 夜盤期指動向", "color": "#38BDF8", "weight": "bold", "size": "xs"},
+                {"type": "text", "text": "⚡ 國際期指與避險核心", "color": "#38BDF8", "weight": "bold", "size": "xs"},
+                {
+                    "type": "box", "layout": "horizontal",
+                    "contents": [
+                        {"type": "text", "text": "紐約黃金期 (GC=F)", "color": "#FCD34D", "size": "xs", "weight": "bold"},
+                        {"type": "text", "text": f"${gold.get('price')} ({fmt_chg(gold.get('chg_pct'))})", "color": is_gold_panic and "#F87171" or "#FDE68A", "weight": "bold", "size": "xs", "align": "end"}
+                    ]
+                },
                 {
                     "type": "box", "layout": "horizontal",
                     "contents": [
@@ -252,20 +254,13 @@ def build_morning_brief_bubble(macro: dict) -> dict:
                         {"type": "text", "text": f"{fmt_chg(nq.get('chg_pct'))}", "color": nq.get('chg_pct',0)>=0 and "#34D399" or "#F87171", "weight": "bold", "size": "xs", "align": "end"}
                     ]
                 },
-                {
-                    "type": "box", "layout": "horizontal",
-                    "contents": [
-                        {"type": "text", "text": "標普 500 期 (ES)", "color": "#94A3B8", "size": "xs"},
-                        {"type": "text", "text": f"{fmt_chg(es.get('chg_pct'))}", "color": es.get('chg_pct',0)>=0 and "#34D399" or "#F87171", "weight": "bold", "size": "xs", "align": "end"}
-                    ]
-                },
                 {"type": "separator", "color": "#334155", "margin": "sm"},
-                {"type": "text", "text": "🌐 國際情勢與總經風險", "color": "#38BDF8", "weight": "bold", "size": "xs", "margin": "sm"},
+                {"type": "text", "text": "🌐 總經風險與折現率", "color": "#38BDF8", "weight": "bold", "size": "xs", "margin": "sm"},
                 {
                     "type": "box", "layout": "horizontal",
                     "contents": [
                         {"type": "text", "text": "VIX 恐慌指數", "color": "#94A3B8", "size": "xs"},
-                        {"type": "text", "text": f"{vix.get('price')} ({vix_val>=25 and '恐慌警戒' or '常態平穩'})", "color": vix_val>=25 and "#EF4444" or "#CBD5E1", "weight": "bold", "size": "xs", "align": "end"}
+                        {"type": "text", "text": f"{vix.get('price')} ({vix_val>=25 and '警戒' or '平穩'})", "color": vix_val>=25 and "#EF4444" or "#CBD5E1", "weight": "bold", "size": "xs", "align": "end"}
                     ]
                 },
                 {
@@ -279,7 +274,7 @@ def build_morning_brief_bubble(macro: dict) -> dict:
                 {
                     "type": "box", "layout": "vertical", "backgroundColor": "#1E293B", "paddingAll": "12px", "cornerRadius": "8px", "margin": "md",
                     "contents": [
-                        {"type": "text", "text": "💡 今日盤前作戰方針：", "color": "#38BDF8", "weight": "bold", "size": "xs"},
+                        {"type": "text", "text": "💡 盤前定錨：", "color": "#38BDF8", "weight": "bold", "size": "xs"},
                         {"type": "text", "text": advice, "color": "#F8FAFC", "size": "xxs", "wrap": True, "margin": "xs"}
                     ]
                 }
@@ -288,179 +283,13 @@ def build_morning_brief_bubble(macro: dict) -> dict:
         "footer": {
             "type": "box", "layout": "horizontal", "backgroundColor": "#1E293B", "paddingAll": "10px",
             "contents": [
-                {"type": "button", "style": "primary", "height": "sm", "color": "#0284C7", "action": {"type": "uri", "label": "開啟估值儀表板", "uri": DASHBOARD_URL}}
+                {"type": "button", "style": "primary", "height": "sm", "color": "#0284C7", "action": {"type": "uri", "label": "開啟雲端儀表板", "uri": DASHBOARD_URL}}
             ]
         }
     }
 
 # ==========================================
-# 7. 資產總覽卡片
-# ==========================================
-def build_portfolio_summary_bubble(summary: dict) -> dict:
-    usd_val, usd_pnl, usd_pct = summary["usd_val"], summary["usd_pnl"], summary["usd_pnl_pct"]
-    twd_val, twd_pnl, twd_pct = summary["twd_val"], summary["twd_pnl"], summary["twd_pnl_pct"]
-
-    usd_pnl_color = "#34D399" if usd_pnl >= 0 else "#F87171"
-    twd_pnl_color = "#34D399" if twd_pnl >= 0 else "#F87171"
-
-    usd_val_str = f"${usd_val:,.2f}"
-    usd_pnl_str = f"{usd_pnl:+,.2f} ({usd_pct:+.2f}%)" if summary["usd_cost"] > 0 else "$0.00 (0.00%)"
-
-    twd_val_str = f"NT${twd_val:,.0f}"
-    twd_pnl_str = f"{twd_pnl:+,.0f} ({twd_pct:+.2f}%)" if summary["twd_cost"] > 0 else "NT$0 (0.00%)"
-
-    return {
-        "type": "bubble", "size": "kilo",
-        "header": {
-            "type": "box", "layout": "vertical", "backgroundColor": "#1E1B4B", "paddingAll": "16px",
-            "contents": [
-                {
-                    "type": "box", "layout": "horizontal",
-                    "contents": [
-                        {"type": "text", "text": "💼 資產部位與損益總覽", "weight": "bold", "color": "#FFFFFF", "size": "md", "flex": 4},
-                        {"type": "text", "text": "即時同步", "color": "#C7D2FE", "size": "xs", "align": "end", "flex": 2}
-                    ]
-                },
-                {"type": "text", "text": "Firstrade · UBS ESPP · 國泰證券", "color": "#A5B4FC", "size": "xs", "margin": "xs"}
-            ]
-        },
-        "body": {
-            "type": "box", "layout": "vertical", "backgroundColor": "#0F172A", "paddingAll": "16px", "spacing": "md",
-            "contents": [
-                {
-                    "type": "box", "layout": "vertical", "backgroundColor": "#1E293B", "paddingAll": "12px", "cornerRadius": "8px",
-                    "contents": [
-                        {
-                            "type": "box", "layout": "horizontal",
-                            "contents": [
-                                {"type": "text", "text": "🇺🇸 美股總市值 (USD)", "color": "#94A3B8", "size": "xs"},
-                                {"type": "text", "text": usd_val_str, "color": "#FFFFFF", "weight": "bold", "size": "sm", "align": "end"}
-                            ]
-                        },
-                        {
-                            "type": "box", "layout": "horizontal", "margin": "xs",
-                            "contents": [
-                                {"type": "text", "text": "未實現損益", "color": "#64748B", "size": "xxs"},
-                                {"type": "text", "text": usd_pnl_str, "color": usd_pnl_color, "weight": "bold", "size": "xs", "align": "end"}
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "type": "box", "layout": "vertical", "backgroundColor": "#1E293B", "paddingAll": "12px", "cornerRadius": "8px",
-                    "contents": [
-                        {
-                            "type": "box", "layout": "horizontal",
-                            "contents": [
-                                {"type": "text", "text": "🇹🇼 台股總市值 (TWD)", "color": "#94A3B8", "size": "xs"},
-                                {"type": "text", "text": twd_val_str, "color": "#FFFFFF", "weight": "bold", "size": "sm", "align": "end"}
-                            ]
-                        },
-                        {
-                            "type": "box", "layout": "horizontal", "margin": "xs",
-                            "contents": [
-                                {"type": "text", "text": "未實現損益", "color": "#64748B", "size": "xxs"},
-                                {"type": "text", "text": twd_pnl_str, "color": twd_pnl_color, "weight": "bold", "size": "xs", "align": "end"}
-                            ]
-                        }
-                    ]
-                },
-                {"type": "text", "text": "💡 數據源自 Google 試算表，手機修改股數即時更新連動。", "color": "#94A3B8", "size": "xxs", "wrap": True}
-            ]
-        },
-        "footer": {
-            "type": "box", "layout": "horizontal", "backgroundColor": "#1E293B", "paddingAll": "10px",
-            "contents": [
-                {"type": "button", "style": "primary", "height": "sm", "color": "#4338CA", "action": {"type": "uri", "label": "開啟雲端儀表板", "uri": DASHBOARD_URL}}
-            ]
-        }
-    }
-
-# ==========================================
-# 8. 智能持股輪動卡片
-# ==========================================
-def build_rotation_bubble(pair: dict) -> dict:
-    from_s = pair["from_stock"]
-    to_s = pair["to_stock"]
-    curr_sym = "$" if pair["currency"] == "USD" else "NT$"
-    freed_str = f"{pair['freed_capital']:,.1f}" if pair["currency"] == "USD" else f"{pair['freed_capital']:,.0f}"
-
-    return {
-        "type": "bubble", "size": "kilo",
-        "header": {
-            "type": "box", "layout": "vertical", "backgroundColor": "#4C1D95", "paddingAll": "16px",
-            "contents": [
-                {
-                    "type": "box", "layout": "horizontal",
-                    "contents": [
-                        {"type": "text", "text": "🔄 智能資金輪動建議", "weight": "bold", "color": "#FFFFFF", "size": "md", "flex": 4},
-                        {"type": "text", "text": f"{pair['currency']}部位", "color": "#DDD6FE", "size": "xs", "align": "end", "flex": 2}
-                    ]
-                },
-                {"type": "text", "text": "汰弱留強 · 鎖定利潤換軌高性價比標的", "color": "#C4B5FD", "size": "xs", "margin": "xs"}
-            ]
-        },
-        "body": {
-            "type": "box", "layout": "vertical", "backgroundColor": "#0F172A", "paddingAll": "16px", "spacing": "sm",
-            "contents": [
-                {"type": "text", "text": "🔴 建議調節轉出：", "color": "#F87171", "weight": "bold", "size": "xs"},
-                {
-                    "type": "box", "layout": "horizontal",
-                    "contents": [
-                        {"type": "text", "text": f"{from_s['name']} ({from_s['ticker']})", "color": "#FFFFFF", "weight": "bold", "size": "sm"},
-                        {"type": "text", "text": from_s["signal_badge"], "color": from_s["badge_color"], "size": "xs", "align": "end"}
-                    ]
-                },
-                {
-                    "type": "box", "layout": "horizontal",
-                    "contents": [
-                        {"type": "text", "text": f"持倉: {from_s['shares']} 股 ({from_s['broker']})", "color": "#94A3B8", "size": "xxs"},
-                        {"type": "text", "text": f"預估釋出: {curr_sym}{freed_str}", "color": "#FCA5A5", "size": "xxs", "align": "end"}
-                    ]
-                },
-                {"type": "separator", "color": "#334155", "margin": "md"},
-                {"type": "text", "text": "🟢 最佳換軌轉進首選：", "color": "#34D399", "weight": "bold", "size": "xs", "margin": "sm"},
-                {
-                    "type": "box", "layout": "horizontal",
-                    "contents": [
-                        {"type": "text", "text": f"{to_s['name']} ({to_s['ticker']})", "color": "#FFFFFF", "weight": "bold", "size": "sm"},
-                        {"type": "text", "text": to_s["signal_badge"], "color": to_s["badge_color"], "size": "xs", "align": "end"}
-                    ]
-                },
-                {
-                    "type": "box", "layout": "horizontal",
-                    "contents": [
-                        {"type": "text", "text": f"現價: {curr_sym}{to_s['price']} | 估值: {curr_sym}{to_s['dynamic_fair']}", "color": "#94A3B8", "size": "xxs"},
-                        {"type": "text", "text": f"折價 {abs(to_s['diff_pct']):.1f}%", "color": "#6EE7B7", "weight": "bold", "size": "xxs", "align": "end"}
-                    ]
-                },
-                {
-                    "type": "box", "layout": "horizontal",
-                    "contents": [
-                        {"type": "text", "text": f"動態停損: {curr_sym}{to_s['stop_loss']} (2.0×ATR)", "color": "#94A3B8", "size": "xxs"},
-                        {"type": "text", "text": f"風報比 1:{to_s['rr_ratio'] or '佳'}", "color": "#6EE7B7", "size": "xxs", "align": "end"}
-                    ]
-                },
-                {"type": "separator", "color": "#334155", "margin": "md"},
-                {
-                    "type": "box", "layout": "vertical", "backgroundColor": "#1E293B", "paddingAll": "12px", "cornerRadius": "8px", "margin": "md",
-                    "contents": [
-                        {"type": "text", "text": "🎯 戰略換軌方針：", "color": "#A78BFA", "weight": "bold", "size": "xs"},
-                        {"type": "text", "text": f"{from_s['name']} 估值偏高或跌破短期均線進入防禦期；建議將部位資金轉進折價幅度達 {abs(to_s['diff_pct']):.1f}%、風報比絕佳的 {to_s['name']}，實現鎖利並放大期望值！", "color": "#F8FAFC", "size": "xxs", "wrap": True, "margin": "xs"}
-                    ]
-                }
-            ]
-        },
-        "footer": {
-            "type": "box", "layout": "horizontal", "backgroundColor": "#1E293B", "paddingAll": "10px",
-            "contents": [
-                {"type": "button", "style": "primary", "height": "sm", "color": "#6D28D9", "action": {"type": "uri", "label": "開啟估值儀表板", "uri": DASHBOARD_URL}}
-            ]
-        }
-    }
-
-# ==========================================
-# 9. 技術分析與【黑天鵝防接刀 + ATR 風控】核心
+# 7. 技術分析與【黑天鵝接刀 + ATR 風控】核心
 # ==========================================
 def calculate_risk_reward(price: float, fair_val: float, ma20: float, low_10d: float, atr: float) -> Tuple[float, Optional[float]]:
     volatility_stop = price - (2.0 * atr)
@@ -518,15 +347,13 @@ def analyze_stock(ticker: str) -> Optional[dict]:
         return {
             "price": curr_price, "prev_price": prev_price,
             "ma20": curr_ma20, "prev_ma20": prev_ma20,
-            "ma120": curr_ma120,
-            "rsi": rsi, "low_10d": low_10d,
-            "atr": curr_atr, "atr_pct": atr_pct,
-            "info": info
+            "ma120": curr_ma120, "rsi": rsi, "low_10d": low_10d,
+            "atr": curr_atr, "atr_pct": atr_pct, "info": info
         }
     except Exception:
         return None
 
-def evaluate_decision(item: dict, data: dict, market_regime: dict, macro_data: dict, dynamic_fair: float, val_source: str) -> dict:
+def evaluate_decision(item: dict, data: dict, market_regime: dict, macro_data: dict, dynamic_fair: float, val_source: str, is_gold_panic: bool) -> dict:
     price = data["price"]
     fair_val = dynamic_fair
     diff_pct = ((price - fair_val) / fair_val) * 100
@@ -552,26 +379,17 @@ def evaluate_decision(item: dict, data: dict, market_regime: dict, macro_data: d
     elif data["rsi"] >= 75: score -= 1.0
 
     macro_warnings = []
+    
+    # 核心：黃金避險暴衝連動防護
+    if is_gold_panic:
+        if score > 0: score = -0.5
+        macro_warnings.append("🚨 [黃金瘋搶避險] 資金全面撤出股市湧向黃金，全線暫停追價，防守為上！")
+
     if vix_val >= 24.0 or not market_regime["is_bull"]:
         if score >= 2.0:
             score = 1.2
             macro_warnings.append("⚠️ [大盤偏空] 買進降級為少量試單")
 
-    is_night_crash = (nq_chg <= -1.5) or (item["currency"] == "TWD" and tsm_chg <= -2.0)
-    is_near_ma20 = (price - data["ma20"]) / data["ma20"] <= 0.015
-    if is_night_crash:
-        if diff_pct > 10.0 or is_near_ma20:
-            score -= 1.5
-            macro_warnings.append(f"⚡ [夜盤急跌避險] 期指/ADR重挫({tsm_chg:+.1f}%)，觸發提前減碼！")
-
-    if vix_val >= 28.0:
-        if diff_pct >= 15.0:
-            score -= 1.8
-            macro_warnings.append(f"🚨 [恐慌警戒] VIX達{vix_val}，高估值部位強制分批停利！")
-        elif diff_pct >= 0:
-            score -= 1.0
-
-    # 黑天鵝防接刀閘門
     is_falling_knife = (price < data["ma20"]) and (data["ma20"] < data["prev_ma20"])
     is_extreme_crash = (data["prev_price"] - price) >= (2.5 * data["atr"])
 
@@ -579,13 +397,13 @@ def evaluate_decision(item: dict, data: dict, market_regime: dict, macro_data: d
         if score >= 1.0:
             score = 0.0
             if is_extreme_crash:
-                macro_warnings.append(f"🚨 [黑天鵝異動] 單日崩跌逾 2.5×ATR ({data['atr']})，估值恐滯後失真，嚴禁徒手接刀！")
+                macro_warnings.append(f"🚨 [黑天鵝異動] 單日崩跌逾 2.5×ATR ({data['atr']})，嚴禁徒手接刀！")
             else:
-                macro_warnings.append("⚠️ [防接刀保護] 股價跌破月線且20MA下彎，左側跌勢未止，強制等待右側站回！")
+                macro_warnings.append("⚠️ [防接刀保護] 股價跌破月線且20MA下彎，強制等待右側站回！")
 
     stop_loss, rr_ratio = calculate_risk_reward(price, fair_val, data["ma20"], data["low_10d"], data["atr"])
-
     curr_sym = "$" if item["currency"] == "USD" else "NT$"
+
     if score >= 2.5:
         signal_badge, badge_color, header_color = "🔥 立即買進", "#10B981", "#064E3B"
         base_advice = f"【右側建倉買點】落入安全邊際且翻多。防守停損 {curr_sym}{stop_loss} (2.0×ATR動態防守)，風報比 1:{rr_ratio or '優'}。"
@@ -709,7 +527,7 @@ def build_stock_bubble(data: dict, market_regime: dict) -> dict:
                 {
                     "type": "box", "layout": "vertical", "backgroundColor": "#1E293B", "paddingAll": "12px", "cornerRadius": "8px", "margin": "md",
                     "contents": [
-                        {"type": "text", "text": "🎯 立即操作方針：", "color": "#38BDF8", "weight": "bold", "size": "xs"},
+                        {"type": "text", "text": "🎯 盤前決策方針：", "color": "#38BDF8", "weight": "bold", "size": "xs"},
                         {"type": "text", "text": data["action_advice"], "color": "#F8FAFC", "size": "xxs", "wrap": True, "margin": "xs"}
                     ]
                 }
@@ -725,7 +543,7 @@ def build_stock_bubble(data: dict, market_regime: dict) -> dict:
     }
 
 # ==========================================
-# 10. 推播發送模組
+# 8. 推播模組
 # ==========================================
 def push_line_flex(token: str, user_id: str, bubbles: List[dict], alt_text: str):
     if not token or not user_id or not bubbles: return
@@ -741,8 +559,7 @@ def push_line_flex(token: str, user_id: str, bubbles: List[dict], alt_text: str)
             "altText": alt_text,
             "contents": {"type": "carousel", "contents": chunk}
         })
-        if len(messages) >= 5:
-            break
+        if len(messages) >= 5: break
 
     payload = {"to": user_id, "messages": messages}
     try:
@@ -755,7 +572,7 @@ def push_line_flex(token: str, user_id: str, bubbles: List[dict], alt_text: str)
         print(f"LINE 請求異常: {e}")
 
 # ==========================================
-# 11. 主排程流程
+# 9. 主排程流程 (盤前定錨 + 寧靜投資過濾)
 # ==========================================
 def main():
     print(f"===== 啟動多源智能投研系統 (模式: {RUN_MODE} | 強制推播: {FORCE_NOTIFY}) =====")
@@ -767,12 +584,16 @@ def main():
 
     macro_data = fetch_global_macro_snapshot()
     vix_val = macro_data.get("VIX", {}).get("price", 15.0)
+    gold_data = macro_data.get("GOLD", {})
+    gold_chg = gold_data.get("chg_pct", 0.0)
+    nq_chg = macro_data.get("NQ_F", {}).get("chg_pct", 0.0)
+    es_chg = macro_data.get("ES_F", {}).get("chg_pct", 0.0)
 
-    if RUN_MODE == "MORNING":
-        print("☀️ 正在建構【晨間全球前瞻與夜盤快報】...")
-        morning_bubble = build_morning_brief_bubble(macro_data)
-        push_line_flex(LINE_CHANNEL_ACCESS_TOKEN, LINE_USER_ID, [morning_bubble], "☀️ 晨間全球前瞻與夜盤快報已送達！")
-        return
+    # 華爾街崩盤避險前兆判定：
+    # 當美指期重挫 (NQ 或 ES <= -0.8%) 且 黃金期貨單日暴衝逾 1.2% 且 VIX >= 22
+    is_gold_panic = (gold_chg >= 1.2) and ((nq_chg <= -0.8) or (es_chg <= -0.8)) and (vix_val >= 22.0)
+    if is_gold_panic:
+        print(f"🚨 警告：觸發【華爾街避險崩盤警訊】！黃金暴漲 {gold_chg}%，期指走弱，避險湧入！")
 
     twse_data = fetch_twse_official_metrics()
     
@@ -813,7 +634,7 @@ def main():
 
         data = analyze_stock(ticker)
         if not data:
-            print(f"⚠️ [{name} ({ticker})] 無法取得歷史行情數據，略過。")
+            print(f"⚠️ [{name} ({ticker})] 無法取得行情，略過。")
             continue
 
         price = data["price"]
@@ -830,32 +651,32 @@ def main():
                 summary_stats["twd_val"] += pos_val
                 summary_stats["twd_cost"] += pos_cost
 
+        # 模式過濾 (TWD 或 USD 盤前獨立跑)
         if RUN_MODE in ["TWD", "USD"] and currency != RUN_MODE:
             continue
 
         dynamic_fair, val_source = calculate_dynamic_fair_value(item, data.get("info", {}), twse_data, price, data)
         market_regime = regimes[currency]
-        decision = evaluate_decision(item, data, market_regime, macro_data, dynamic_fair, val_source)
+        decision = evaluate_decision(item, data, market_regime, macro_data, dynamic_fair, val_source, is_gold_panic)
 
         current_signal = decision["signal_badge"]
         last_signal = state_cache.get(ticker)
         new_state_cache[ticker] = current_signal
 
-        print(f"[{name}] 市價: {curr_symbol}{price} | 合理價: {curr_symbol}{dynamic_fair} ({val_source}) | 訊號: {current_signal}")
-
         card_info = {
             "name": name, "ticker": ticker, "currency": currency, "broker": item["broker"],
             "shares": shares, "cost_price": cost_price, "curr_symbol": curr_symbol,
             "price": price, "ma20": data["ma20"], "rsi": data["rsi"],
-            "atr": data["atr"], "atr_pct": data["atr_pct"],
-            **decision
+            "atr": data["atr"], "atr_pct": data["atr_pct"], **decision
         }
         evaluated_pool.append(card_info)
 
-        is_state_changed = (current_signal != last_signal)
-        should_alert = is_state_changed or FORCE_NOTIFY
-
-        if should_alert:
+        # 核心防操盤過濾：
+        # 平日只在「出現買進、賣出、減碼」訊號，或手動強制 (FORCE_NOTIFY) 時才納入推播！
+        # 徹底過濾「⚪ 觀望續抱」卡片，避免天天洗版造成想盯盤的衝動！
+        is_actionable = ("買進" in current_signal) or ("賣出" in current_signal) or ("減碼" in current_signal)
+        
+        if is_actionable or FORCE_NOTIFY:
             actionable_cards.append(build_stock_bubble(card_info, market_regime))
 
     if summary_stats["usd_cost"] > 0:
@@ -865,55 +686,43 @@ def main():
         summary_stats["twd_pnl"] = summary_stats["twd_val"] - summary_stats["twd_cost"]
         summary_stats["twd_pnl_pct"] = (summary_stats["twd_pnl"] / summary_stats["twd_cost"]) * 100
 
-    # 資金輪動計算
-    rotation_bubbles = []
-    rotation_export_data = []
-    sell_candidates = [s for s in evaluated_pool if s["shares"] > 0 and s["score"] <= -1.0]
-    buy_candidates = [b for b in evaluated_pool if b["score"] >= 1.5]
-
-    for sell_item in sell_candidates:
-        currency = sell_item["currency"]
-        valid_targets = [b for b in buy_candidates if b["currency"] == currency and b["ticker"] != sell_item["ticker"]]
-        if valid_targets:
-            best_target = sorted(valid_targets, key=lambda x: (x["score"], -x["diff_pct"]), reverse=True)[0]
-            pair_data = {
-                "from_stock": sell_item,
-                "to_stock": best_target,
-                "freed_capital": sell_item["shares"] * sell_item["price"],
-                "currency": currency
-            }
-            rotation_bubbles.append(build_rotation_bubble(pair_data))
-            rotation_export_data.append(pair_data)
-
-    # 組裝推播
-    if actionable_cards or rotation_bubbles:
-        summary_bubble = build_portfolio_summary_bubble(summary_stats)
-        final_bubbles = [summary_bubble] + rotation_bubbles + actionable_cards
-        push_line_flex(LINE_CHANNEL_ACCESS_TOKEN, LINE_USER_ID, final_bubbles, f"🚨 投資資產與持股分析報告：共 {len(actionable_cards)} 檔標的最新資訊！")
-    else:
-        print("💡 所有標的狀態未變動，無須打擾。")
-
-    save_state_cache(new_state_cache)
-
-    # ==========================================
-    # 核心：匯出完整決策數據至 data.json (供網頁儀表板讀取)
-    # ==========================================
+    # 匯出資料至網頁儀表板 (無論推播與否，網頁隨時保持 100% 最新)
     try:
         now_str = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S")
         dashboard_payload = {
             "updated_at": now_str,
             "macro": macro_data,
             "summary": summary_stats,
-            "rotations": rotation_export_data,
+            "is_gold_panic": is_gold_panic,
             "stocks": evaluated_pool
         }
         with open(DATA_EXPORT_FILE, "w", encoding="utf-8") as f:
             json.dump(dashboard_payload, f, ensure_ascii=False, indent=2)
-        print(f"✅ 成功匯出最新投資建議與資產數據至 {DATA_EXPORT_FILE}！")
+        print(f"✅ 儀表板資料已同步儲存至 {DATA_EXPORT_FILE}！")
     except Exception as e:
-        print(f"⚠️ 匯出 dashboard 數據失敗: {e}")
+        print(f"⚠️ 匯出 dashboard 失敗: {e}")
 
-    print("===== 掃描流程完畢 =====")
+    # ==========================================
+    # 寧靜推播決策
+    # ==========================================
+    # 只要滿足任一條件才推播：
+    # 1. 觸發黃金避險崩盤警訊 (is_gold_panic)
+    # 2. 有標的出現買進/加碼/減碼/賣出 (actionable_cards)
+    # 3. 手動強制測試 (FORCE_NOTIFY)
+    should_push = is_gold_panic or (len(actionable_cards) > 0) or FORCE_NOTIFY
+
+    if should_push:
+        morning_brief = build_morning_brief_bubble(macro_data, is_gold_panic)
+        final_bubbles = [morning_brief] + actionable_cards
+        push_line_flex(
+            LINE_CHANNEL_ACCESS_TOKEN, LINE_USER_ID, final_bubbles,
+            f"🚨 盤前重點快報：{'黃金避險警報！' if is_gold_panic else ''}共 {len(actionable_cards)} 檔標的出現決策訊號！"
+        )
+    else:
+        print("☕ 今日全體持股處於【⚪ 觀望續抱】且總經無異常，啟動寧靜防打擾模式，不發送 LINE，讓您安心生活！")
+
+    save_state_cache(new_state_cache)
+    print("===== 排程掃描結束 =====")
 
 if __name__ == "__main__":
     main()
