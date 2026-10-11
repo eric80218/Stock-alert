@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 """
 Quantitative Risk & Valuation Engine (Execution-Ready Edition)
-- 決策矩陣化：趨勢優先於價值，消除訊號衝突
-- 具體份額執行指引：提供明確階梯倉位比例與建議價位
-- 系統靜默失敗主動報警 (Silent Failure Watchdog)
+- 支援個股與大盤 ETF 差異化風控 (ETF 自動豁免硬停損，改採定期定額/逢低加碼)
+- 具體倉位執行指引與決策矩陣 (趨勢優先於價值)
+- 系統異常主動報警 (Silent Failure Watchdog)
 - 狀態去重 (Deduplication) 與回撤保護 (Trailing Stop)
 """
 
@@ -19,36 +19,38 @@ import yfinance as yf
 # ==========================================
 # 1. 監控標的與策略設定
 # ==========================================
-# market: "US" 或 "TW" (配合排程分流)
-# fair_value: 基準合理價
-# valuation_date: 估值設定日期 (超過 90 天未更新會提示估值過期)
+# is_etf: 若為 True，代表大盤市值型 ETF，不執行恐慌停損
+# valuation_date: 估值更新日期 (若超過 90 天未更新會標註超時)
 WATCHLIST = {
     "NVDA": {
         "name": "NVIDIA",
         "market": "US",
-        "fair_value": 130.0,
-        "valuation_date": "2026-08-15",
-        "cost": 115.0,
-        "stop_loss_pct": -10.0,
+        "is_etf": False,
+        "fair_value": 220.0,
+        "valuation_date": "2026-10-12",
+        "cost": 190.0,
+        "stop_loss_pct": -10.0,       # 個股嚴格停損
         "trailing_stop_pct": -15.0,
     },
     "AMAT": {
         "name": "Applied Materials",
         "market": "US",
-        "fair_value": 220.0,
-        "valuation_date": "2026-08-15",
-        "cost": 190.0,
-        "stop_loss_pct": -10.0,
+        "is_etf": False,
+        "fair_value": 480.0,
+        "valuation_date": "2026-10-12",
+        "cost": 420.0,
+        "stop_loss_pct": -10.0,       # 個股嚴格停損
         "trailing_stop_pct": -15.0,
     },
     "0050.TW": {
         "name": "元大台灣50",
         "market": "TW",
-        "fair_value": 185.0,
-        "valuation_date": "2026-07-01",
-        "cost": 165.0,
-        "stop_loss_pct": -8.0,
-        "trailing_stop_pct": -12.0,
+        "is_etf": True,               # 指數型 ETF：豁免硬停損
+        "fair_value": 115.0,          # 對齊除息/分割後市價水準
+        "valuation_date": "2026-10-12",
+        "cost": 105.0,                # 定期定額持有均價
+        "stop_loss_pct": None,        # 大盤 ETF 不設停損，嚴防恐慌賣出
+        "trailing_stop_pct": -20.0,   # 移動停利門檻 (大盤放寬)
     },
 }
 
@@ -79,7 +81,7 @@ def save_state(stocks_dict: dict):
 
 
 # ==========================================
-# 3. 穩定行情報價模組 (含跳空偵測與退避重試)
+# 3. 行情報價擷取模組 (含指數退避重試)
 # ==========================================
 def fetch_stock_data(symbol: str, retries: int = 3, delay: int = 3):
     for attempt in range(1, retries + 1):
@@ -110,20 +112,20 @@ def fetch_stock_data(symbol: str, retries: int = 3, delay: int = 3):
 
 
 # ==========================================
-# 4. 決策矩陣量化核心 (消除衝突與具體行動)
+# 4. 決策矩陣與風控核心
 # ==========================================
 def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_stock_state: dict) -> dict:
     price = market_data["current_price"]
     ma200 = market_data["ma200"]
-    ma20 = market_data["ma20"]
     gap_pct = market_data["gap_pct"]
 
     fair = meta["fair_value"]
     cost = meta["cost"]
-    stop_loss = meta.get("stop_loss_pct", -10.0)
+    is_etf = meta.get("is_etf", False)
+    stop_loss = meta.get("stop_loss_pct", None)
     trailing_stop = meta.get("trailing_stop_pct", -15.0)
 
-    # 1. 計算回撤與損益
+    # 1. 回撤與損益計算
     cached_peak = prev_stock_state.get("peak_price", price)
     peak_price = max(cached_peak, price)
     drawdown_from_peak = ((price - peak_price) / peak_price) * 100
@@ -140,23 +142,26 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_stock
         if (datetime.date.today() - val_date).days > 90:
             is_valuation_stale = True
 
-    # 3. 決策矩陣 (Rule Priority: 風控 > 移動停利 > 昂貴減碼 > 買進濾網)
     gap_warning = f" (注意: 今日跳空 {gap_pct}%)" if abs(gap_pct) >= 3.0 else ""
 
-    if pnl_rate <= stop_loss:
+    # 3. 決策矩陣判斷
+    # 規則 A: 個股硬停損 (ETF 豁免)
+    if not is_etf and stop_loss is not None and pnl_rate <= stop_loss:
         risk_level = "停損警戒"
         color = "#991B1B"
         action = "市價全數平倉 / 嚴格停損"
-        desc = f"成本損益達 {pnl_rate:.1f}%，跌破防線。不問理由執行紀律停損。{gap_warning}"
+        desc = f"成本損益達 {pnl_rate:.1f}%，跌破防線。個股基本面疑慮，不問理由執行紀律停損。{gap_warning}"
         should_alert = True
 
+    # 規則 B: 移動停利 (獲利回吐防禦)
     elif drawdown_from_peak <= trailing_stop and pnl_rate > 8.0:
         risk_level = "移動停利"
         color = "#B91C1C"
-        action = "出清剩餘部位 1/2 / 鎖住獲利"
+        action = "出清持股 1/2 / 鎖定波段獲利"
         desc = f"自高點 ${peak_price:.2f} 回撤達 {drawdown_from_peak:.1f}%，啟動移動停利保全利潤。"
         should_alert = True
 
+    # 規則 C: 嚴重溢價 (高風險昂貴區)
     elif premium_rate > 25.0:
         risk_level = "高風險 (嚴重昂貴)"
         color = "#DC2626"
@@ -164,6 +169,7 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_stock
         desc = f"溢價率達 {premium_rate:.1f}%，估值嚴重透支，收回本金並提高現金水位。"
         should_alert = True
 
+    # 規則 D: 估值警戒 (中風險)
     elif 12.0 <= premium_rate <= 25.0:
         risk_level = "中風險 (估值警戒)"
         color = "#F59E0B"
@@ -171,28 +177,37 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_stock
         desc = f"溢價率 {premium_rate:.1f}%，進入超買警戒區，禁止追價，維持部分調節。"
         should_alert = True
 
-    elif safety_margin >= 15.0:
-        # 價值 + 趨勢 矩陣判定
-        if price < ma200:
-            risk_level = "偏空觀察 (左側禁買)"
-            color = "#D97706"
-            action = "禁止接刀，等待站上 20MA 拐點"
-            desc = f"安全邊際充足 ({safety_margin:.1f}%)，但受制於 200MA 空頭走勢。嚴防基本面惡化陷阱。"
-            should_alert = False  # 觀察中不騷擾推播
-        else:
-            risk_level = "低風險 (買進區)"
+    # 規則 E: 具安全邊際 (買進 / 加碼區)
+    elif safety_margin >= 10.0:
+        if is_etf:
+            risk_level = "低風險 (ETF加碼區)"
             color = "#10B981"
-            action = "啟動第 1 批建倉：買進部位 1/3"
-            desc = f"安全邊際達 {safety_margin:.1f}% 且位於 200MA 上方，符合量化進場防禦門檻。"
+            action = "大盤折價，執行定期定額或加碼"
+            desc = f"安全邊際達 {safety_margin:.1f}%，大盤估值合理偏低，適合長期累積單位數。"
             should_alert = True
+        else:
+            if price < ma200:
+                risk_level = "偏空觀察 (左側禁買)"
+                color = "#D97706"
+                action = "禁止接刀，等待站上均線右側訊號"
+                desc = f"安全邊際充足 ({safety_margin:.1f}%)，但受制於 200MA 空頭走勢，嚴防價值陷阱。"
+                should_alert = False
+            else:
+                risk_level = "低風險 (買進區)"
+                color = "#10B981"
+                action = "啟動第 1 批建倉：買進部位 1/3"
+                desc = f"安全邊際達 {safety_margin:.1f}% 且位於 200MA 上方，符合量化進場防禦門檻。"
+                should_alert = True
+
+    # 規則 F: 合理估值區
     else:
         risk_level = "合理估值區"
         color = "#3B82F6"
-        action = "定時定額 / 續抱不動"
-        desc = "估值處於合理防禦帶內，波動屬於市場噪音，維持原配置步調。"
+        action = "定期定額 / 續抱不動"
+        desc = "估值處於合理防禦帶內，波動屬於市場正常雜訊，維持既定步調。"
         should_alert = False
 
-    # 4. 去重與狀態轉移比對
+    # 4. 去重比對
     last_risk = prev_stock_state.get("risk_level", "")
     is_state_changed = (last_risk != risk_level)
     must_push = should_alert and (is_state_changed or "停損" in risk_level)
@@ -201,10 +216,10 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_stock
         "symbol": symbol,
         "name": meta.get("name", symbol),
         "market": meta.get("market", "US"),
+        "is_etf": is_etf,
         "current_price": round(price, 2),
         "gap_pct": gap_pct,
         "ma200": round(ma200, 2),
-        "ma20": round(ma20, 2),
         "peak_price": round(peak_price, 2),
         "drawdown_from_peak": round(drawdown_from_peak, 2),
         "fair_value": round(fair, 2),
@@ -222,14 +237,12 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_stock
 
 
 # ==========================================
-# 5. LINE Flex 卡片與系統異常報警
+# 5. LINE 推播與異常告警模組
 # ==========================================
 def build_stock_bubble(item: dict) -> dict:
     pnl_sign = "+" if item["pnl_rate"] > 0 else ""
     pnl_color = "#10B981" if item["pnl_rate"] >= 0 else "#EF4444"
     stale_text = " ⚠️估值超時" if item["is_valuation_stale"] else ""
-
-    # 外部行情快速跳轉連結 (縮短執行路徑)
     external_url = f"https://finance.yahoo.com/quote/{item['symbol']}"
 
     return {
@@ -340,7 +353,6 @@ def send_line_message(payload: dict):
 
 
 def push_system_watchdog_error(error_msg: str):
-    """兜底警報：系統崩潰或網路阻擋時主動發出通知，拒絕靜默失效"""
     user_id = os.environ.get("LINE_USER_ID")
     if not user_id:
         return
@@ -349,7 +361,7 @@ def push_system_watchdog_error(error_msg: str):
         "messages": [
             {
                 "type": "text",
-                "text": f"🚨【股票監控系統異常警報】\n執行失敗，排程已被阻擋或發生錯誤:\n{error_msg[:300]}",
+                "text": f"🚨【股票監控系統異常警報】\n排程執行發生錯誤:\n{error_msg[:300]}",
             }
         ],
     }
@@ -357,7 +369,7 @@ def push_system_watchdog_error(error_msg: str):
 
 
 # ==========================================
-# 6. HTML 儀表板
+# 6. HTML 儀表板生成器
 # ==========================================
 def generate_dashboard(eval_results: list):
     cards_html = ""
@@ -442,9 +454,9 @@ def main():
                 items_to_push.append(eval_data)
 
         if not eval_results:
-            raise RuntimeError("所有標的皆無法自 Yahoo Finance 獲取報價，可能遭到風控 IP 封鎖。")
+            raise RuntimeError("無法自 Yahoo Finance 獲取任何報價，可能遭到 IP 風控。")
 
-        # 執行推播
+        # 發送 LINE 卡片
         if items_to_push and user_id:
             bubbles = [build_stock_bubble(x) for x in items_to_push[:10]]
             payload = {
@@ -459,7 +471,7 @@ def main():
             }
             send_line_message(payload)
 
-        # 儲存持久化資料與儀表板
+        # 寫入狀態快取與更新網頁
         save_state(new_stocks_dict)
         generate_dashboard(eval_results)
         print("[完成] 量化監控與狀態保存完畢。")
