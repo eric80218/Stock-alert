@@ -2,14 +2,26 @@ name: Global Stock Alerts
 
 on:
   schedule:
-    # 1. 台股盤前：週一至週五 08:30 CST (UTC 00:30) - 晨報 + 台股檢查
+    # ── 🇹🇼 台股時段 (週一至週五) ──
+    # 1. 08:30 CST (UTC 00:30) - 晨間盤前定錨
     - cron: '30 0 * * 1-5'
-    # 2. 美股盤前：週一至週五 21:00 CST (UTC 13:00) - 美股盤前檢查
+    # 2. 10:30 CST (UTC 02:30) - 台股盤中早盤消化檢查
+    - cron: '30 2 * * 1-5'
+    # 3. 12:30 CST (UTC 04:30) - 台股盤中尾盤前風險掃描
+    - cron: '30 4 * * 1-5'
+
+    # ── 🇺🇸 美股時段 (週一至週五) ──
+    # 4. 21:00 CST (UTC 13:00) - 美股盤前戰略前瞻
     - cron: '0 13 * * 1-5'
+    # 5. 23:30 CST (UTC 15:30) - 美股盤中開盤波動檢查
+    - cron: '30 15 * * 1-5'
+    # 6. 02:00 CST (UTC 18:00) - 美股中盤深度風險掃描
+    - cron: '0 18 * * 1-5'
+
   workflow_dispatch:
     inputs:
       run_mode:
-        description: '選擇執行模式 (ALL / TWD / USD / MORNING)'
+        description: '選擇執行模式 (ALL / TWD / USD)'
         required: true
         default: 'ALL'
         type: choice
@@ -17,9 +29,8 @@ on:
           - ALL
           - TWD
           - USD
-          - MORNING
       force_notify:
-        description: '強制推播 LINE (不論有無訊號)'
+        description: '強制推播 LINE (不論有無異常)'
         required: true
         default: false
         type: boolean
