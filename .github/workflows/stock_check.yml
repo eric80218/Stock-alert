@@ -2,74 +2,57 @@ name: Global Stock Alerts
 
 on:
   schedule:
-    # 1. 晨間全球情勢快報：週一至週五 UTC 00:30 (台灣時間 08:30)
+    # 1. 台股盤前：週一至週五 08:30 CST (UTC 00:30) - 晨報 + 台股檢查
     - cron: '30 0 * * 1-5'
-    # 2. 台股盤後掃描：週一至週五 UTC 05:45 (台灣時間 13:45)
-    - cron: '45 5 * * 1-5'
-    # 3. 美股盤後掃描：週一至週五 UTC 21:15 (台灣時間 週二至週六 05:15)
-    - cron: '15 21 * * 1-5'
+    # 2. 美股盤前：週一至週五 21:00 CST (UTC 13:00) - 美股盤前檢查
+    - cron: '0 13 * * 1-5'
   workflow_dispatch:
     inputs:
-      mode:
-        description: '選擇執行任務'
+      run_mode:
+        description: '選擇執行模式 (ALL / TWD / USD / MORNING)'
         required: true
         default: 'ALL'
         type: choice
         options:
           - ALL
-          - MORNING
           - TWD
           - USD
-
-permissions:
-  contents: write
+          - MORNING
+      force_notify:
+        description: '強制推播 LINE (不論有無訊號)'
+        required: true
+        default: false
+        type: boolean
 
 jobs:
-  run-tracker:
+  check-stocks:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: '3.10'
 
-      - name: Install Libs
+      - name: Install Dependencies
         run: |
-          pip install yfinance pandas requests
+          pip install requests pandas yfinance
 
-      - name: Determine Run Mode
-        id: set-mode
-        run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "mode=${{ github.event.inputs.mode }}" >> $GITHUB_OUTPUT
-          else
-            HOUR=$(date -u +%H)
-            if [ "$HOUR" -eq 0 ]; then
-              echo "mode=MORNING" >> $GITHUB_OUTPUT
-            elif [ "$HOUR" -eq 5 ]; then
-              echo "mode=TWD" >> $GITHUB_OUTPUT
-            else
-              echo "mode=USD" >> $GITHUB_OUTPUT
-            fi
-          fi
-
-      - name: Run Script
+      - name: Run Quantitative Engine
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
           LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
           PORTFOLIO_SHEET_URL: ${{ secrets.PORTFOLIO_SHEET_URL }}
-          RUN_MODE: ${{ steps.set-mode.outputs.mode }}
-          FORCE_NOTIFY: ${{ github.event_name == 'workflow_dispatch' }}
-        run: python main.py
+          RUN_MODE: ${{ github.event.inputs.run_mode || 'ALL' }}
+          FORCE_NOTIFY: ${{ github.event.inputs.force_notify || 'false' }}
+        run: |
+          python main.py
 
-      - name: Auto-commit state cache
+      - name: Auto-commit state cache & dashboard data
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
