@@ -1,23 +1,23 @@
 {
-  "updated_at": "2026-10-14 21:20:43",
+  "updated_at": "2026-10-15 06:22:08",
   "stocks": {
     "NVDA": {
       "risk_level": "合理估值區",
       "current_price": 221.3,
       "peak_price": 229.28,
-      "updated_at": "2026-10-14 21:20:42"
+      "updated_at": "2026-10-15 06:22:07"
     },
     "AMAT": {
       "risk_level": "合理估值區",
       "current_price": 446.63,
       "peak_price": 507.03,
-      "updated_at": "2026-10-14 21:20:43"
+      "updated_at": "2026-10-15 06:22:07"
     },
     "0050.TW": {
       "risk_level": "合理估值區",
-      "current_price": NaN,
+      "current_price": 108.9,
       "peak_price": 114.95,
-      "updated_at": "2026-10-14 21:20:43"
+      "updated_at": "2026-10-15 06:22:08"
     }
   }
 }
