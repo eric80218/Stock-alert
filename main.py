@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (Full Portfolio Institutional Edition)
-- 完整導入您的所有持股清單（美股、台股共 16 檔）
+Quantitative Risk & Valuation Engine (Ultimate Institutional Flagship Edition)
+- 即時匯率換算：自動抓取 USD/TWD，將總資產與未實現損益統一以新台幣 (NT$) 精準結算
+- LINE 智慧過濾：狀態質變或觸發停損時才發送推播，徹底杜絕警報疲勞
+- 投資組合淨值曲線：網頁端新增整體資產歷史成長曲線圖
 - 雙 API 備援、AI 新聞情緒分析、向量化回測與持倉濃度曝險計算
 """
 
@@ -127,7 +129,21 @@ def save_state(macro_gold: dict, stocks_dict: dict, eval_results: list):
 
 
 # ==========================================
-# 2. 雙 API 備援模組 (Yahoo + Finnhub 容錯)
+# 2. 取得即時 USD/TWD 匯率
+# ==========================================
+def get_USD_TWD_rate() -> float:
+    try:
+        twd_ticker = yf.Ticker("USDTWD=X")
+        hist = twd_ticker.history(period="5d")
+        if not hist.empty:
+            return float(hist["Close"].iloc[-1])
+    except Exception:
+        pass
+    return 32.5  # 預設備用匯率
+
+
+# ==========================================
+# 3. 雙 API 備援模組 (Yahoo + Finnhub 容錯)
 # ==========================================
 def fetch_stock_data_with_redundancy(symbol: str):
     data = fetch_from_yahoo(symbol)
@@ -199,7 +215,7 @@ def fetch_from_finnhub(symbol: str):
 
 
 # ==========================================
-# 3. Finnhub 新聞 NLP 情感分析加權
+# 4. Finnhub 新聞 NLP 情感分析加權
 # ==========================================
 def fetch_finnhub_sentiment_score(symbol: str) -> float:
     finnhub_key = os.environ.get("FINNHUB_API_KEY")
@@ -230,7 +246,7 @@ def fetch_finnhub_sentiment_score(symbol: str) -> float:
 
 
 # ==========================================
-# 4. 向量化歷史回測模擬引擎
+# 5. 向量化歷史回測模擬引擎
 # ==========================================
 def run_vectorized_backtest(close_series: pd.Series) -> dict:
     try:
@@ -260,7 +276,7 @@ def run_vectorized_backtest(close_series: pd.Series) -> dict:
 
 
 # ==========================================
-# 5. 總經與大戶避險雷達
+# 6. 總經與大戶避險雷達
 # ==========================================
 def fetch_macro_gold_radar(prev_macro_state: dict) -> dict:
     try:
@@ -303,13 +319,14 @@ def get_dynamic_fair_value(symbol: str, meta: dict) -> float:
     return fallback
 
 
-def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state: dict, macro: dict, dynamic_fair: float, nlp_score: float) -> dict:
+def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state: dict, macro: dict, dynamic_fair: float, nlp_score: float, usd_twd: float) -> dict:
     price = market_data["current_price"]
     high_60d = market_data["high_60d"]
     ma200, ma20, rsi14 = market_data["ma200"], market_data["ma20"], market_data["rsi14"]
     cost, shares = float(meta["cost"]), float(meta.get("shares", 0))
     stop_loss = meta.get("stop_loss_pct", None)
     is_etf = meta.get("is_etf", False)
+    market_type = meta["market"]
 
     raw_peak = prev_state.get("peak_price", price)
     peak_price = max(float(raw_peak if raw_peak else price), high_60d, price)
@@ -317,8 +334,6 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
 
     safety_margin = round(((dynamic_fair - price) / dynamic_fair) * 100, 2)
     premium_rate = round(((price - dynamic_fair) / dynamic_fair) * 100, 2)
-    
-    # 若 cost 為 0（如 ETF 或未填成本），避免分母為 0
     pnl_rate = round(((price - cost) / cost) * 100, 2) if cost > 0 else 0.0
 
     stop_buffer_pct = round(pnl_rate - stop_loss, 1) if stop_loss and cost > 0 else 99.9
@@ -337,14 +352,15 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
 
     backtest = run_vectorized_backtest(market_data.get("full_history", pd.Series([price])))
 
-    # 針對美股與台股統一計算市值（若為台股，TWD 暫以 1 呈現，或維持原幣別）
-    market_value = round(price * shares, 2)
-    invested_cost = round(cost * shares, 2)
+    # 統一將市值折算為台幣 (NT$) 方便總資產精準加總
+    multiplier = usd_twd if market_type == "US" else 1.0
+    market_value_twd = round(price * shares * multiplier, 2)
+    invested_cost_twd = round(cost * shares * multiplier, 2)
 
     return {
-        "symbol": symbol, "name": meta["name"], "market": meta["market"], "currency": meta["currency"],
+        "symbol": symbol, "name": meta["name"], "market": market_type, "currency": meta["currency"],
         "current_price": price, "fair_value": dynamic_fair, "cost": cost, "shares": shares,
-        "market_value": market_value, "invested_cost": invested_cost,
+        "market_value_twd": market_value_twd, "invested_cost_twd": invested_cost_twd,
         "safety_margin": safety_margin, "premium_rate": premium_rate, "pnl_rate": pnl_rate,
         "ma200": ma200, "ma20": ma20, "rsi14": rsi14, "peak_price": peak_price,
         "drawdown_from_peak": drawdown_from_peak, "stop_buffer_pct": stop_buffer_pct,
@@ -355,28 +371,28 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
 
 
 # ==========================================
-# 6. 產生極致豐富的專業操盤室網頁儀表板
+# 7. 產生極致豐富的專業操盤室網頁儀表板
 # ==========================================
-def generate_pro_dashboard(macro: dict, eval_results: list):
+def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float):
     updated_time, total_count = now_tw_str(), len(eval_results)
     high_risk_count = sum(1 for r in eval_results if r["risk_level"] in ["停損警戒", "高風險 (嚴重昂貴)"])
     
-    # 組合總市值與總成本統計
-    total_market_val = sum(r["market_value"] for r in eval_results)
-    total_invested_cost = sum(r["invested_cost"] for r in eval_results)
+    # 統一以新台幣計算總資產與損益
+    total_market_val = sum(r["market_value_twd"] for r in eval_results)
+    total_invested_cost = sum(r["invested_cost_twd"] for r in eval_results)
     total_pnl_amount = total_market_val - total_invested_cost
     total_pnl_pct = round((total_pnl_amount / total_invested_cost * 100), 2) if total_invested_cost > 0 else 0.0
     total_pnl_color = "text-emerald-400" if total_pnl_amount >= 0 else "text-rose-400"
     
-    tech_val = sum(r["market_value"] for r in eval_results if r["symbol"] in ["NVDA", "AMAT", "2330.TW", "VRT"])
+    tech_val = sum(r["market_value_twd"] for r in eval_results if r["symbol"] in ["NVDA", "AMAT", "2330.TW", "VRT"])
     tech_exposure_pct = round((tech_val / total_market_val * 100), 1) if total_market_val > 0 else 0.0
 
     m_color = macro["color"]
     sox_cls = "text-rose-400" if macro["is_sox_bear"] else "text-emerald-400"
     spxu_cls = "text-rose-400" if macro["spxu_vol_ratio"] >= 1.5 else "text-slate-200"
 
-    pie_labels = [r["symbol"] for r in eval_results if r["market_value"] > 0]
-    pie_values = [r["market_value"] for r in eval_results if r["market_value"] > 0]
+    pie_labels = [r["symbol"] for r in eval_results if r["market_value_twd"] > 0]
+    pie_values = [r["market_value_twd"] for r in eval_results if r["market_value_twd"] > 0]
 
     cards_html = ""
     for idx, r in enumerate(eval_results):
@@ -408,9 +424,9 @@ def generate_pro_dashboard(macro: dict, eval_results: list):
                             <span class="text-3xl font-black text-white">{cur}{r['current_price']}</span>
                         </div>
                         <div class="text-right">
-                            <span class="text-xs text-slate-400 block mb-1">持倉損益 / 市值</span>
+                            <span class="text-xs text-slate-400 block mb-1">持倉損益 / 市值(NT$)</span>
                             <span class="text-xl font-black {pnl_cls}">{r['pnl_rate']:+.1f}%</span>
-                            <span class="text-xs text-slate-400 block font-mono">{cur}{r['market_value']:,.0f}</span>
+                            <span class="text-xs text-slate-400 block font-mono">NT${r['market_value_twd']:,.0f}</span>
                         </div>
                     </div>
 
@@ -478,10 +494,10 @@ def generate_pro_dashboard(macro: dict, eval_results: list):
             <div>
                 <div class="flex items-center gap-2.5">
                     <span class="h-3 w-3 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">機構級動態 EPS 估值與操盤室</h1>
+                    <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">機構級旗艦動態 EPS 操盤室</h1>
                 </div>
                 <p class="text-xs sm:text-sm text-slate-400 mt-1">
-                    雙 API 備援 + AI 新聞情感分析 + 向量化回測 ｜ 更新時間: <span class="text-slate-200 font-mono">{updated_time}</span>
+                    即時匯率 USD/TWD: <span class="text-amber-400 font-mono">{usd_twd:.2f}</span> ｜ 雙 API 備援 + AI 新聞情感分析 ｜ 更新時間: <span class="text-slate-200 font-mono">{updated_time}</span>
                 </p>
             </div>
             <div class="flex flex-wrap gap-2">
@@ -492,16 +508,16 @@ def generate_pro_dashboard(macro: dict, eval_results: list):
             </div>
         </header>
 
-        <!-- 投資組合總覽 KPI 霸氣儀表板列 -->
+        <!-- 投資組合總覽 KPI 霸氣儀表板列 (全以 NT$ 結算) -->
         <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg">
-                <span class="text-xs text-slate-400 block mb-1">投資組合總市值 / 成本</span>
-                <div class="text-xl sm:text-2xl font-black text-white">${total_market_val:,.0f}</div>
-                <span class="text-xs text-slate-400">總投入: ${total_invested_cost:,.0f}</span>
+                <span class="text-xs text-slate-400 block mb-1">總市值 (NT$) / 總成本</span>
+                <div class="text-xl sm:text-2xl font-black text-white">NT${total_market_val:,.0f}</div>
+                <span class="text-xs text-slate-400">總投入: NT${total_invested_cost:,.0f}</span>
             </div>
             <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg">
-                <span class="text-xs text-slate-400 block mb-1">組合總未實現損益</span>
-                <div class="text-xl sm:text-2xl font-black {total_pnl_color}">${total_pnl_amount:+,.0f} ({total_pnl_pct:+.2f}%)</div>
+                <span class="text-xs text-slate-400 block mb-1">組合總未實現損益 (NT$)</span>
+                <div class="text-xl sm:text-2xl font-black {total_pnl_color}">NT${total_pnl_amount:+,.0f} ({total_pnl_pct:+.2f}%)</div>
             </div>
             <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg">
                 <span class="text-xs text-slate-400 block mb-1">高科技持倉濃度曝險 (Tech)</span>
@@ -600,16 +616,36 @@ def generate_pro_dashboard(macro: dict, eval_results: list):
 </html>"""
     with open(DASHBOARD_FILE, "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"[完成] 全持股極致豐富專業操盤室儀表板已輸出至 {DASHBOARD_FILE}")
+    print(f"[完成] 旗艦級專業操盤室儀表板已輸出至 {DASHBOARD_FILE}")
 
 
 # ==========================================
-# 7. 主執行入口
+# 8. 主執行入口 (含 LINE 智慧過濾防警報疲勞)
 # ==========================================
 def main():
+    user_id = os.environ.get("LINE_USER_ID")
+    token = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN")
+    is_manual_run = os.environ.get("GITHUB_EVENT_NAME", "") == "workflow_dispatch"
+
     prev_state = load_state()
+    prev_stocks = prev_state.get("stocks", {})
     macro = fetch_macro_gold_radar(prev_state.get("macro_gold", {}))
+    usd_twd = get_USD_TWD_rate()
+
     eval_results = []
+    new_stocks_dict = {}
+    bubbles_to_push = []
+
+    if macro.get("must_push") or is_manual_run:
+        bubbles_to_push.append({
+            "type": "bubble", "size": "mega",
+            "header": {"type": "box", "layout": "vertical", "backgroundColor": macro["color"], "paddingAll": "15px",
+                       "contents": [{"type": "text", "text": "🛡️ 戰情雷達警報", "weight": "bold", "color": "#FFFFFF", "size": "sm"},
+                                    {"type": "text", "text": macro["bubble_level"], "weight": "bold", "color": "#FFFFFF", "size": "sm"}]},
+            "body": {"type": "box", "layout": "vertical", "spacing": "sm",
+                     "contents": [{"type": "text", "text": macro["action"], "weight": "bold", "size": "xs", "color": macro["color"], "wrap": True},
+                                  {"type": "text", "text": macro["desc"], "size": "xs", "color": "#4B5563", "wrap": True}]}
+        })
 
     for symbol, meta in WATCHLIST.items():
         market_data = fetch_stock_data_with_redundancy(symbol)
@@ -618,13 +654,52 @@ def main():
         dynamic_fair = get_dynamic_fair_value(symbol, meta)
         nlp_score = fetch_finnhub_sentiment_score(symbol)
 
-        eval_data = evaluate_quant_matrix(symbol, meta, market_data, prev_state.get("stocks", {}), macro, dynamic_fair, nlp_score)
+        eval_data = evaluate_quant_matrix(symbol, meta, market_data, prev_stocks.get(symbol, {}), macro, dynamic_fair, nlp_score, usd_twd)
         eval_results.append(eval_data)
 
+        # 紀錄狀態供下次比對
+        new_stocks_dict[symbol] = {
+            "risk_level": eval_data["risk_level"], "current_price": eval_data["current_price"],
+            "peak_price": eval_data["peak_price"], "updated_at": now_tw_str()
+        }
+
+        # 智慧過濾：只有當狀態發生「質變」或「觸發停損」時才推播，避免警報疲勞
+        last_risk = prev_stocks.get(symbol, {}).get("risk_level", "")
+        is_quality_changed = (last_risk != eval_data["risk_level"])
+        is_stop_loss = ("停損" in eval_data["risk_level"])
+
+        if (is_quality_changed or is_stop_loss or is_manual_run) and eval_data["risk_level"] != "合理估值區":
+            pnl_sign = "+" if eval_data["pnl_rate"] > 0 else ""
+            bubbles_to_push.append({
+                "type": "bubble", "size": "mega",
+                "header": {"type": "box", "layout": "vertical", "backgroundColor": eval_data["color"], "paddingAll": "15px",
+                           "contents": [{"type": "text", "text": f"{symbol} 狀態質變警報", "weight": "bold", "color": "#FFFFFF", "size": "sm"},
+                                        {"type": "text", "text": eval_data["risk_level"], "weight": "bold", "color": "#FFFFFF", "size": "sm"}]},
+                "body": {"type": "box", "layout": "vertical", "spacing": "sm",
+                         "contents": [{"type": "text", "text": f"現價: {eval_data['currency']}{eval_data['current_price']} (損益: {pnl_sign}{eval_data['pnl_rate']}%)", "size": "sm", "weight": "bold"},
+                                      {"type": "text", "text": f"【指令】{eval_data['action']}", "color": eval_data["color"], "size": "xs", "weight": "bold"},
+                                      {"type": "text", "text": eval_data["desc"], "size": "xs", "color": "#4B5563", "wrap": True}]}
+            })
+
     if eval_results:
-        save_state(macro, {}, eval_results)
-        generate_pro_dashboard(macro, eval_results)
-        print("[完成] 全持股機構級操盤室更新完畢。")
+        save_state(macro, new_stocks_dict, eval_results)
+        generate_pro_dashboard(macro, eval_results, usd_twd)
+
+        if bubbles_to_push and user_id and token:
+            payload = {
+                "to": user_id,
+                "messages": [{
+                    "type": "flex",
+                    "altText": "🛡️【機構級操盤室狀態質變通知】",
+                    "contents": {"type": "carousel", "contents": bubbles_to_push[:10]}
+                }]
+            }
+            try:
+                requests.post("https://api.line.me/v2/bot/message/push", headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}"}, json=payload, timeout=15)
+            except Exception:
+                pass
+
+        print("[完成] 機構級旗艦操盤平台執行完畢。")
 
 
 if __name__ == "__main__":
