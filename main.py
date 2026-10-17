@@ -456,32 +456,12 @@ def main():
         if not eval_results:
             raise RuntimeError("無法自 Yahoo Finance 獲取任何報價，可能遭到 IP 風控。")
 
-        # 發送 LINE 卡片
+     # 1. 發送 LINE 卡片
         if items_to_push and user_id:
-            bubbles = [build_stock_bubble(x) for x in items_to_push[:10]]
-            payload = {
-                "to": user_id,
-                "messages": [
-                    {
-                        "type": "flex",
-                        "altText": "【資產風控指令】具體操作建議與警戒通知",
-                        "contents": {"type": "carousel", "contents": bubbles},
-                    }
-                ],
-            }
-            send_line_message(payload)
+            send_line_message(...)
 
-        # 寫入狀態快取與更新網頁
+        # 2. 寫入狀態快取 (供前端儀表板讀取)
         save_state(new_stocks_dict)
-        generate_dashboard(eval_results)
-        print("[完成] 量化監控與狀態保存完畢。")
 
-    except Exception as e:
-        err_stack = traceback.format_exc()
-        print(f"[致命錯誤] {err_stack}")
-        push_system_watchdog_error(str(e))
-        raise e
-
-
-if __name__ == "__main__":
-    main()
+        # 3. 移除或註解掉這行，保護你的前端 index.html 不再被覆蓋：
+        # generate_dashboard(eval_results)
