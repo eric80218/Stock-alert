@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-18 07:01:49",
+  "updated_at": "2026-10-18 07:10:09",
   "macro_gold": {
     "bubble_level": "資金安穩：未見異常避險潮",
     "bubble_tag": "LOW",
@@ -14,7 +14,7 @@
     "is_sox_bear": false,
     "dxy_price": 101.84,
     "flash_alert_date": "",
-    "updated_at": "2026-10-18 07:01:49"
+    "updated_at": "2026-10-18 07:10:09"
   },
   "stocks": {
     "NVDA": {
@@ -22,28 +22,28 @@
       "current_price": 214.13,
       "peak_price": 243.37,
       "flash_alert_date": "",
-      "updated_at": "2026-10-18 07:01:48"
+      "updated_at": "2026-10-18 07:10:08"
     },
     "AMAT": {
       "risk_level": "偏空觀察 (左側禁買)",
       "current_price": 409.29,
       "peak_price": 563.16,
       "flash_alert_date": "2026-10-18",
-      "updated_at": "2026-10-18 07:01:48"
+      "updated_at": "2026-10-18 07:10:08"
     },
     "2330.TW": {
       "risk_level": "高風險 (嚴重昂貴)",
       "current_price": 2420.0,
       "peak_price": 2590.0,
       "flash_alert_date": "",
-      "updated_at": "2026-10-18 07:01:48"
+      "updated_at": "2026-10-18 07:10:08"
     },
     "0050.TW": {
       "risk_level": "合理估值區",
       "current_price": 109.0,
       "peak_price": 116.6,
       "flash_alert_date": "",
-      "updated_at": "2026-10-18 07:01:48"
+      "updated_at": "2026-10-18 07:10:09"
     }
   },
   "results": [
@@ -259,7 +259,7 @@
       "action": "執行第 2 階減碼：賣出持倉 1/3",
       "color": "#EF4444",
       "desc": "溢價率達 130.5% (門檻 >25%)，估值透支，分批收回現金。",
-      "must_push": true,
+      "must_push": false,
       "flash_alert_date": "",
       "history_dates": [
         "09/02",
