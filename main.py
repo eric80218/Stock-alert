@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (Ultimate Institutional Alpha Edition)
+Quantitative Risk & Valuation Engine (Ultimate Rich UI Institutional Edition)
 - 雙 API 備援：Yahoo Finance 失敗時自動切換至 Finnhub API 容錯
-- 投資組合風險管理：計算高科技持倉濃度曝險 (Concentration) 與歷史 VaR
+- 投資組合風險管理：計算高科技持倉濃度曝險 (Tech Exposure) 與總市值
 - 向量化回測框架：自動評估策略歷史勝率與最大回撤
 - NLP 新聞情緒分析：整合 Finnhub 財經新聞情緒作為動態風險加權
+- 豐富互動式儀表板：30日走勢圖、資產配置圓餅圖、六宮格技術指標完整回歸
 """
 
 import os
@@ -117,7 +118,7 @@ def fetch_from_yahoo(symbol: str):
             "ma200": round(ma200_val, 2), "ma20": round(ma20_val, 2), "rsi14": rsi14,
             "history_dates": [d.strftime("%m/%d") for d in recent_30.index],
             "history_prices": [round(float(p), 2) for p in recent_30["Close"].tolist()],
-            "full_history": close_s  # 供回測使用
+            "full_history": close_s
         }
     except Exception:
         return None
@@ -161,12 +162,11 @@ def fetch_finnhub_sentiment_score(symbol: str) -> float:
         news_list = res.json()
         if not isinstance(news_list, list) or not news_list: return 0.0
 
-        # 簡單關鍵字情緒掃描
         score = 0
-        positive_words = ["surge", "jump", "beat", "record", "growth", "strong", "bull", "涨", "創新高", "優於預期"]
+        positive_words = ["surge", "jump", "beat", "record", "growth", "strong", "bull", "漲", "創新高", "優於預期"]
         negative_words = ["plunge", "drop", "miss", "lawsuit", "cut", "weak", "bear", "跌", "衰退", "砍單"]
 
-        for item in news_list[:15]: # 檢查最近 15 則新聞
+        for item in news_list[:15]:
             headline = (item.get("headline", "") + " " + item.get("summary", "")).lower()
             for pw in positive_words:
                 if pw in headline: score += 1
@@ -179,14 +179,12 @@ def fetch_finnhub_sentiment_score(symbol: str) -> float:
 
 
 # ==========================================
-# 4. 向量化歷史回測模擬引擎 (Backtesting)
+# 4. 向量化歷史回測模擬引擎
 # ==========================================
 def run_vectorized_backtest(close_series: pd.Series) -> dict:
     try:
         if len(close_series) < 60:
             return {"return_pct": 0.0, "max_drawdown": 0.0, "win_rate": 50.0}
-        
-        # 模擬簡單動能與均線策略
         df = pd.DataFrame({"Close": close_series})
         df["MA20"] = df["Close"].rolling(20).mean()
         df["Return"] = df["Close"].pct_change()
@@ -220,27 +218,28 @@ def fetch_macro_gold_radar(prev_macro_state: dict) -> dict:
         gld_hist = yf.Ticker("GLD").history(period="6mo").dropna(subset=["Close", "Volume"])
         sox_hist = yf.Ticker("^SOX").history(period="6mo").dropna(subset=["Close"])
         vix_hist = yf.Ticker("^VIX").history(period="1mo").dropna(subset=["Close"])
-        gcf_hist = yf.Ticker("GC=F").history(period="3mo").dropna(subset=["Close"])
+        dxy_hist = yf.Ticker("DX-Y.NYB").history(period="3mo").dropna(subset=["Close"])
 
         spxu_vol_ratio = round(float(spxu_hist["Volume"].iloc[-1]) / float(spxu_hist["Volume"].tail(20).mean()), 2) if not spxu_hist.empty else 1.0
         vix_val = round(float(vix_hist["Close"].iloc[-1]), 2) if not vix_hist.empty else 18.0
+        dxy_price = round(float(dxy_hist["Close"].iloc[-1]), 2) if not dxy_hist.empty else 100.0
         sox_price = round(float(sox_hist["Close"].iloc[-1]), 1) if not sox_hist.empty else 0.0
         is_sox_bear = sox_price < float(sox_hist["Close"].rolling(200).mean().iloc[-1]) if len(sox_hist) >= 200 else False
 
         is_smart_money_hedging = spxu_vol_ratio >= 1.50 or vix_val >= 20.0
         bubble_level = "高度警報：機構大舉避險" if is_smart_money_hedging else "資金安穩：市場多頭運行"
         color = "#EF4444" if is_smart_money_hedging else "#10B981"
-        premium_shift = -10.0 if is_smart_money_hedging else 0.0
+        action = "🚨 聰明錢重押空頭，個股減碼門檻下調！" if is_smart_money_hedging else "✅ 華爾街資金留駐股市，維持標準估值運作。"
+        desc = f"SPXU 量比 {spxu_vol_ratio}x，VIX 恐慌指數 {vix_val}，費半 {'空頭' if is_sox_bear else '多頭'}。"
 
         return {
-            "bubble_level": bubble_level, "color": color, "vix": vix_val,
-            "spxu_vol_ratio": spxu_vol_ratio, "sox_price": sox_price, "is_sox_bear": is_sox_bear,
-            "premium_shift": premium_shift, "must_push": is_smart_money_hedging,
-            "dates_30": [d.strftime("%m/%d") for d in gld_hist.tail(30).index],
-            "gld_norm_series": [0.0] * 30, "spy_norm_series": [0.0] * 30,
+            "bubble_level": bubble_level, "color": color, "action": action, "desc": desc,
+            "vix": vix_val, "dxy_price": dxy_price, "spxu_vol_ratio": spxu_vol_ratio,
+            "sox_price": sox_price, "is_sox_bear": is_sox_bear, "premium_shift": -10.0 if is_smart_money_hedging else 0.0,
+            "must_push": is_smart_money_hedging,
         }
     except Exception:
-        return {"bubble_level": "資料連線中", "color": "#64748B", "vix": 18.0, "spxu_vol_ratio": 1.0, "sox_price": 0.0, "is_sox_bear": False, "premium_shift": 0.0, "must_push": False, "dates_30": [], "gld_norm_series": [], "spy_norm_series": []}
+        return {"bubble_level": "資料連線中", "color": "#64748B", "action": "暫以標準門檻運行", "desc": "連線異常", "vix": 18.0, "dxy_price": 100.0, "spxu_vol_ratio": 1.0, "sox_price": 0.0, "is_sox_bear": False, "premium_shift": 0.0, "must_push": False}
 
 
 def get_dynamic_fair_value(symbol: str, meta: dict) -> float:
@@ -257,25 +256,30 @@ def get_dynamic_fair_value(symbol: str, meta: dict) -> float:
 
 def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state: dict, macro: dict, dynamic_fair: float, nlp_score: float) -> dict:
     price = market_data["current_price"]
+    high_60d = market_data["high_60d"]
+    ma200, ma20, rsi14 = market_data["ma200"], market_data["ma20"], market_data["rsi14"]
     cost, shares = float(meta["cost"]), float(meta.get("shares", 0))
     is_etf = meta.get("is_etf", False)
+
+    raw_peak = prev_state.get("peak_price", price)
+    peak_price = max(float(raw_peak if raw_peak else price), high_60d, price)
+    drawdown_from_peak = round(((price - peak_price) / peak_price) * 100, 2)
 
     safety_margin = round(((dynamic_fair - price) / dynamic_fair) * 100, 2)
     premium_rate = round(((price - dynamic_fair) / dynamic_fair) * 100, 2)
     pnl_rate = round(((price - cost) / cost) * 100, 2)
 
-    # 綜合 NLP 情緒微調風控門檻
     nlp_adjustment = -2.0 if nlp_score < -2 else (2.0 if nlp_score > 2 else 0.0)
     high_risk_threshold = 25.0 + macro.get("premium_shift", 0.0) + nlp_adjustment
 
     if not is_etf and pnl_rate <= -10.0:
-        risk_level, color, action = "停損警戒", "#EF4444", "市價全數平倉 / 嚴格停損"
+        risk_level, color, action, desc = "停損警戒", "#EF4444", "市價全數平倉 / 嚴格停損", f"成本損益達 {pnl_rate:.1f}%，跌破防線。"
     elif premium_rate > high_risk_threshold:
-        risk_level, color, action = "高風險 (嚴重昂貴)", "#EF4444", "執行減碼：賣出持倉 1/3"
+        risk_level, color, action, desc = "高風險 (嚴重昂貴)", "#EF4444", "執行減碼：賣出持倉 1/3", f"溢價率達 {premium_rate:.1f}%，估值透支。"
     elif safety_margin >= 10.0 and not macro.get("is_sox_bear", False):
-        risk_level, color, action = "低風險 (買進區)", "#10B981", "啟動第 1 批建倉：買進 1/3"
+        risk_level, color, action, desc = "低風險 (買進區)", "#10B981", "啟動第 1 批建倉：買進 1/3", f"安全邊際達 {safety_margin:.1f}% 且多頭排列。"
     else:
-        risk_level, color, action = "合理估值區", "#3B82F6", "定期定額 / 維持續抱"
+        risk_level, color, action, desc = "合理估值區", "#3B82F6", "定期定額 / 維持續抱", "處於合理估值防禦帶內。"
 
     backtest = run_vectorized_backtest(market_data.get("full_history", pd.Series([price])))
 
@@ -283,89 +287,228 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
         "symbol": symbol, "name": meta["name"], "market": meta["market"], "currency": meta["currency"],
         "current_price": price, "fair_value": dynamic_fair, "cost": cost, "shares": shares,
         "market_value": round(price * shares, 2), "safety_margin": safety_margin, "premium_rate": premium_rate,
-        "pnl_rate": pnl_rate, "risk_level": risk_level, "color": color, "action": action,
+        "pnl_rate": pnl_rate, "ma200": ma200, "ma20": ma20, "rsi14": rsi14,
+        "peak_price": peak_price, "drawdown_from_peak": drawdown_from_peak,
+        "risk_level": risk_level, "color": color, "action": action, "desc": desc,
         "nlp_score": nlp_score, "backtest": backtest,
         "history_dates": market_data["history_dates"], "history_prices": market_data["history_prices"],
     }
 
 
 # ==========================================
-# 6. 專業操盤室儀表板輸出
+# 6. 產生極致豐富的專業操盤室網頁儀表板
 # ==========================================
 def generate_pro_dashboard(macro: dict, eval_results: list):
+    updated_time, total_count = now_tw_str(), len(eval_results)
+    high_risk_count = sum(1 for r in eval_results if r["risk_level"] in ["停損警戒", "高風險 (嚴重昂貴)"])
     total_val = sum(r["market_value"] for r in eval_results)
     tech_val = sum(r["market_value"] for r in eval_results if r["symbol"] in ["NVDA", "AMAT", "2330.TW"])
     tech_exposure_pct = round((tech_val / total_val * 100), 1) if total_val > 0 else 0.0
+
+    m_color = macro["color"]
+    sox_cls = "text-rose-400" if macro["is_sox_bear"] else "text-emerald-400"
+    spxu_cls = "text-rose-400" if macro["spxu_vol_ratio"] >= 1.5 else "text-slate-200"
 
     pie_labels = [r["symbol"] for r in eval_results]
     pie_values = [max(1.0, r["market_value"]) for r in eval_results]
 
     cards_html = ""
     for idx, r in enumerate(eval_results):
+        cur = r["currency"]
+        pnl_cls = "text-emerald-400" if r["pnl_rate"] >= 0 else "text-rose-400"
+        gauge_pct = round(50.0 + (max(-40.0, min(40.0, r["safety_margin"])) / 40.0) * 45.0, 1)
+
         cards_html += f"""
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+        <div class="stock-card bg-slate-900/90 border border-slate-800 rounded-2xl shadow-xl overflow-hidden flex flex-col justify-between" data-market="{r['market']}" data-risk="{r['risk_level']}">
             <div>
-                <div class="flex justify-between items-center mb-3">
-                    <span class="text-lg font-black text-white">{r['symbol']} <span class="text-xs font-normal text-slate-400">{r['name']}</span></span>
-                    <span class="px-3 py-1 rounded-full text-xs font-bold text-white" style="background-color: {r['color']};">{r['risk_level']}</span>
+                <!-- 卡片標題 -->
+                <div class="px-5 py-3.5 flex justify-between items-center border-b border-slate-800" style="background: linear-gradient(90deg, {r['color']}22 0%, transparent 100%); border-left: 4px solid {r['color']};">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg font-black text-white">{r['symbol']}</span>
+                            <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300">{r['market']}</span>
+                        </div>
+                        <p class="text-xs text-slate-400">{r['name']}</p>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm" style="background-color: {r['color']};">{r['risk_level']}</span>
                 </div>
-                <div class="flex justify-between items-baseline mb-3">
-                    <span class="text-2xl font-black text-white">{r['currency']}{r['current_price']}</span>
-                    <span class="text-sm font-bold {'text-emerald-400' if r['pnl_rate']>=0 else 'text-rose-400'}">損益 {r['pnl_rate']:+.1f}%</span>
+
+                <!-- 卡片內文 -->
+                <div class="p-5 space-y-4">
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <span class="text-xs text-slate-400 block mb-1">現價 (動態合理價: <strong class="text-slate-200">{cur}{r['fair_value']}</strong>)</span>
+                            <span class="text-3xl font-black text-white">{cur}{r['current_price']}</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-slate-400 block mb-1">持倉損益 / 市值</span>
+                            <span class="text-xl font-black {pnl_cls}">{r['pnl_rate']:+.1f}%</span>
+                            <span class="text-xs text-slate-400 block">{cur}{r['market_value']:,.0f}</span>
+                        </div>
+                    </div>
+
+                    <!-- 安全邊際量尺 -->
+                    <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                        <div class="flex justify-between text-xs mb-1.5">
+                            <span class="text-slate-400">安全邊際量尺</span>
+                            <span class="font-bold" style="color: {r['color']}">邊際 {r['safety_margin']}% / 溢價 {r['premium_rate']}%</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-800 rounded-full relative overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-500" style="width: {gauge_pct}%; background-color: {r['color']};"></div>
+                        </div>
+                    </div>
+
+                    <!-- 30日走勢圖 -->
+                    <div class="h-28 w-full bg-slate-950/40 rounded-xl p-2 border border-slate-800/40">
+                        <canvas id="chart-{idx}"></canvas>
+                    </div>
+
+                    <!-- 六宮格技術指標 -->
+                    <div class="grid grid-cols-3 gap-2 text-xs bg-slate-950/50 p-3 rounded-xl border border-slate-800/50">
+                        <div><span class="text-slate-500">成本</span><div class="font-bold text-slate-200">{cur}{r['cost']}</div></div>
+                        <div><span class="text-slate-500">200MA</span><div class="font-bold text-slate-200">{cur}{r['ma200']}</div></div>
+                        <div><span class="text-slate-500">RSI(14)</span><div class="font-bold text-amber-400">{r['rsi14']}</div></div>
+                        <div><span class="text-slate-500">60D 高點</span><div class="font-bold text-slate-200">{cur}{r['peak_price']}</div></div>
+                        <div><span class="text-slate-500">回撤</span><div class="font-bold text-rose-400">{r['drawdown_from_peak']}%</div></div>
+                        <div><span class="text-slate-500">AI新聞分數</span><div class="font-bold text-blue-400">{r['nlp_score']}分</div></div>
+                    </div>
+
+                    <!-- 回測數據與量化指令 -->
+                    <div class="p-3.5 rounded-xl border" style="background-color: {r['color']}15; border-color: {r['color']}40;">
+                        <div class="text-xs font-extrabold" style="color: {r['color']};">⚡ 指令：{r['action']}</div>
+                        <p class="text-xs text-slate-300 mt-1">{r['desc']} (回測勝率 {r['backtest']['win_rate']}%)</p>
+                    </div>
                 </div>
-                <div class="text-xs bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1 mb-3">
-                    <div class="flex justify-between"><span class="text-slate-400">持股市值</span><span class="text-white">{r['currency']}{r['market_value']:,.0f}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">動態合理價</span><span class="text-slate-200">{r['currency']}{r['fair_value']}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">新聞情感分數</span><span class="text-amber-400">{r['nlp_score']} 分</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">歷史回測勝率</span><span class="text-emerald-400">{r['backtest']['win_rate']}% (回撤 {r['backtest']['max_drawdown']}%)</span></div>
-                </div>
-                <div class="text-xs font-bold" style="color: {r['color']};">⚡ {r['action']}</div>
+            </div>
+
+            <!-- 卡片底部連結 -->
+            <div class="px-5 py-3 bg-slate-950/80 border-t border-slate-800 flex justify-between text-xs">
+                <a href="https://finance.yahoo.com/quote/{r['symbol']}" target="_blank" class="text-blue-400 hover:text-blue-300">Yahoo ↗</a>
+                <a href="https://www.tradingview.com/symbols/{r['symbol'].replace('.TW', '')}/" target="_blank" class="text-slate-400 hover:text-slate-200">TradingView ↗</a>
             </div>
         </div>
         """
 
+    charts_json = json.dumps([{"id": f"chart-{idx}", "dates": r["history_dates"], "prices": r["history_prices"], "fair": r["fair_value"], "color": r["color"]} for idx, r in enumerate(eval_results)], ensure_ascii=False)
+    pie_json = json.dumps({"labels": pie_labels, "values": pie_values}, ensure_ascii=False)
+
     html = f"""<!DOCTYPE html>
 <html lang="zh-TW" class="dark">
-<head><meta charset="UTF-8"><title>Institutional Quant Terminal</title><script src="https://cdn.tailwindcss.com"></script><script src="https://cdn.jsdelivr.net/npm/chart.js"></script></head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans p-6">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Institutional Quant Terminal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans p-4 sm:p-6 selection:bg-blue-500 selection:text-white">
     <div class="max-w-7xl mx-auto space-y-6">
-        <header class="flex justify-between items-center pb-6 border-b border-slate-800">
+        <!-- 頂部標題列 -->
+        <header class="flex flex-col md:flex-row justify-between items-center pb-6 border-b border-slate-800 gap-4">
             <div>
-                <h1 class="text-3xl font-black text-white">機構級量化操盤室 (雙API + AI情緒 + 回測)</h1>
-                <p class="text-xs text-slate-400 mt-1">更新時間: {now_tw_str()}</p>
+                <div class="flex items-center gap-2.5">
+                    <span class="h-3 w-3 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <h1 class="text-2xl sm:text-3xl font-black text-white">機構級動態 EPS 估值與操盤室</h1>
+                </div>
+                <p class="text-xs sm:text-sm text-slate-400 mt-1">
+                    雙 API 備援 + AI 新聞情感分析 + 向量化回測 ｜ 更新時間: <span class="text-slate-200 font-mono">{updated_time}</span>
+                </p>
             </div>
-            <div class="text-right">
-                <span class="text-xs text-slate-400 block">高科技持倉濃度曝險 (Tech Exposure)</span>
-                <span class="text-xl font-black text-amber-400">{tech_exposure_pct}%</span>
+            <div class="flex flex-wrap gap-2">
+                <button onclick="filterCards('ALL')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white">全部標的 ({total_count})</button>
+                <button onclick="filterCards('US')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300">美股 US</button>
+                <button onclick="filterCards('TW')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300">台股 TW</button>
+                <button onclick="filterCards('ALERT')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-rose-950 text-rose-300 border border-rose-800">警戒 ({high_risk_count})</button>
             </div>
         </header>
+
+        <!-- 總經風向與資產配置圓餅圖 -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-5">
-                <h2 class="text-base font-black text-white mb-2">🛡️ 總經與避險狀態</h2>
-                <p class="text-xs text-slate-300">{macro['bubble_level']} (VIX: {macro['vix']} | 費半: ${macro['sox_price']})</p>
-            </div>
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col items-center">
-                <span class="text-xs font-bold text-slate-400 mb-2">資產配置圓餅圖</span>
-                <div class="h-36 w-full"><canvas id="pie"></canvas></div>
-            </div>
+            <section class="lg:col-span-2 rounded-2xl border p-5 shadow-xl flex flex-col justify-between" style="background: linear-gradient(135deg, {m_color}18 0%, #0F172A 65%); border-color: {m_color}60;">
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <div class="flex items-center gap-2"><span>🛡️</span><h2 class="text-base font-black text-white">華爾街總經與大戶避險雷達</h2></div>
+                        <span class="px-3.5 py-1 rounded-full text-xs font-extrabold text-white shadow" style="background-color: {m_color};">{macro['bubble_level']}</span>
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed mb-4">{macro['action']} — {macro['desc']}</p>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-slate-950/70 p-3.5 rounded-xl border border-slate-800">
+                    <div><span class="text-slate-400">VIX 恐慌</span><div class="text-base font-bold text-amber-400">{macro['vix']}</div></div>
+                    <div><span class="text-slate-400">費半 (^SOX)</span><div class="text-base font-bold {sox_cls}">${macro['sox_price']}</div></div>
+                    <div><span class="text-slate-400">大戶避險SPXU</span><div class="text-base font-bold {spxu_cls}">{macro['spxu_vol_ratio']}x</div></div>
+                    <div><span class="text-slate-400">高科技持倉濃度</span><div class="text-base font-bold text-amber-400">{tech_exposure_pct}%</div></div>
+                </div>
+            </section>
+            <section class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col items-center justify-center">
+                <span class="text-xs font-bold text-slate-400 mb-2">持倉市值配置比例 (Portfolio Weight)</span>
+                <div class="h-40 w-full"><canvas id="portfolio-pie"></canvas></div>
+            </section>
         </div>
-        <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">{cards_html}</main>
+
+        <!-- 豐富版個股卡片網格 -->
+        <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {cards_html}
+        </main>
     </div>
+
     <script>
-        const pieData = {json.dumps({"labels": pie_labels, "values": pie_values}, ensure_ascii=False)};
+        const chartConfigs = {charts_json};
+        const pieData = {pie_json};
+
         window.addEventListener('DOMContentLoaded', () => {{
-            new Chart(document.getElementById('pie'), {{
-                type: 'doughnut',
-                data: {{ labels: pieData.labels, datasets: [{{ data: pieData.values, backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444'] }}] }},
-                options: {{ responsive: true, maintainAspectRatio: false, plugins: {{ legend: {{ position: 'right', labels: {{ color: '#94A3B8', boxWidth: 10, font: {{ size: 10 }} }} }} }} }}
+            chartConfigs.forEach(cfg => {{
+                const ctx = document.getElementById(cfg.id);
+                if (!ctx) return;
+                new Chart(ctx, {{
+                    type: 'line',
+                    data: {{
+                        labels: cfg.dates,
+                        datasets: [
+                            {{ data: cfg.prices, borderColor: cfg.color, borderWidth: 2, pointRadius: 0, fill: true, backgroundColor: cfg.color + '20', tension: 0.3 }},
+                            {{ data: Array(cfg.dates.length).fill(cfg.fair), borderColor: '#94A3B8', borderDash: [4, 4], borderWidth: 1, pointRadius: 0, fill: false }}
+                        ]
+                    }},
+                    options: {{
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: {{ legend: {{ display: false }} }},
+                        scales: {{ x: {{ display: false }}, y: {{ ticks: {{ color: '#64748B', font: {{ size: 9 }} }}, grid: {{ color: '#1E293B' }} }} }}
+                    }}
+                }});
             }});
+
+            const pieCtx = document.getElementById('portfolio-pie');
+            if (pieCtx && pieData.labels.length > 0) {{
+                new Chart(pieCtx, {{
+                    type: 'doughnut',
+                    data: {{
+                        labels: pieData.labels,
+                        datasets: [{{ data: pieData.values, backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'], borderWidth: 0 }}]
+                    }},
+                    options: {{ responsive: true, maintainAspectRatio: false, plugins: {{ legend: {{ position: 'right', labels: {{ color: '#94A3B8', boxWidth: 10, font: {{ size: 10 }} }} }} }} }}
+                }});
+            }}
         }});
+
+        function filterCards(mode) {{
+            document.querySelectorAll('.stock-card').forEach(card => {{
+                const market = card.getAttribute('data-market');
+                const risk = card.getAttribute('data-risk');
+                if (mode === 'ALL') card.style.display = 'flex';
+                else if (mode === 'US' || mode === 'TW') card.style.display = (market === mode) ? 'flex' : 'none';
+                else if (mode === 'ALERT') card.style.display = (risk === '停損警戒' || risk === '高風險 (嚴重昂貴)') ? 'flex' : 'none';
+            }});
+        }}
     </script>
 </body>
 </html>"""
-    with open(DASHBOARD_FILE, "w", encoding="utf-8") as f: f.write(html)
+    with open(DASHBOARD_FILE, "w", encoding="utf-8") as f:
+        f.write(html)
+    print(f"[完成] 豐富版專業操盤室儀表板已輸出至 {DASHBOARD_FILE}")
 
 
+# ==========================================
+# 7. 主執行入口
+# ==========================================
 def main():
     prev_state = load_state()
     macro = fetch_macro_gold_radar(prev_state.get("macro_gold", {}))
@@ -374,17 +517,18 @@ def main():
     for symbol, meta in WATCHLIST.items():
         market_data = fetch_stock_data_with_redundancy(symbol)
         if not market_data: continue
-        
+
         dynamic_fair = get_dynamic_fair_value(symbol, meta)
         nlp_score = fetch_finnhub_sentiment_score(symbol)
-        
+
         eval_data = evaluate_quant_matrix(symbol, meta, market_data, prev_state.get("stocks", {}), macro, dynamic_fair, nlp_score)
         eval_results.append(eval_data)
 
     if eval_results:
         save_state(macro, {}, eval_results)
         generate_pro_dashboard(macro, eval_results)
-        print("[完成] 操盤室資料更新完畢。")
+        print("[完成] 機構級豐富操盤室更新完畢。")
+
 
 if __name__ == "__main__":
     main()
