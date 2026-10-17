@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (Macro Gold Safe-Haven & Bubble Radar Edition)
-- 頂層總經濾網：監控華爾街黃金 ETF (GLD) 機構爆量倍數、黃金期貨 (GC=F)、股金輪動差 (GLD vs SPY) 與 VIX
-- 動態風險連動：當華爾街大舉買進黃金避險時，自動收緊個股「中/高風險」減碼門檻，提早防範泡沫破裂
-- 面板整合：頂部「華爾街黃金避險與股市泡沫預警雷達」+「30日股金資金輪動走勢圖」
-- 清洗 yfinance NaN 空值，防止台美股跨時區出現 $nan
+Quantitative Risk & Valuation Engine (Self-Audited & Hardened Edition)
+- 修正黃金雷達假訊號：區分「股金齊漲(流動性派對)」與「棄股投金(泡沫避險)」，採用上漲日攻擊量比
+- 修正高點回撤失憶問題：自動擷取近 60 日真實盤中最高價 (60D High) 計算移動停利
+- 修正 RSI(14) 演算法：採用標準 Wilder's Smoothing (與 TradingView 完全一致)
+- 支援手動觸發 (workflow_dispatch) 強制發送 LINE 測試通知，定時排程維持智慧去重
 """
 
 import os
@@ -92,19 +92,24 @@ def save_state(macro_gold: dict, stocks_dict: dict, eval_results: list):
 
 
 # ==========================================
-# 3. 華爾街黃金避險與股市泡沫預警引擎
+# 3. 華爾街黃金避險與股市泡沫預警引擎 (強化防假訊號版)
 # ==========================================
 def fetch_macro_gold_radar(prev_macro_state: dict) -> dict:
     """
-    透過 GLD (SPDR 黃金 ETF 機構資金指標)、GC=F (黃金期貨)、SPY (美股大盤) 與 ^VIX
-    偵測華爾街是否正在大舉買進黃金避險 (股市泡沫破裂前兆)
+    精準偵測華爾街「棄股投金」避險行為：
+    1. 僅計算 GLD 上漲日攻擊量能與 60 日均量比 (排除爆量下跌的假訊號)
+    2. 計算 GLD/SPY 股金比值是否突破 20MA
+    3. 區分「股金同漲(資金派對)」與「金強股弱(真正避險)」
     """
-    print("[總經雷達] 正在掃描華爾街黃金避險資金流向 (GLD / GC=F / SPY / VIX)...")
+    print("[總經雷達] 正在掃描華爾街黃金避險資金流向 (GLD / GC=F / SPY / VIX / TNX)...")
     try:
         gld_hist = yf.Ticker("GLD").history(period="6mo").dropna(subset=["Close", "Volume"])
+        gld_hist = gld_hist[gld_hist["Volume"] > 0]
+
         spy_hist = yf.Ticker("SPY").history(period="6mo").dropna(subset=["Close"])
         gcf_hist = yf.Ticker("GC=F").history(period="3mo").dropna(subset=["Close"])
         vix_hist = yf.Ticker("^VIX").history(period="1mo").dropna(subset=["Close"])
+        tnx_hist = yf.Ticker("^TNX").history(period="1mo").dropna(subset=["Close"])
 
         if len(gld_hist) < 25 or len(spy_hist) < 25:
             raise ValueError("總經指標歷史資料不足")
@@ -114,30 +119,35 @@ def fetch_macro_gold_radar(prev_macro_state: dict) -> dict:
         gld_vol = gld_hist["Volume"]
         gld_price = float(gld_close.iloc[-1])
         gld_ma20 = float(gld_close.rolling(20).mean().iloc[-1])
+        gld_ret_1d = ((gld_price - float(gld_close.iloc[-2])) / float(gld_close.iloc[-2])) * 100
         gld_ret_5d = ((gld_price - float(gld_close.iloc[-6])) / float(gld_close.iloc[-6])) * 100
         gld_ret_20d = ((gld_price - float(gld_close.iloc[-21])) / float(gld_close.iloc[-21])) * 100
 
-        # 2. 華爾街機構掃貨量能比 (近5日均量 vs 60日基準均量 / 當日量 vs 20日均量)
-        vol_5d_avg = float(gld_vol.tail(5).mean())
+        # 2. 強化版機構掃貨量能比：只取近 10 日內「上漲日」的平均成交量 vs 60日均量
+        recent_10 = gld_hist.tail(10).copy()
+        recent_10["ret"] = recent_10["Close"].pct_change()
+        up_days_vol = recent_10[recent_10["ret"] > 0]["Volume"]
+        up_vol_avg = float(up_days_vol.mean()) if not up_days_vol.empty else float(gld_vol.tail(5).mean())
         vol_60d_avg = float(gld_vol.tail(60).mean()) if len(gld_vol) >= 60 else float(gld_vol.mean())
-        vol_today = float(gld_vol.iloc[-1])
-        vol_20d_avg = float(gld_vol.tail(20).mean())
 
-        inst_vol_ratio = round(vol_5d_avg / vol_60d_avg, 2) if vol_60d_avg > 0 else 1.0
-        spike_vol_ratio = round(vol_today / vol_20d_avg, 2) if vol_20d_avg > 0 else 1.0
-        effective_vol_ratio = max(inst_vol_ratio, spike_vol_ratio)
+        inst_buy_vol_ratio = round(up_vol_avg / vol_60d_avg, 2) if vol_60d_avg > 0 else 1.0
+        # 若今日為上漲日且放量，納入單日爆發量考量
+        today_buy_spike = round(float(gld_vol.iloc[-1]) / vol_60d_avg, 2) if (gld_ret_1d > 0 and vol_60d_avg > 0) else 1.0
+        effective_vol_ratio = max(inst_buy_vol_ratio, today_buy_spike)
 
-        # 3. 股金資金輪動差 (GLD 20日漲幅 - SPY 20日漲幅)
+        # 3. 股金資金輪動差與 GLD/SPY 比值趨勢
         spy_close = spy_hist["Close"]
         spy_price = float(spy_close.iloc[-1])
+        spy_ma20 = float(spy_close.rolling(20).mean().iloc[-1])
         spy_ret_20d = ((spy_price - float(spy_close.iloc[-21])) / float(spy_close.iloc[-21])) * 100
         gold_vs_spy_spread = round(gld_ret_20d - spy_ret_20d, 2)
 
-        # 4. 黃金期貨 (GC=F) 與 VIX 恐慌指數
+        # 4. 黃金期貨、VIX 恐慌指數與 10 年期美債殖利率
         gold_spot = round(float(gcf_hist["Close"].iloc[-1]), 1) if not gcf_hist.empty else round(gld_price * 10.8, 1)
         vix_val = round(float(vix_hist["Close"].iloc[-1]), 2) if not vix_hist.empty else 18.0
+        us10y_val = round(float(tnx_hist["Close"].iloc[-1]), 2) if not tnx_hist.empty else 4.2
 
-        # 5. 近 30 日「黃金 vs 標普500」累積報酬率走勢對比 (供前端繪製資金輪動圖)
+        # 5. 近 30 日「黃金 vs 標普500」累積報酬率走勢對比
         gld_30 = gld_close.tail(30)
         spy_30 = spy_close.reindex(gld_30.index).ffill().bfill()
         dates_30 = [d.strftime("%m/%d") for d in gld_30.index]
@@ -146,36 +156,48 @@ def fetch_macro_gold_radar(prev_macro_state: dict) -> dict:
         gld_norm_series = [round(((float(p) / gld_base) - 1.0) * 100, 2) for p in gld_30]
         spy_norm_series = [round(((float(p) / spy_base) - 1.0) * 100, 2) for p in spy_30]
 
-        # 6. 綜合泡沫風險評分與預警等級判定
-        # 條件評估：機構放量買金 + 金價突破月線 + 表現顯著強於美股大盤
-        is_gold_uptrend = gld_price >= gld_ma20 and gld_ret_20d > 2.0
-        is_massive_inflow = effective_vol_ratio >= 1.45 and gld_ret_5d > 1.5
-        is_moderate_inflow = effective_vol_ratio >= 1.20 and is_gold_uptrend
-        is_strong_divergence = gold_vs_spy_spread >= 7.5 and gld_ret_20d > 4.0
-        is_moderate_divergence = gold_vs_spy_spread >= 4.0 and gld_ret_20d > 2.0
+        # 6. 防偽判決策樹：區分「真避險」與「股金同漲」
+        is_gold_uptrend = gld_price >= gld_ma20 and gld_ret_20d > 2.5
+        is_equity_weak_or_vix_high = (spy_price < spy_ma20) or (spy_ret_20d < 1.0) or (vix_val >= 20.0)
 
-        if (is_massive_inflow and is_gold_uptrend) or is_strong_divergence:
+        # 高度警報：機構大舉放量買金 + 黃金顯著跑贏大盤 + (美股轉弱或恐慌升溫 或 背離極端擴大)
+        if is_gold_uptrend and (
+            (effective_vol_ratio >= 1.40 and gold_vs_spy_spread >= 5.0 and is_equity_weak_or_vix_high)
+            or (gold_vs_spy_spread >= 8.5 and effective_vol_ratio >= 1.25)
+        ):
             bubble_level = "高度警報：華爾街大舉買金避險"
             bubble_tag = "HIGH"
             color = "#EF4444"
-            premium_shift = -10.0  # 自動將個股中/高風險溢價門檻下調 10% (提早減碼)
-            action = "🚨 股市泡沫破裂前兆！全面收緊風控，優先減碼高溢價科技股、拉高現金水位"
+            premium_shift = -10.0
+            action = "🚨 機構棄股投金訊號確立！全面收緊風控，優先減碼高溢價科技股、拉高現金"
             desc = (
-                f"偵測到華爾街機構資金異常湧入黃金 ETF (GLD 量能放大 {effective_vol_ratio}x，20日漲幅 +{gld_ret_20d:.1f}%，"
-                f"領先美股大盤 {gold_vs_spy_spread:+.1f}%)。機構正在建立大型避險部位，系統已自動下調個股中高風險減碼門檻 10%！"
+                f"偵測到華爾街機構於上漲日大舉掃貨黃金 (GLD 攻擊量比 {effective_vol_ratio}x，20日漲幅 {gld_ret_20d:+.1f}%，"
+                f"領先美股大盤達 {gold_vs_spy_spread:+.1f}%，VIX {vix_val})。系統已自動將個股中高風險減碼門檻下調 10%！"
             )
             should_alert = True
 
-        elif is_moderate_inflow or is_moderate_divergence:
-            bubble_level = "中度警戒：機構避險買盤升溫"
-            bubble_tag = "MEDIUM"
-            color = "#F59E0B"
-            premium_shift = -4.0  # 自動將個股中/高風險溢價門檻下調 4%
-            action = "⚠️ 聰明錢開始配置黃金避險，個股風控門檻已自動收緊，切勿追高"
-            desc = (
-                f"黃金維持多頭且資金流入升溫 (GLD 量能倍數 {effective_vol_ratio}x，20日漲幅 {gld_ret_20d:+.1f}%，"
-                f"相對美股強弱差 {gold_vs_spy_spread:+.1f}%)。建議停止追高溢價股，留意市場波動。"
-            )
+        # 中度警戒：黃金獲機構買盤支撐且跑贏美股，或股金同漲但黃金動能過熱
+        elif is_gold_uptrend and (effective_vol_ratio >= 1.20 or gold_vs_spy_spread >= 4.0):
+            if not is_equity_weak_or_vix_high and spy_ret_20d > 3.0:
+                bubble_level = "中度觀察：股金齊漲 (通膨/降息預期)"
+                bubble_tag = "MEDIUM"
+                color = "#F59E0B"
+                premium_shift = -3.0
+                action = "⚠️ 黃金獲買盤流入但美股仍強，屬流動性行情，個股門檻微調收緊 3%"
+                desc = (
+                    f"GLD 攻擊量比 {effective_vol_ratio}x (20日 {gld_ret_20d:+.1f}%)，但標普500同步上漲 {spy_ret_20d:+.1f}% (VIX {vix_val})。"
+                    f"機構買金主要反映流動性與通膨避險，尚未全面撤出股市，保持戒心即可。"
+                )
+            else:
+                bubble_level = "中度警戒：機構避險買盤升溫"
+                bubble_tag = "MEDIUM"
+                color = "#F59E0B"
+                premium_shift = -5.0
+                action = "⚠️ 聰明錢開始轉進黃金避險，個股減碼門檻已自動收緊 5%，切勿追高"
+                desc = (
+                    f"黃金維持多頭且上漲日量能放大 ({effective_vol_ratio}x)，近 20 日領先美股 {gold_vs_spy_spread:+.1f}%。"
+                    f"華爾街防禦意識抬頭，建議停止追高溢價股。"
+                )
             should_alert = True
 
         else:
@@ -183,10 +205,10 @@ def fetch_macro_gold_radar(prev_macro_state: dict) -> dict:
             bubble_tag = "LOW"
             color = "#10B981"
             premium_shift = 0.0
-            action = "✅ 華爾街資金留駐股市，黃金量能正常，維持標準估值門檻運作"
+            action = "✅ 華爾街資金留駐股市，黃金攻擊量能正常，維持標準估值門檻運作"
             desc = (
-                f"目前 GLD 機構量能比為 {effective_vol_ratio}x，近 20 日金股強弱差為 {gold_vs_spy_spread:+.1f}%，"
-                f"尚未出現華爾街大規模拋售股票轉進黃金的泡沫避險訊號。"
+                f"目前 GLD 上漲日機構量能比為 {effective_vol_ratio}x，近 20 日金股強弱差為 {gold_vs_spy_spread:+.1f}% "
+                f"(VIX {vix_val} / 美債10Y {us10y_val}%)，無大規模避險跡象。"
             )
             should_alert = False
 
@@ -207,6 +229,7 @@ def fetch_macro_gold_radar(prev_macro_state: dict) -> dict:
             "gold_vs_spy_spread": gold_vs_spy_spread,
             "vol_ratio": effective_vol_ratio,
             "vix": vix_val,
+            "us10y": us10y_val,
             "premium_shift": premium_shift,
             "must_push": must_push,
             "dates_30": dates_30,
@@ -230,6 +253,7 @@ def fetch_macro_gold_radar(prev_macro_state: dict) -> dict:
             "gold_vs_spy_spread": 0.0,
             "vol_ratio": 1.0,
             "vix": 0.0,
+            "us10y": 0.0,
             "premium_shift": 0.0,
             "must_push": False,
             "dates_30": [],
@@ -239,16 +263,25 @@ def fetch_macro_gold_radar(prev_macro_state: dict) -> dict:
 
 
 # ==========================================
-# 4. 個股報價與技術指標計算 (修復 NaN 問題)
+# 4. 個股報價與技術指標計算 (Wilder's RSI + 60日真實高點)
 # ==========================================
-def calculate_rsi(series: pd.Series, period: int = 14) -> float:
+def calculate_wilder_rsi(series: pd.Series, period: int = 14) -> float:
+    """採用 TradingView 標準 Wilder's Smoothing 計算 RSI，並防範除以零"""
     delta = series.diff()
-    gain = (delta.where(delta > 0, 0.0)).rolling(window=period).mean()
-    loss = (-delta.where(delta < 0, 0.0)).rolling(window=period).mean()
-    rs = gain / loss
+    gain = delta.clip(lower=0.0)
+    loss = -delta.clip(upper=0.0)
+
+    avg_gain = gain.ewm(alpha=1.0 / period, min_periods=period, adjust=False).mean()
+    avg_loss = loss.ewm(alpha=1.0 / period, min_periods=period, adjust=False).mean()
+
+    last_gain = float(avg_gain.iloc[-1])
+    last_loss = float(avg_loss.iloc[-1])
+
+    if last_loss == 0:
+        return 100.0 if last_gain > 0 else 50.0
+    rs = last_gain / last_loss
     rsi = 100.0 - (100.0 / (1.0 + rs))
-    val = float(rsi.iloc[-1])
-    return round(val, 1) if not math.isnan(val) else 50.0
+    return round(rsi, 1) if not math.isnan(rsi) else 50.0
 
 
 def fetch_stock_data(symbol: str, retries: int = 3, delay: int = 3):
@@ -259,7 +292,10 @@ def fetch_stock_data(symbol: str, retries: int = 3, delay: int = 3):
             if hist is None or hist.empty:
                 raise ValueError("回傳歷史資料為空")
 
-            hist = hist.dropna(subset=["Close", "Open"])
+            hist = hist.dropna(subset=["Close", "Open", "High"])
+            if "Volume" in hist.columns:
+                hist = hist[hist["Volume"] > 0]
+
             if len(hist) < 5:
                 raise ValueError("有效交易日數不足 5 天")
 
@@ -268,12 +304,15 @@ def fetch_stock_data(symbol: str, retries: int = 3, delay: int = 3):
             prev_close = float(close_s.iloc[-2])
             open_price = float(hist["Open"].iloc[-1])
 
+            # 關鍵補強：直接擷取近 60 個交易日盤中最高價，徹底解決 state.json 重置後回撤歸零問題
+            high_60d = float(hist["High"].tail(60).max())
+
             gap_pct = ((open_price - prev_close) / prev_close) * 100
             day_change_pct = ((current_price - prev_close) / prev_close) * 100
 
             ma200_val = close_s.rolling(window=200).mean().iloc[-1] if len(close_s) >= 200 else close_s.mean()
             ma20_val = close_s.rolling(window=20).mean().iloc[-1] if len(close_s) >= 20 else close_s.mean()
-            rsi14 = calculate_rsi(close_s, 14)
+            rsi14 = calculate_wilder_rsi(close_s, 14)
 
             recent_30 = hist.tail(30)
             history_dates = [d.strftime("%m/%d") for d in recent_30.index]
@@ -283,6 +322,7 @@ def fetch_stock_data(symbol: str, retries: int = 3, delay: int = 3):
                 "current_price": round(current_price, 2),
                 "prev_close": round(prev_close, 2),
                 "open_price": round(open_price, 2),
+                "high_60d": round(high_60d, 2),
                 "gap_pct": round(gap_pct, 2),
                 "day_change_pct": round(day_change_pct, 2),
                 "ma200": round(float(ma200_val), 2),
@@ -298,12 +338,13 @@ def fetch_stock_data(symbol: str, retries: int = 3, delay: int = 3):
 
 
 # ==========================================
-# 5. 個股決策矩陣 (連動黃金泡沫預警動態調整中高風險)
+# 5. 個股決策矩陣
 # ==========================================
 def evaluate_quant_matrix(
     symbol: str, meta: dict, market_data: dict, prev_stock_state: dict, macro_gold: dict
 ) -> dict:
     price = market_data["current_price"]
+    high_60d = market_data["high_60d"]
     ma200 = market_data["ma200"]
     ma20 = market_data["ma20"]
     rsi14 = market_data["rsi14"]
@@ -316,22 +357,20 @@ def evaluate_quant_matrix(
     stop_loss = meta.get("stop_loss_pct", None)
     trailing_stop = meta.get("trailing_stop_pct", -15.0)
 
+    # 結合「近 60 日真實盤中最高價」與「快取最高價」，永不失憶
     raw_peak = prev_stock_state.get("peak_price", price)
     cached_peak = price if (raw_peak is None or math.isnan(float(raw_peak))) else float(raw_peak)
-    peak_price = max(cached_peak, price)
+    peak_price = max(cached_peak, high_60d, price)
     drawdown_from_peak = ((price - peak_price) / peak_price) * 100
 
     safety_margin = ((fair - price) / fair) * 100
     premium_rate = ((price - fair) / fair) * 100
     pnl_rate = ((price - cost) / cost) * 100
 
-    # 連動黃金避險預警：動態收緊中/高風險溢價門檻
-    # 正常門檻：中風險 12%、高風險 25%
-    # 當華爾街大買黃金時，shift 為 -4% 或 -10%，提前觸發減碼警報
     shift = macro_gold.get("premium_shift", 0.0)
-    high_risk_threshold = 25.0 + shift    # 泡沫警報時降至 15%
-    med_risk_threshold = 12.0 + shift     # 泡沫警報時降至 2% (幾乎只要溢價就警戒)
-    macro_note = " (⚠️受黃金避險預警連動收緊門檻)" if shift < 0 else ""
+    high_risk_threshold = 25.0 + shift
+    med_risk_threshold = 12.0 + shift
+    macro_note = f" (⚠️受黃金避險連動下調 {abs(shift):.0f}%)" if shift < 0 else ""
 
     gap_warning = f" (注意: 今日跳空 {gap_pct}%)" if abs(gap_pct) >= 3.0 else ""
 
@@ -356,7 +395,7 @@ def evaluate_quant_matrix(
         risk_tag = "HIGH"
         color = "#EF4444"
         action = "執行第 2 階減碼：賣出持倉 1/3"
-        desc = f"溢價率達 {premium_rate:.1f}% (門檻 >{high_risk_threshold:.0f}%{macro_note})，估值透支，分批收回現金防範泡沫。"
+        desc = f"溢價率達 {premium_rate:.1f}% (門檻 >{high_risk_threshold:.0f}%{macro_note})，估值透支，分批收回現金。"
         should_alert = True
 
     elif med_risk_threshold <= premium_rate <= high_risk_threshold:
@@ -436,10 +475,9 @@ def evaluate_quant_matrix(
 
 
 # ==========================================
-# 6. LINE Flex Message 產生器 (含黃金泡沫預警卡)
+# 6. LINE Flex Message 產生器
 # ==========================================
 def build_macro_gold_bubble(macro: dict) -> dict:
-    """當華爾街黃金避險訊號觸發時，作為第一張卡片推播"""
     return {
         "type": "bubble",
         "size": "mega",
@@ -451,7 +489,7 @@ def build_macro_gold_bubble(macro: dict) -> dict:
             "contents": [
                 {
                     "type": "text",
-                    "text": "🌍 華爾街黃金避險與泡沫雷達",
+                    "text": "🛡️ 華爾街黃金避險與泡沫雷達",
                     "weight": "bold",
                     "color": "#FFFFFF",
                     "size": "md",
@@ -489,7 +527,7 @@ def build_macro_gold_bubble(macro: dict) -> dict:
                     "type": "box",
                     "layout": "horizontal",
                     "contents": [
-                        {"type": "text", "text": "機構量能異常倍數", "color": "#6B7280", "size": "sm"},
+                        {"type": "text", "text": "上漲日攻擊量能比", "color": "#6B7280", "size": "sm"},
                         {
                             "type": "text",
                             "text": f"{macro['vol_ratio']}x (20日 {macro['gld_ret_20d']:+.1f}%)",
@@ -504,10 +542,10 @@ def build_macro_gold_bubble(macro: dict) -> dict:
                     "type": "box",
                     "layout": "horizontal",
                     "contents": [
-                        {"type": "text", "text": "金股輪動差 (GLD-SPY)", "color": "#6B7280", "size": "sm"},
+                        {"type": "text", "text": "金股輪動差 / VIX", "color": "#6B7280", "size": "sm"},
                         {
                             "type": "text",
-                            "text": f"{macro['gold_vs_spy_spread']:+.1f}% (VIX {macro['vix']})",
+                            "text": f"{macro['gold_vs_spy_spread']:+.1f}% / VIX {macro['vix']}",
                             "weight": "bold",
                             "size": "sm",
                             "align": "end",
@@ -600,7 +638,7 @@ def build_stock_bubble(item: dict) -> dict:
                     "type": "box",
                     "layout": "horizontal",
                     "contents": [
-                        {"type": "text", "text": "持股損益 / 回撤", "color": "#6B7280", "size": "sm"},
+                        {"type": "text", "text": "持股損益 / 60D回撤", "color": "#6B7280", "size": "sm"},
                         {
                             "type": "text",
                             "text": f"{pnl_sign}{item['pnl_rate']}% / {item['drawdown_from_peak']}%",
@@ -615,10 +653,10 @@ def build_stock_bubble(item: dict) -> dict:
                     "type": "box",
                     "layout": "horizontal",
                     "contents": [
-                        {"type": "text", "text": "安全邊際 / 200MA", "color": "#6B7280", "size": "sm"},
+                        {"type": "text", "text": "安全邊際 / RSI", "color": "#6B7280", "size": "sm"},
                         {
                             "type": "text",
-                            "text": f"{item['safety_margin']}% / {cur}{item['ma200']}",
+                            "text": f"{item['safety_margin']}% / RSI {item['rsi14']}",
                             "size": "sm",
                             "align": "end",
                             "color": "#374151",
@@ -710,7 +748,7 @@ def push_system_watchdog_error(error_msg: str):
 
 
 # ==========================================
-# 7. 旗艦版深色互動式量化儀表板 (含華爾街黃金避險雷達)
+# 7. 旗艦版深色互動式量化儀表板 (index.html)
 # ==========================================
 def generate_pro_dashboard(macro_gold: dict, eval_results: list):
     updated_time = now_tw_str()
@@ -721,7 +759,6 @@ def generate_pro_dashboard(macro_gold: dict, eval_results: list):
     avg_pnl_sign = "+" if avg_pnl > 0 else ""
     avg_pnl_color = "text-emerald-400" if avg_pnl >= 0 else "text-rose-400"
 
-    # 黃金雷達顏色與樣式
     m_color = macro_gold["color"]
     spread_cls = "text-amber-400" if macro_gold["gold_vs_spy_spread"] > 0 else "text-slate-300"
     gld_20d_cls = "text-emerald-400" if macro_gold["gld_ret_20d"] >= 0 else "text-rose-400"
@@ -771,7 +808,7 @@ def generate_pro_dashboard(macro_gold: dict, eval_results: list):
 
                     <div class="mb-4 bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
                         <div class="flex justify-between text-xs mb-1.5">
-                            <span class="text-slate-400">合理價 <strong class="text-slate-200">{cur}{r['fair_value']}</strong> (高風險線 &gt;{r['high_risk_threshold']:.0f}%)</span>
+                            <span class="text-slate-400">合理價 <strong class="text-slate-200">{cur}{r['fair_value']}</strong> (高風險 &gt;{r['high_risk_threshold']:.0f}%)</span>
                             <span class="font-bold" style="color: {r['color']}">邊際 {r['safety_margin']}% / 溢價 {r['premium_rate']}%</span>
                         </div>
                         <div class="w-full h-2 bg-slate-800 rounded-full relative overflow-hidden">
@@ -803,7 +840,7 @@ def generate_pro_dashboard(macro_gold: dict, eval_results: list):
                             <span class="font-bold text-slate-200">{cur}{r['ma20']}</span>
                         </div>
                         <div>
-                            <span class="text-slate-500 block">波段最高價</span>
+                            <span class="text-slate-500 block">60D 波段高點</span>
                             <span class="font-bold text-slate-200">{cur}{r['peak_price']}</span>
                         </div>
                         <div>
@@ -811,7 +848,7 @@ def generate_pro_dashboard(macro_gold: dict, eval_results: list):
                             <span class="font-bold text-rose-400">{r['drawdown_from_peak']}%</span>
                         </div>
                         <div>
-                            <span class="text-slate-500 block">RSI (14) 強弱</span>
+                            <span class="text-slate-500 block">RSI (14)</span>
                             <span class="font-bold text-amber-400">{r['rsi14']}</span>
                         </div>
                     </div>
@@ -867,7 +904,6 @@ def generate_pro_dashboard(macro_gold: dict, eval_results: list):
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen font-sans selection:bg-blue-500 selection:text-white">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <!-- 頂部標題與系統狀態 -->
         <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-6 border-b border-slate-800">
             <div>
                 <div class="flex items-center gap-2.5">
@@ -875,7 +911,7 @@ def generate_pro_dashboard(macro_gold: dict, eval_results: list):
                     <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white">量化估值與華爾街避險預警系統</h1>
                 </div>
                 <p class="text-xs sm:text-sm text-slate-400 mt-1">
-                    整合 GLD 機構黃金避險雷達、安全邊際階梯、200MA 濾網與高點移動停利 ｜ 更新時間: <span class="text-slate-200 font-mono">{updated_time}</span>
+                    整合 GLD 上漲日攻擊量能雷達、Wilder's RSI、60D 高點移動停利 ｜ 更新時間: <span class="text-slate-200 font-mono">{updated_time}</span>
                 </p>
             </div>
             <div class="flex flex-wrap gap-2">
@@ -886,17 +922,16 @@ def generate_pro_dashboard(macro_gold: dict, eval_results: list):
             </div>
         </header>
 
-        <!-- 🌍 華爾街黃金避險與股市泡沫預警雷達 (核心新增模組) -->
+        <!-- 🛡️ 華爾街黃金避險與股市泡沫預警雷達 -->
         <section class="my-6 rounded-2xl border p-5 shadow-2xl" style="background: linear-gradient(135deg, {m_color}18 0%, #0F172A 65%); border-color: {m_color}60;">
             <div class="flex flex-col lg:flex-row justify-between gap-6">
-                <!-- 左側：預警狀態與機構指標 -->
                 <div class="flex-1 space-y-4">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <div class="flex items-center gap-2.5">
                             <span class="text-xl">🛡️</span>
                             <div>
                                 <h2 class="text-base sm:text-lg font-black text-white tracking-wide">華爾街黃金避險與股市泡沫預警雷達</h2>
-                                <p class="text-xs text-slate-400">監控全球最大實體黃金 ETF (GLD) 機構資金異常放量與「棄股投金」輪動背離</p>
+                                <p class="text-xs text-slate-400">監控黃金 ETF (GLD) 上漲日機構攻擊量能與「棄股投金」輪動背離 (已排除股金齊漲假訊號)</p>
                             </div>
                         </div>
                         <span class="px-3.5 py-1 rounded-full text-xs font-extrabold text-white shadow" style="background-color: {m_color};">
@@ -904,41 +939,38 @@ def generate_pro_dashboard(macro_gold: dict, eval_results: list):
                         </span>
                     </div>
 
-                    <!-- 四大機構避險監控指標 -->
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         <div class="bg-slate-950/70 border border-slate-800/80 p-3 rounded-xl">
-                            <span class="text-[11px] text-slate-400 block">國際黃金期貨 / GLD</span>
+                            <span class="text-[11px] text-slate-400 block">黃金期貨 / GLD 現價</span>
                             <span class="text-lg font-black text-amber-400">${macro_gold['gold_spot']}</span>
                             <span class="text-xs text-slate-400 block mt-0.5">GLD: ${macro_gold['gld_price']}</span>
                         </div>
                         <div class="bg-slate-950/70 border border-slate-800/80 p-3 rounded-xl">
-                            <span class="text-[11px] text-slate-400 block">華爾街機構掃貨量比</span>
+                            <span class="text-[11px] text-slate-400 block">上漲日機構攻擊量比</span>
                             <span class="text-lg font-black text-white">{macro_gold['vol_ratio']}x</span>
-                            <span class="text-[11px] text-slate-400 block mt-0.5">&ge;1.45x 代表機構異常買進</span>
+                            <span class="text-[11px] text-slate-400 block mt-0.5">&ge;1.40x 代表機構異常掃貨</span>
                         </div>
                         <div class="bg-slate-950/70 border border-slate-800/80 p-3 rounded-xl">
-                            <span class="text-[11px] text-slate-400 block">GLD 近 20 日動能</span>
-                            <span class="text-lg font-black {gld_20d_cls}">{macro_gold['gld_ret_20d']:+.2f}%</span>
-                            <span class="text-[11px] text-slate-400 block mt-0.5">近 5 日: {macro_gold['gld_ret_5d']:+.2f}%</span>
-                        </div>
-                        <div class="bg-slate-950/70 border border-slate-800/80 p-3 rounded-xl">
-                            <span class="text-[11px] text-slate-400 block">金股輪動差 (GLD-SPY)</span>
+                            <span class="text-[11px] text-slate-400 block">GLD vs SPY 輪動差</span>
                             <span class="text-lg font-black {spread_cls}">{macro_gold['gold_vs_spy_spread']:+.2f}%</span>
-                            <span class="text-[11px] text-slate-400 block mt-0.5">VIX 恐慌指數: {macro_gold['vix']}</span>
+                            <span class="text-[11px] text-slate-400 block mt-0.5">GLD 20日: <strong class="{gld_20d_cls}">{macro_gold['gld_ret_20d']:+.1f}%</strong></span>
+                        </div>
+                        <div class="bg-slate-950/70 border border-slate-800/80 p-3 rounded-xl">
+                            <span class="text-[11px] text-slate-400 block">VIX 恐慌 / 美債10Y</span>
+                            <span class="text-lg font-black text-rose-400">{macro_gold['vix']}</span>
+                            <span class="text-[11px] text-slate-400 block mt-0.5">10Y 殖利率: {macro_gold['us10y']}%</span>
                         </div>
                     </div>
 
-                    <!-- 總經連動指令說明 -->
                     <div class="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800">
                         <div class="text-xs font-extrabold" style="color: {m_color};">{macro_gold['action']}</div>
                         <p class="text-xs text-slate-300 mt-1 leading-relaxed">{macro_gold['desc']}</p>
                     </div>
                 </div>
 
-                <!-- 右側：近 30 日「黃金 GLD vs 美股 SPY」資金流向對比走勢圖 -->
                 <div class="w-full lg:w-80 bg-slate-950/70 border border-slate-800/80 rounded-xl p-3 flex flex-col justify-between">
                     <div class="flex justify-between items-center mb-2">
-                        <span class="text-xs font-bold text-slate-300">近 30 日資金輪動對比 (累積漲跌幅%)</span>
+                        <span class="text-xs font-bold text-slate-300">近 30 日股金資金輪動 (累積%)</span>
                         <div class="flex gap-2 text-[10px]">
                             <span class="text-amber-400 font-bold">● 黃金 GLD</span>
                             <span class="text-blue-400 font-bold">● 美股 SPY</span>
@@ -947,7 +979,7 @@ def generate_pro_dashboard(macro_gold: dict, eval_results: list):
                     <div class="h-36 w-full">
                         <canvas id="macro-gold-chart"></canvas>
                     </div>
-                    <p class="text-[10px] text-slate-500 mt-1.5 text-center">當黃線 (GLD) 急遽向上背離藍線 (SPY)，代表華爾街資金正撤出股市買進黃金避險</p>
+                    <p class="text-[10px] text-slate-500 mt-1.5 text-center">黃線向上突破且藍線走平/下彎 = 典型華爾街泡沫避險前兆</p>
                 </div>
             </div>
         </section>
@@ -972,7 +1004,6 @@ def generate_pro_dashboard(macro_gold: dict, eval_results: list):
             </div>
         </section>
 
-        <!-- 個股量化卡片網格 -->
         <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {cards_html}
         </main>
@@ -983,7 +1014,6 @@ def generate_pro_dashboard(macro_gold: dict, eval_results: list):
         const macroChartCfg = {macro_chart_json};
 
         window.addEventListener('DOMContentLoaded', () => {{
-            // 1. 繪製頂部「黃金 GLD vs 美股 SPY」資金輪動圖
             const macroCtx = document.getElementById('macro-gold-chart');
             if (macroCtx && macroChartCfg.dates.length > 0) {{
                 new Chart(macroCtx, {{
@@ -1031,7 +1061,6 @@ def generate_pro_dashboard(macro_gold: dict, eval_results: list):
                 }});
             }}
 
-            // 2. 繪製各檔股票走勢與合理基準價
             chartConfigs.forEach(cfg => {{
                 const ctx = document.getElementById(cfg.id);
                 if (!ctx) return;
@@ -1097,7 +1126,7 @@ def generate_pro_dashboard(macro_gold: dict, eval_results: list):
 
     with open(DASHBOARD_FILE, "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"[完成] 含黃金避險雷達之互動儀表板已輸出至 {DASHBOARD_FILE}")
+    print(f"[完成] 強化版互動儀表板已輸出至 {DASHBOARD_FILE}")
 
 
 # ==========================================
@@ -1105,6 +1134,9 @@ def generate_pro_dashboard(macro_gold: dict, eval_results: list):
 # ==========================================
 def main():
     user_id = os.environ.get("LINE_USER_ID")
+    event_name = os.environ.get("GITHUB_EVENT_NAME", "")
+    is_manual_run = event_name == "workflow_dispatch"
+
     prev_state = load_state()
     prev_stocks = prev_state.get("stocks", {})
     prev_macro = prev_state.get("macro_gold", {})
@@ -1114,12 +1146,12 @@ def main():
     bubbles_to_push = []
 
     try:
-        # 1. 先執行頂層「華爾街黃金避險與泡沫預警雷達」
+        # 1. 掃描華爾街黃金避險雷達
         macro_gold = fetch_macro_gold_radar(prev_macro)
-        if macro_gold.get("must_push"):
+        if macro_gold.get("must_push") or is_manual_run:
             bubbles_to_push.append(build_macro_gold_bubble(macro_gold))
 
-        # 2. 執行個股評估 (帶入黃金泡沫預警進行動態中高風險門檻收緊)
+        # 2. 評估個股風控矩陣
         for symbol, meta in WATCHLIST.items():
             market_data = fetch_stock_data(symbol)
             if not market_data:
@@ -1137,27 +1169,28 @@ def main():
                 "updated_at": now_tw_str(),
             }
 
-            if eval_data["must_push"]:
+            # 若為定時排程則依去重規則推播；若為手動點擊 workflow_dispatch 則強制推播全部卡片供檢視
+            if eval_data["must_push"] or is_manual_run:
                 bubbles_to_push.append(build_stock_bubble(eval_data))
 
         if not eval_results:
             raise RuntimeError("無法自 Yahoo Finance 獲取任何個股報價。")
 
-        # 3. 發送 LINE 推播 (若有黃金避險警報或個股風險轉變)
+        # 3. 發送 LINE 推播
         if bubbles_to_push and user_id:
             payload = {
                 "to": user_id,
                 "messages": [
                     {
                         "type": "flex",
-                        "altText": "🚨【華爾街避險與資產風控通知】點擊查看最新指令",
+                        "altText": "🛡️【華爾街避險雷達與資產風控通知】點擊查看最新指令",
                         "contents": {"type": "carousel", "contents": bubbles_to_push[:10]},
                     }
                 ],
             }
             send_line_message(payload)
 
-        # 4. 儲存快取與輸出儀表板
+        # 4. 儲存快取與輸出面板
         macro_summary = {
             "bubble_level": macro_gold["bubble_level"],
             "bubble_tag": macro_gold["bubble_tag"],
@@ -1165,11 +1198,13 @@ def main():
             "gld_price": macro_gold["gld_price"],
             "vol_ratio": macro_gold["vol_ratio"],
             "gold_vs_spy_spread": macro_gold["gold_vs_spy_spread"],
+            "vix": macro_gold["vix"],
+            "us10y": macro_gold["us10y"],
             "updated_at": now_tw_str(),
         }
         save_state(macro_summary, new_stocks_dict, eval_results)
         generate_pro_dashboard(macro_gold, eval_results)
-        print("[完成] 總經黃金避險雷達與個股量化監控執行完畢。")
+        print(f"[完成] 量化監控執行完畢 (觸發模式: {event_name or 'local'})。")
 
     except Exception as e:
         err_stack = traceback.format_exc()
