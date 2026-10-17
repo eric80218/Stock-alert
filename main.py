@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 Quantitative Risk & Valuation Engine (Ultimate Institutional Flagship Edition - Fixed)
-- 已將台積電 (2330.TW) 重新補回監控清單
-- 即時匯率換算 (USD/TWD)、LINE 智慧過濾（防警報疲勞）、總市值 NT$ 結算與資產配置圓餅圖
+- 已修正結尾語法縮排錯誤 (IndentationError)
+- 16 檔完整持股（含 2330.TW）、即時匯率換算 (USD/TWD)、總市值 NT$ 結算、LINE 智慧過濾
 """
 
 import os
@@ -17,7 +17,7 @@ import pandas as pd
 import yfinance as yf
 
 # ==========================================
-# 1. 完整持股監控清單與部位設定 (已完整納入 2330.TW 與其他持股)
+# 1. 完整持股監控清單與部位設定
 # ==========================================
 WATCHLIST = {
     "2330.TW": {
@@ -283,7 +283,7 @@ def fetch_macro_gold_radar(prev_macro_state: dict) -> dict:
         bubble_level = "高度警報：機構大舉避險" if is_smart_money_hedging else "資金安穩：市場多頭運行"
         color = "#EF4444" if is_smart_money_hedging else "#10B981"
         action = "🚨 聰明錢重押空頭，個股減碼門檻已下調！" if is_smart_money_hedging else "✅ 華爾街機構資金留駐股市，維持標準估值運作。"
-        desc = f"華爾街資金動態監控：SPXU 量比 {spxu_vol_ratio}x，VIX 恐慌指數 {vix_val}，費半 {'空頭' if is_sox_bear else '多頭'}。"
+        desc = f"華爾街資金動態監控：SPXU 量比 {spxu_vol_ratio}x, VIX 恐慌指數 {vix_val}, 費半 {'空頭' if is_sox_bear else '多頭'}。"
 
         return {
             "bubble_level": bubble_level, "color": color, "action": action, "desc": desc,
@@ -582,7 +582,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float):
 </html>"""
     with open(DASHBOARD_FILE, "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"[完成] 台積電歸位版旗艦操盤室儀表板已輸出至 {DASHBOARD_FILE}")
+    print(f"[完成] 旗艦級專業操盤室儀表板已輸出至 {DASHBOARD_FILE}")
 
 
 def main():
@@ -660,8 +660,8 @@ def main():
             except Exception:
                 pass
 
-        print("[完成] 旗艦級操盤平台（含 2330.TW）執行完畢。")
+        print("[完成] 旗艦級操盤平台執行完畢。")
 
 
 if __name__ == "__main__":
-main()
+    main()
