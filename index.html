@@ -9,7 +9,6 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen font-sans selection:bg-blue-500 selection:text-white">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        <!-- 頂部標題與系統狀態 -->
         <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-6 border-b border-slate-800">
             <div>
                 <div class="flex items-center gap-2.5">
@@ -17,7 +16,7 @@
                     <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white">量化估值與華爾街避險預警系統</h1>
                 </div>
                 <p class="text-xs sm:text-sm text-slate-400 mt-1">
-                    整合 GLD 機構黃金避險雷達、安全邊際階梯、200MA 濾網與高點移動停利 ｜ 更新時間: <span class="text-slate-200 font-mono">2026-10-18 06:40:55</span>
+                    整合 GLD 上漲日攻擊量能雷達、Wilder's RSI、60D 高點移動停利 ｜ 更新時間: <span class="text-slate-200 font-mono">2026-10-18 06:43:14</span>
                 </p>
             </div>
             <div class="flex flex-wrap gap-2">
@@ -28,17 +27,16 @@
             </div>
         </header>
 
-        <!-- 🌍 華爾街黃金避險與股市泡沫預警雷達 (核心新增模組) -->
+        <!-- 🛡️ 華爾街黃金避險與股市泡沫預警雷達 -->
         <section class="my-6 rounded-2xl border p-5 shadow-2xl" style="background: linear-gradient(135deg, #10B98118 0%, #0F172A 65%); border-color: #10B98160;">
             <div class="flex flex-col lg:flex-row justify-between gap-6">
-                <!-- 左側：預警狀態與機構指標 -->
                 <div class="flex-1 space-y-4">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <div class="flex items-center gap-2.5">
                             <span class="text-xl">🛡️</span>
                             <div>
                                 <h2 class="text-base sm:text-lg font-black text-white tracking-wide">華爾街黃金避險與股市泡沫預警雷達</h2>
-                                <p class="text-xs text-slate-400">監控全球最大實體黃金 ETF (GLD) 機構資金異常放量與「棄股投金」輪動背離</p>
+                                <p class="text-xs text-slate-400">監控黃金 ETF (GLD) 上漲日機構攻擊量能與「棄股投金」輪動背離 (已排除股金齊漲假訊號)</p>
                             </div>
                         </div>
                         <span class="px-3.5 py-1 rounded-full text-xs font-extrabold text-white shadow" style="background-color: #10B981;">
@@ -46,41 +44,38 @@
                         </span>
                     </div>
 
-                    <!-- 四大機構避險監控指標 -->
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         <div class="bg-slate-950/70 border border-slate-800/80 p-3 rounded-xl">
-                            <span class="text-[11px] text-slate-400 block">國際黃金期貨 / GLD</span>
+                            <span class="text-[11px] text-slate-400 block">黃金期貨 / GLD 現價</span>
                             <span class="text-lg font-black text-amber-400">$4181.1</span>
                             <span class="text-xs text-slate-400 block mt-0.5">GLD: $382.01</span>
                         </div>
                         <div class="bg-slate-950/70 border border-slate-800/80 p-3 rounded-xl">
-                            <span class="text-[11px] text-slate-400 block">華爾街機構掃貨量比</span>
-                            <span class="text-lg font-black text-white">1.17x</span>
-                            <span class="text-[11px] text-slate-400 block mt-0.5">&ge;1.45x 代表機構異常買進</span>
+                            <span class="text-[11px] text-slate-400 block">上漲日機構攻擊量比</span>
+                            <span class="text-lg font-black text-white">1.0x</span>
+                            <span class="text-[11px] text-slate-400 block mt-0.5">&ge;1.40x 代表機構異常掃貨</span>
                         </div>
                         <div class="bg-slate-950/70 border border-slate-800/80 p-3 rounded-xl">
-                            <span class="text-[11px] text-slate-400 block">GLD 近 20 日動能</span>
-                            <span class="text-lg font-black text-rose-400">-4.78%</span>
-                            <span class="text-[11px] text-slate-400 block mt-0.5">近 5 日: -0.67%</span>
-                        </div>
-                        <div class="bg-slate-950/70 border border-slate-800/80 p-3 rounded-xl">
-                            <span class="text-[11px] text-slate-400 block">金股輪動差 (GLD-SPY)</span>
+                            <span class="text-[11px] text-slate-400 block">GLD vs SPY 輪動差</span>
                             <span class="text-lg font-black text-slate-300">-4.98%</span>
-                            <span class="text-[11px] text-slate-400 block mt-0.5">VIX 恐慌指數: 19.99</span>
+                            <span class="text-[11px] text-slate-400 block mt-0.5">GLD 20日: <strong class="text-rose-400">-4.8%</strong></span>
+                        </div>
+                        <div class="bg-slate-950/70 border border-slate-800/80 p-3 rounded-xl">
+                            <span class="text-[11px] text-slate-400 block">VIX 恐慌 / 美債10Y</span>
+                            <span class="text-lg font-black text-rose-400">19.99</span>
+                            <span class="text-[11px] text-slate-400 block mt-0.5">10Y 殖利率: 5.1%</span>
                         </div>
                     </div>
 
-                    <!-- 總經連動指令說明 -->
                     <div class="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800">
-                        <div class="text-xs font-extrabold" style="color: #10B981;">✅ 華爾街資金留駐股市，黃金量能正常，維持標準估值門檻運作</div>
-                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">目前 GLD 機構量能比為 1.17x，近 20 日金股強弱差為 -5.0%，尚未出現華爾街大規模拋售股票轉進黃金的泡沫避險訊號。</p>
+                        <div class="text-xs font-extrabold" style="color: #10B981;">✅ 華爾街資金留駐股市，黃金攻擊量能正常，維持標準估值門檻運作</div>
+                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">目前 GLD 上漲日機構量能比為 1.0x，近 20 日金股強弱差為 -5.0% (VIX 19.99 / 美債10Y 5.1%)，無大規模避險跡象。</p>
                     </div>
                 </div>
 
-                <!-- 右側：近 30 日「黃金 GLD vs 美股 SPY」資金流向對比走勢圖 -->
                 <div class="w-full lg:w-80 bg-slate-950/70 border border-slate-800/80 rounded-xl p-3 flex flex-col justify-between">
                     <div class="flex justify-between items-center mb-2">
-                        <span class="text-xs font-bold text-slate-300">近 30 日資金輪動對比 (累積漲跌幅%)</span>
+                        <span class="text-xs font-bold text-slate-300">近 30 日股金資金輪動 (累積%)</span>
                         <div class="flex gap-2 text-[10px]">
                             <span class="text-amber-400 font-bold">● 黃金 GLD</span>
                             <span class="text-blue-400 font-bold">● 美股 SPY</span>
@@ -89,7 +84,7 @@
                     <div class="h-36 w-full">
                         <canvas id="macro-gold-chart"></canvas>
                     </div>
-                    <p class="text-[10px] text-slate-500 mt-1.5 text-center">當黃線 (GLD) 急遽向上背離藍線 (SPY)，代表華爾街資金正撤出股市買進黃金避險</p>
+                    <p class="text-[10px] text-slate-500 mt-1.5 text-center">黃線向上突破且藍線走平/下彎 = 典型華爾街泡沫避險前兆</p>
                 </div>
             </div>
         </section>
@@ -114,7 +109,6 @@
             </div>
         </section>
 
-        <!-- 個股量化卡片網格 -->
         <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             
         <div class="stock-card bg-slate-900/90 border border-slate-800 rounded-2xl shadow-xl overflow-hidden flex flex-col justify-between transition-all duration-200 hover:border-slate-700"
@@ -150,7 +144,7 @@
 
                     <div class="mb-4 bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
                         <div class="flex justify-between text-xs mb-1.5">
-                            <span class="text-slate-400">合理價 <strong class="text-slate-200">$220.0</strong> (高風險線 &gt;25%)</span>
+                            <span class="text-slate-400">合理價 <strong class="text-slate-200">$220.0</strong> (高風險 &gt;25%)</span>
                             <span class="font-bold" style="color: #3B82F6">邊際 2.67% / 溢價 -2.67%</span>
                         </div>
                         <div class="w-full h-2 bg-slate-800 rounded-full relative overflow-hidden">
@@ -182,16 +176,16 @@
                             <span class="font-bold text-slate-200">$228.18</span>
                         </div>
                         <div>
-                            <span class="text-slate-500 block">波段最高價</span>
-                            <span class="font-bold text-slate-200">$229.28</span>
+                            <span class="text-slate-500 block">60D 波段高點</span>
+                            <span class="font-bold text-slate-200">$243.37</span>
                         </div>
                         <div>
                             <span class="text-slate-500 block">高點回撤</span>
-                            <span class="font-bold text-rose-400">-6.61%</span>
+                            <span class="font-bold text-rose-400">-12.01%</span>
                         </div>
                         <div>
-                            <span class="text-slate-500 block">RSI (14) 強弱</span>
-                            <span class="font-bold text-amber-400">32.9</span>
+                            <span class="text-slate-500 block">RSI (14)</span>
+                            <span class="font-bold text-amber-400">37.6</span>
                         </div>
                     </div>
 
@@ -243,7 +237,7 @@
 
                     <div class="mb-4 bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
                         <div class="flex justify-between text-xs mb-1.5">
-                            <span class="text-slate-400">合理價 <strong class="text-slate-200">$480.0</strong> (高風險線 &gt;25%)</span>
+                            <span class="text-slate-400">合理價 <strong class="text-slate-200">$480.0</strong> (高風險 &gt;25%)</span>
                             <span class="font-bold" style="color: #F97316">邊際 14.73% / 溢價 -14.73%</span>
                         </div>
                         <div class="w-full h-2 bg-slate-800 rounded-full relative overflow-hidden">
@@ -275,16 +269,16 @@
                             <span class="font-bold text-slate-200">$490.37</span>
                         </div>
                         <div>
-                            <span class="text-slate-500 block">波段最高價</span>
-                            <span class="font-bold text-slate-200">$507.03</span>
+                            <span class="text-slate-500 block">60D 波段高點</span>
+                            <span class="font-bold text-slate-200">$563.16</span>
                         </div>
                         <div>
                             <span class="text-slate-500 block">高點回撤</span>
-                            <span class="font-bold text-rose-400">-19.28%</span>
+                            <span class="font-bold text-rose-400">-27.32%</span>
                         </div>
                         <div>
-                            <span class="text-slate-500 block">RSI (14) 強弱</span>
-                            <span class="font-bold text-amber-400">29.6</span>
+                            <span class="text-slate-500 block">RSI (14)</span>
+                            <span class="font-bold text-amber-400">29.2</span>
                         </div>
                     </div>
 
@@ -336,7 +330,7 @@
 
                     <div class="mb-4 bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
                         <div class="flex justify-between text-xs mb-1.5">
-                            <span class="text-slate-400">合理價 <strong class="text-slate-200">NT$115.0</strong> (高風險線 &gt;25%)</span>
+                            <span class="text-slate-400">合理價 <strong class="text-slate-200">NT$115.0</strong> (高風險 &gt;25%)</span>
                             <span class="font-bold" style="color: #3B82F6">邊際 5.22% / 溢價 -5.22%</span>
                         </div>
                         <div class="w-full h-2 bg-slate-800 rounded-full relative overflow-hidden">
@@ -368,16 +362,16 @@
                             <span class="font-bold text-slate-200">NT$112.17</span>
                         </div>
                         <div>
-                            <span class="text-slate-500 block">波段最高價</span>
-                            <span class="font-bold text-slate-200">NT$114.95</span>
+                            <span class="text-slate-500 block">60D 波段高點</span>
+                            <span class="font-bold text-slate-200">NT$116.6</span>
                         </div>
                         <div>
                             <span class="text-slate-500 block">高點回撤</span>
-                            <span class="font-bold text-rose-400">-5.18%</span>
+                            <span class="font-bold text-rose-400">-6.52%</span>
                         </div>
                         <div>
-                            <span class="text-slate-500 block">RSI (14) 強弱</span>
-                            <span class="font-bold text-amber-400">38.8</span>
+                            <span class="text-slate-500 block">RSI (14)</span>
+                            <span class="font-bold text-amber-400">43.1</span>
                         </div>
                     </div>
 
@@ -404,7 +398,6 @@
         const macroChartCfg = {"dates": ["09/04", "09/08", "09/09", "09/10", "09/11", "09/14", "09/15", "09/16", "09/17", "09/18", "09/21", "09/22", "09/23", "09/24", "09/25", "09/28", "09/29", "09/30", "10/01", "10/02", "10/05", "10/06", "10/07", "10/08", "10/09", "10/12", "10/13", "10/14", "10/15", "10/16"], "gld": [0.0, -1.73, -0.84, -2.56, -1.97, -3.42, -3.1, -3.69, -2.07, -1.38, -2.06, -1.65, -3.41, -3.71, -3.28, -7.09, -5.87, -6.37, -5.9, -6.55, -6.69, -6.02, -7.59, -6.92, -5.46, -6.05, -6.17, -7.57, -5.91, -6.09], "spy": [0.0, -0.55, -1.01, -1.6, -0.77, -1.21, -1.66, -2.1, -0.99, -0.86, 0.68, 0.66, -0.06, -0.14, 0.4, -0.35, -0.53, -0.74, -0.56, 0.18, 0.85, 1.41, 1.16, 0.74, 1.34, 1.28, 1.27, 0.17, 0.46, -0.65]};
 
         window.addEventListener('DOMContentLoaded', () => {
-            // 1. 繪製頂部「黃金 GLD vs 美股 SPY」資金輪動圖
             const macroCtx = document.getElementById('macro-gold-chart');
             if (macroCtx && macroChartCfg.dates.length > 0) {
                 new Chart(macroCtx, {
@@ -452,7 +445,6 @@
                 });
             }
 
-            // 2. 繪製各檔股票走勢與合理基準價
             chartConfigs.forEach(cfg => {
                 const ctx = document.getElementById(cfg.id);
                 if (!ctx) return;
