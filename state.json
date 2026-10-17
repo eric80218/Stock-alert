@@ -1,23 +1,32 @@
 {
-  "updated_at": "2026-10-18 06:30:07",
+  "updated_at": "2026-10-18 06:37:15",
+  "macro_gold": {
+    "bubble_level": "資金安穩：未見異常黃金避險潮",
+    "bubble_tag": "LOW",
+    "gold_spot": 4181.1,
+    "gld_price": 382.01,
+    "vol_ratio": 1.17,
+    "gold_vs_spy_spread": -4.98,
+    "updated_at": "2026-10-18 06:37:15"
+  },
   "stocks": {
     "NVDA": {
       "risk_level": "合理估值區",
       "current_price": 214.13,
       "peak_price": 229.28,
-      "updated_at": "2026-10-18 06:30:06"
+      "updated_at": "2026-10-18 06:37:14"
     },
     "AMAT": {
       "risk_level": "偏空觀察 (左側禁買)",
       "current_price": 409.29,
       "peak_price": 507.03,
-      "updated_at": "2026-10-18 06:30:07"
+      "updated_at": "2026-10-18 06:37:15"
     },
     "0050.TW": {
       "risk_level": "合理估值區",
       "current_price": 109.0,
       "peak_price": 114.95,
-      "updated_at": "2026-10-18 06:30:07"
+      "updated_at": "2026-10-18 06:37:15"
     }
   },
   "results": [
@@ -40,13 +49,14 @@
       "safety_margin": 2.67,
       "premium_rate": -2.67,
       "pnl_rate": 12.7,
+      "high_risk_threshold": 25.0,
+      "med_risk_threshold": 12.0,
       "risk_level": "合理估值區",
       "risk_tag": "NORMAL",
       "action": "定期定額 / 維持續抱",
       "color": "#3B82F6",
-      "desc": "股價處於合理估值防禦帶內，短期波動屬正常市場雜訊，維持既定配置。",
+      "desc": "股價處於合理估值防禦帶內 (中風險警戒線為溢價 >12%)。",
       "must_push": false,
-      "is_valuation_stale": false,
       "history_dates": [
         "09/04",
         "09/08",
@@ -131,13 +141,14 @@
       "safety_margin": 14.73,
       "premium_rate": -14.73,
       "pnl_rate": -2.55,
+      "high_risk_threshold": 25.0,
+      "med_risk_threshold": 12.0,
       "risk_level": "偏空觀察 (左側禁買)",
       "risk_tag": "MEDIUM",
       "action": "禁止接刀，等待站上 20MA 右側訊號",
       "color": "#F97316",
       "desc": "安全邊際充足 (14.7%)，但股價位於 200MA ($438.38) 之下，嚴防價值陷阱。",
       "must_push": false,
-      "is_valuation_stale": false,
       "history_dates": [
         "09/04",
         "09/08",
@@ -222,13 +233,14 @@
       "safety_margin": 5.22,
       "premium_rate": -5.22,
       "pnl_rate": 3.81,
+      "high_risk_threshold": 25.0,
+      "med_risk_threshold": 12.0,
       "risk_level": "合理估值區",
       "risk_tag": "NORMAL",
       "action": "定期定額 / 維持續抱",
       "color": "#3B82F6",
-      "desc": "股價處於合理估值防禦帶內，短期波動屬正常市場雜訊，維持既定配置。",
+      "desc": "股價處於合理估值防禦帶內 (中風險警戒線為溢價 >12%)。",
       "must_push": false,
-      "is_valuation_stale": false,
       "history_dates": [
         "09/02",
         "09/03",
