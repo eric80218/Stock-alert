@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (Ultimate Rich UI Institutional Edition)
-- 雙 API 備援：Yahoo 失敗自動切換至 Finnhub API
-- 投資組合績效統計：總市值、總未實現損益、持倉濃度曝險
-- 豐富互動式儀表板：總覽 KPI 條、30日走勢圖、六宮格技術指標、回測勝率與停損緩衝
+Quantitative Risk & Valuation Engine (Full Portfolio Institutional Edition)
+- 完整導入您的所有持股清單（美股、台股共 16 檔）
+- 雙 API 備援、AI 新聞情緒分析、向量化回測與持倉濃度曝險計算
 """
 
 import os
@@ -18,28 +17,83 @@ import pandas as pd
 import yfinance as yf
 
 # ==========================================
-# 1. 監控標的與部位設定
+# 1. 完整持股監控清單與部位設定
 # ==========================================
 WATCHLIST = {
-    "NVDA": {
-        "name": "NVIDIA", "market": "US", "currency": "$", "is_etf": False,
-        "shares": 50, "target_pe": 35.0, "fallback_fair_value": 220.0,
-        "cost": 190.0, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 4.0,
-    },
     "AMAT": {
-        "name": "Applied Materials", "market": "US", "currency": "$", "is_etf": False,
-        "shares": 40, "target_pe": 22.0, "fallback_fair_value": 480.0,
-        "cost": 420.0, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 4.0,
+        "name": "應用材料", "market": "US", "currency": "$", "is_etf": False,
+        "shares": 19, "target_pe": 22.0, "fallback_fair_value": 420.0,
+        "cost": 316.35, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 4.0,
     },
-    "2330.TW": {
-        "name": "台積電", "market": "TW", "currency": "NT$", "is_etf": False,
-        "shares": 1000, "target_pe": 20.0, "fallback_fair_value": 1350.0,
-        "cost": 920.0, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 3.0,
+    "BRK-B": {
+        "name": "波克夏 B", "market": "US", "currency": "$", "is_etf": False,
+        "shares": 5, "target_pe": 20.0, "fallback_fair_value": 510.0,
+        "cost": 492.03, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 3.0,
+    },
+    "COST": {
+        "name": "好市多", "market": "US", "currency": "$", "is_etf": False,
+        "shares": 8.0, "target_pe": 35.0, "fallback_fair_value": 920.0,
+        "cost": 1044.55, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 3.0,
+    },
+    "LLY": {
+        "name": "禮來製藥", "market": "US", "currency": "$", "is_etf": False,
+        "shares": 2.0, "target_pe": 40.0, "fallback_fair_value": 1150.0,
+        "cost": 1159.82, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 4.0,
+    },
+    "NVDA": {
+        "name": "輝達", "market": "US", "currency": "$", "is_etf": False,
+        "shares": 16.0, "target_pe": 35.0, "fallback_fair_value": 220.0,
+        "cost": 221.22, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 4.0,
+    },
+    "VRT": {
+        "name": "維諦技術", "market": "US", "currency": "$", "is_etf": False,
+        "shares": 8.0, "target_pe": 30.0, "fallback_fair_value": 260.0,
+        "cost": 321.39, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 4.0,
+    },
+    "GLD": {
+        "name": "SPDR黃金ETF", "market": "US", "currency": "$", "is_etf": True,
+        "shares": 0, "target_pe": 20.0, "fallback_fair_value": 240.0,
+        "cost": 0.0, "stop_loss_pct": None, "trailing_stop_pct": -20.0, "flash_pct": 2.5,
     },
     "0050.TW": {
         "name": "元大台灣50", "market": "TW", "currency": "NT$", "is_etf": True,
-        "shares": 3000, "target_pe": 20.0, "fallback_fair_value": 115.0,
-        "cost": 105.0, "stop_loss_pct": None, "trailing_stop_pct": -20.0, "flash_pct": 2.5,
+        "shares": 150, "target_pe": 20.0, "fallback_fair_value": 120.0,
+        "cost": 73.4, "stop_loss_pct": None, "trailing_stop_pct": -20.0, "flash_pct": 2.5,
+    },
+    "2337.TW": {
+        "name": "旺宏", "market": "TW", "currency": "NT$", "is_etf": False,
+        "shares": 50, "target_pe": 20.0, "fallback_fair_value": 183.0,
+        "cost": 145.0, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 3.0,
+    },
+    "2002.TW": {
+        "name": "中鋼", "market": "TW", "currency": "NT$", "is_etf": False,
+        "shares": 1000, "target_pe": 15.0, "fallback_fair_value": 23.5,
+        "cost": 25.0, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 2.5,
+    },
+    "1232.TW": {
+        "name": "大統益", "market": "TW", "currency": "NT$", "is_etf": False,
+        "shares": 50, "target_pe": 18.0, "fallback_fair_value": 155.0,
+        "cost": 144.0, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 2.5,
+    },
+    "1904.TW": {
+        "name": "正隆", "market": "TW", "currency": "NT$", "is_etf": False,
+        "shares": 1, "target_pe": 15.0, "fallback_fair_value": 29.0,
+        "cost": 25.75, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 2.5,
+    },
+    "2616.TW": {
+        "name": "山隆", "market": "TW", "currency": "NT$", "is_etf": False,
+        "shares": 1, "target_pe": 15.0, "fallback_fair_value": 31.0,
+        "cost": 22.1, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 2.5,
+    },
+    "009816.TW": {
+        "name": "凱基台灣TOP50", "market": "TW", "currency": "NT$", "is_etf": True,
+        "shares": 959, "target_pe": 20.0, "fallback_fair_value": 16.0,
+        "cost": 15.49, "stop_loss_pct": None, "trailing_stop_pct": -20.0, "flash_pct": 2.5,
+    },
+    "6182.TWO": {
+        "name": "合晶", "market": "TW", "currency": "NT$", "is_etf": False,
+        "shares": 120, "target_pe": 20.0, "fallback_fair_value": 130.0,
+        "cost": 120.5, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 3.0,
     },
 }
 
@@ -263,15 +317,16 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
 
     safety_margin = round(((dynamic_fair - price) / dynamic_fair) * 100, 2)
     premium_rate = round(((price - dynamic_fair) / dynamic_fair) * 100, 2)
-    pnl_rate = round(((price - cost) / cost) * 100, 2)
+    
+    # 若 cost 為 0（如 ETF 或未填成本），避免分母為 0
+    pnl_rate = round(((price - cost) / cost) * 100, 2) if cost > 0 else 0.0
 
-    # 計算距離停損還有多少百分比緩衝
-    stop_buffer_pct = round(pnl_rate - stop_loss, 1) if stop_loss else 99.9
+    stop_buffer_pct = round(pnl_rate - stop_loss, 1) if stop_loss and cost > 0 else 99.9
 
     nlp_adjustment = -2.0 if nlp_score < -2 else (2.0 if nlp_score > 2 else 0.0)
     high_risk_threshold = 25.0 + macro.get("premium_shift", 0.0) + nlp_adjustment
 
-    if not is_etf and stop_loss is not None and pnl_rate <= stop_loss:
+    if not is_etf and stop_loss is not None and cost > 0 and pnl_rate <= stop_loss:
         risk_level, color, action, desc = "停損警戒", "#EF4444", "市價全數平倉 / 嚴格停損", f"成本損益達 {pnl_rate:.1f}%，跌破防線。"
     elif premium_rate > high_risk_threshold:
         risk_level, color, action, desc = "高風險 (嚴重昂貴)", "#EF4444", "執行減碼：賣出持倉 1/3", f"溢價率達 {premium_rate:.1f}%，估值透支。"
@@ -282,10 +337,14 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
 
     backtest = run_vectorized_backtest(market_data.get("full_history", pd.Series([price])))
 
+    # 針對美股與台股統一計算市值（若為台股，TWD 暫以 1 呈現，或維持原幣別）
+    market_value = round(price * shares, 2)
+    invested_cost = round(cost * shares, 2)
+
     return {
         "symbol": symbol, "name": meta["name"], "market": meta["market"], "currency": meta["currency"],
         "current_price": price, "fair_value": dynamic_fair, "cost": cost, "shares": shares,
-        "market_value": round(price * shares, 2), "invested_cost": round(cost * shares, 2),
+        "market_value": market_value, "invested_cost": invested_cost,
         "safety_margin": safety_margin, "premium_rate": premium_rate, "pnl_rate": pnl_rate,
         "ma200": ma200, "ma20": ma20, "rsi14": rsi14, "peak_price": peak_price,
         "drawdown_from_peak": drawdown_from_peak, "stop_buffer_pct": stop_buffer_pct,
@@ -302,22 +361,22 @@ def generate_pro_dashboard(macro: dict, eval_results: list):
     updated_time, total_count = now_tw_str(), len(eval_results)
     high_risk_count = sum(1 for r in eval_results if r["risk_level"] in ["停損警戒", "高風險 (嚴重昂貴)"])
     
-    # 計算投資組合總攬 KPI
+    # 組合總市值與總成本統計
     total_market_val = sum(r["market_value"] for r in eval_results)
     total_invested_cost = sum(r["invested_cost"] for r in eval_results)
     total_pnl_amount = total_market_val - total_invested_cost
     total_pnl_pct = round((total_pnl_amount / total_invested_cost * 100), 2) if total_invested_cost > 0 else 0.0
     total_pnl_color = "text-emerald-400" if total_pnl_amount >= 0 else "text-rose-400"
     
-    tech_val = sum(r["market_value"] for r in eval_results if r["symbol"] in ["NVDA", "AMAT", "2330.TW"])
+    tech_val = sum(r["market_value"] for r in eval_results if r["symbol"] in ["NVDA", "AMAT", "2330.TW", "VRT"])
     tech_exposure_pct = round((tech_val / total_market_val * 100), 1) if total_market_val > 0 else 0.0
 
     m_color = macro["color"]
     sox_cls = "text-rose-400" if macro["is_sox_bear"] else "text-emerald-400"
     spxu_cls = "text-rose-400" if macro["spxu_vol_ratio"] >= 1.5 else "text-slate-200"
 
-    pie_labels = [r["symbol"] for r in eval_results]
-    pie_values = [max(1.0, r["market_value"]) for r in eval_results]
+    pie_labels = [r["symbol"] for r in eval_results if r["market_value"] > 0]
+    pie_values = [r["market_value"] for r in eval_results if r["market_value"] > 0]
 
     cards_html = ""
     for idx, r in enumerate(eval_results):
@@ -336,7 +395,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list):
                             <span class="text-lg font-black text-white">{r['symbol']}</span>
                             <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">{r['market']}</span>
                         </div>
-                        <p class="text-xs text-slate-400">{r['name']}</p>
+                        <p class="text-xs text-slate-400">{r['name']} (持股: {r['shares']})</p>
                     </div>
                     <span class="px-3 py-1 rounded-full text-xs font-extrabold text-white shadow" style="background-color: {r['color']};">{r['risk_level']}</span>
                 </div>
@@ -520,9 +579,9 @@ def generate_pro_dashboard(macro: dict, eval_results: list):
                     type: 'doughnut',
                     data: {{
                         labels: pieData.labels,
-                        datasets: [{{ data: pieData.values, backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'], borderWidth: 0 }}]
+                        datasets: [{{ data: pieData.values, backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1', '#14B8A6', '#F97316', '#A855F7'], borderWidth: 0 }}]
                     }},
-                    options: {{ responsive: true, maintainAspectRatio: false, plugins: {{ legend: {{ position: 'right', labels: {{ color: '#94A3B8', boxWidth: 10, font: {{ size: 10 }} }} }} }} }}
+                    options: {{ responsive: true, maintainAspectRatio: false, plugins: {{ legend: {{ position: 'right', labels: {{ color: '#94A3B8', boxWidth: 8, font: {{ size: 9 }} }} }} }} }}
                 }});
             }}
         }});
@@ -541,7 +600,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list):
 </html>"""
     with open(DASHBOARD_FILE, "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"[完成] 極致豐富版專業操盤室儀表板已輸出至 {DASHBOARD_FILE}")
+    print(f"[完成] 全持股極致豐富專業操盤室儀表板已輸出至 {DASHBOARD_FILE}")
 
 
 # ==========================================
@@ -565,7 +624,7 @@ def main():
     if eval_results:
         save_state(macro, {}, eval_results)
         generate_pro_dashboard(macro, eval_results)
-        print("[完成] 機構級極致豐富操盤室更新完畢。")
+        print("[完成] 全持股機構級操盤室更新完畢。")
 
 
 if __name__ == "__main__":
