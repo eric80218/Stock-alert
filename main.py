@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (Ultimate Institutional Flagship Edition)
-- 即時匯率換算：自動抓取 USD/TWD，將總資產與未實現損益統一以新台幣 (NT$) 精準結算
-- LINE 智慧過濾：狀態質變或觸發停損時才發送推播，徹底杜絕警報疲勞
-- 投資組合淨值曲線：網頁端新增整體資產歷史成長曲線圖
-- 雙 API 備援、AI 新聞情緒分析、向量化回測與持倉濃度曝險計算
+Quantitative Risk & Valuation Engine (Ultimate Institutional Flagship Edition - Fixed)
+- 已將台積電 (2330.TW) 重新補回監控清單
+- 即時匯率換算 (USD/TWD)、LINE 智慧過濾（防警報疲勞）、總市值 NT$ 結算與資產配置圓餅圖
 """
 
 import os
@@ -19,9 +17,19 @@ import pandas as pd
 import yfinance as yf
 
 # ==========================================
-# 1. 完整持股監控清單與部位設定
+# 1. 完整持股監控清單與部位設定 (已完整納入 2330.TW 與其他持股)
 # ==========================================
 WATCHLIST = {
+    "2330.TW": {
+        "name": "台積電", "market": "TW", "currency": "NT$", "is_etf": False,
+        "shares": 1000, "target_pe": 20.0, "fallback_fair_value": 1350.0,
+        "cost": 920.0, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 3.0,
+    },
+    "NVDA": {
+        "name": "輝達", "market": "US", "currency": "$", "is_etf": False,
+        "shares": 16.0, "target_pe": 35.0, "fallback_fair_value": 220.0,
+        "cost": 221.22, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 4.0,
+    },
     "AMAT": {
         "name": "應用材料", "market": "US", "currency": "$", "is_etf": False,
         "shares": 19, "target_pe": 22.0, "fallback_fair_value": 420.0,
@@ -41,11 +49,6 @@ WATCHLIST = {
         "name": "禮來製藥", "market": "US", "currency": "$", "is_etf": False,
         "shares": 2.0, "target_pe": 40.0, "fallback_fair_value": 1150.0,
         "cost": 1159.82, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 4.0,
-    },
-    "NVDA": {
-        "name": "輝達", "market": "US", "currency": "$", "is_etf": False,
-        "shares": 16.0, "target_pe": 35.0, "fallback_fair_value": 220.0,
-        "cost": 221.22, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 4.0,
     },
     "VRT": {
         "name": "維諦技術", "market": "US", "currency": "$", "is_etf": False,
@@ -128,9 +131,6 @@ def save_state(macro_gold: dict, stocks_dict: dict, eval_results: list):
         json.dump(payload, f, ensure_ascii=False, indent=2)
 
 
-# ==========================================
-# 2. 取得即時 USD/TWD 匯率
-# ==========================================
 def get_USD_TWD_rate() -> float:
     try:
         twd_ticker = yf.Ticker("USDTWD=X")
@@ -139,12 +139,9 @@ def get_USD_TWD_rate() -> float:
             return float(hist["Close"].iloc[-1])
     except Exception:
         pass
-    return 32.5  # 預設備用匯率
+    return 32.5
 
 
-# ==========================================
-# 3. 雙 API 備援模組 (Yahoo + Finnhub 容錯)
-# ==========================================
 def fetch_stock_data_with_redundancy(symbol: str):
     data = fetch_from_yahoo(symbol)
     if data:
@@ -214,9 +211,6 @@ def fetch_from_finnhub(symbol: str):
     return None
 
 
-# ==========================================
-# 4. Finnhub 新聞 NLP 情感分析加權
-# ==========================================
 def fetch_finnhub_sentiment_score(symbol: str) -> float:
     finnhub_key = os.environ.get("FINNHUB_API_KEY")
     if not finnhub_key: return 0.0
@@ -245,9 +239,6 @@ def fetch_finnhub_sentiment_score(symbol: str) -> float:
         return 0.0
 
 
-# ==========================================
-# 5. 向量化歷史回測模擬引擎
-# ==========================================
 def run_vectorized_backtest(close_series: pd.Series) -> dict:
     try:
         if len(close_series) < 60:
@@ -275,9 +266,6 @@ def run_vectorized_backtest(close_series: pd.Series) -> dict:
         return {"return_pct": 15.4, "max_drawdown": -12.2, "win_rate": 62.5}
 
 
-# ==========================================
-# 6. 總經與大戶避險雷達
-# ==========================================
 def fetch_macro_gold_radar(prev_macro_state: dict) -> dict:
     try:
         spxu_hist = yf.Ticker("SPXU").history(period="3mo").dropna(subset=["Close", "Volume"])
@@ -352,7 +340,6 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
 
     backtest = run_vectorized_backtest(market_data.get("full_history", pd.Series([price])))
 
-    # 統一將市值折算為台幣 (NT$) 方便總資產精準加總
     multiplier = usd_twd if market_type == "US" else 1.0
     market_value_twd = round(price * shares * multiplier, 2)
     invested_cost_twd = round(cost * shares * multiplier, 2)
@@ -370,14 +357,10 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
     }
 
 
-# ==========================================
-# 7. 產生極致豐富的專業操盤室網頁儀表板
-# ==========================================
 def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float):
     updated_time, total_count = now_tw_str(), len(eval_results)
     high_risk_count = sum(1 for r in eval_results if r["risk_level"] in ["停損警戒", "高風險 (嚴重昂貴)"])
     
-    # 統一以新台幣計算總資產與損益
     total_market_val = sum(r["market_value_twd"] for r in eval_results)
     total_invested_cost = sum(r["invested_cost_twd"] for r in eval_results)
     total_pnl_amount = total_market_val - total_invested_cost
@@ -404,7 +387,6 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float):
         cards_html += f"""
         <div class="stock-card bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between backdrop-blur-md transition hover:border-slate-700" data-market="{r['market']}" data-risk="{r['risk_level']}">
             <div>
-                <!-- 卡片標題 -->
                 <div class="px-5 py-3.5 flex justify-between items-center border-b border-slate-800/80" style="background: linear-gradient(90deg, {r['color']}25 0%, transparent 100%); border-left: 4px solid {r['color']};">
                     <div>
                         <div class="flex items-center gap-2">
@@ -415,8 +397,6 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float):
                     </div>
                     <span class="px-3 py-1 rounded-full text-xs font-extrabold text-white shadow" style="background-color: {r['color']};">{r['risk_level']}</span>
                 </div>
-
-                <!-- 卡片內文 -->
                 <div class="p-5 space-y-4">
                     <div class="flex justify-between items-end">
                         <div>
@@ -429,8 +409,6 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float):
                             <span class="text-xs text-slate-400 block font-mono">NT${r['market_value_twd']:,.0f}</span>
                         </div>
                     </div>
-
-                    <!-- 安全邊際量尺 -->
                     <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
                         <div class="flex justify-between text-xs mb-1.5">
                             <span class="text-slate-400">安全邊際量尺</span>
@@ -440,13 +418,9 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float):
                             <div class="h-full rounded-full transition-all duration-500" style="width: {gauge_pct}%; background-color: {r['color']};"></div>
                         </div>
                     </div>
-
-                    <!-- 30日走勢圖 -->
                     <div class="h-28 w-full bg-slate-950/50 rounded-xl p-2 border border-slate-800/60">
                         <canvas id="chart-{idx}"></canvas>
                     </div>
-
-                    <!-- 八宮格技術與風控指標 -->
                     <div class="grid grid-cols-3 gap-2 text-xs bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
                         <div><span class="text-slate-500">持有成本</span><div class="font-bold text-slate-200">{cur}{r['cost']}</div></div>
                         <div><span class="text-slate-500">200MA 均線</span><div class="font-bold text-slate-200">{cur}{r['ma200']}</div></div>
@@ -458,16 +432,12 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float):
                         <div><span class="text-slate-500">回測勝率</span><div class="font-bold text-emerald-400">{r['backtest']['win_rate']}%</div></div>
                         <div><span class="text-slate-500">策略回撤</span><div class="font-bold text-rose-400">{r['backtest']['max_drawdown']}%</div></div>
                     </div>
-
-                    <!-- 回測數據與量化指令 -->
                     <div class="p-3.5 rounded-xl border" style="background-color: {r['color']}15; border-color: {r['color']}40;">
                         <div class="text-xs font-extrabold" style="color: {r['color']};">⚡ 指令：{r['action']}</div>
                         <p class="text-xs text-slate-300 mt-1 leading-relaxed">{r['desc']}</p>
                     </div>
                 </div>
             </div>
-
-            <!-- 卡片底部連結 -->
             <div class="px-5 py-3 bg-slate-950/90 border-t border-slate-800 flex justify-between text-xs">
                 <a href="https://finance.yahoo.com/quote/{r['symbol']}" target="_blank" class="text-blue-400 hover:text-blue-300 font-semibold">Yahoo 報價 ↗</a>
                 <a href="https://www.tradingview.com/symbols/{r['symbol'].replace('.TW', '')}/" target="_blank" class="text-slate-400 hover:text-slate-200">TradingView 線圖 ↗</a>
@@ -489,7 +459,6 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float):
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen font-sans p-4 sm:p-6 selection:bg-blue-500 selection:text-white">
     <div class="max-w-7xl mx-auto space-y-6">
-        <!-- 頂部標題與篩選列 -->
         <header class="flex flex-col md:flex-row justify-between items-center pb-6 border-b border-slate-800 gap-4">
             <div>
                 <div class="flex items-center gap-2.5">
@@ -508,7 +477,6 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float):
             </div>
         </header>
 
-        <!-- 投資組合總覽 KPI 霸氣儀表板列 (全以 NT$ 結算) -->
         <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg">
                 <span class="text-xs text-slate-400 block mb-1">總市值 (NT$) / 總成本</span>
@@ -531,7 +499,6 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float):
             </div>
         </section>
 
-        <!-- 🛡️ 總經避險雷達與資產配置圓餅圖 -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <section class="lg:col-span-2 rounded-2xl border p-5 shadow-2xl flex flex-col justify-between" style="background: linear-gradient(135deg, {m_color}22 0%, #0F172A 75%); border-color: {m_color}60;">
                 <div>
@@ -558,7 +525,6 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float):
             </section>
         </div>
 
-        <!-- 個股豐富版卡片網格 -->
         <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {cards_html}
         </main>
@@ -616,12 +582,9 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float):
 </html>"""
     with open(DASHBOARD_FILE, "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"[完成] 旗艦級專業操盤室儀表板已輸出至 {DASHBOARD_FILE}")
+    print(f"[完成] 台積電歸位版旗艦操盤室儀表板已輸出至 {DASHBOARD_FILE}")
 
 
-# ==========================================
-# 8. 主執行入口 (含 LINE 智慧過濾防警報疲勞)
-# ==========================================
 def main():
     user_id = os.environ.get("LINE_USER_ID")
     token = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN")
@@ -657,13 +620,11 @@ def main():
         eval_data = evaluate_quant_matrix(symbol, meta, market_data, prev_stocks.get(symbol, {}), macro, dynamic_fair, nlp_score, usd_twd)
         eval_results.append(eval_data)
 
-        # 紀錄狀態供下次比對
         new_stocks_dict[symbol] = {
             "risk_level": eval_data["risk_level"], "current_price": eval_data["current_price"],
             "peak_price": eval_data["peak_price"], "updated_at": now_tw_str()
         }
 
-        # 智慧過濾：只有當狀態發生「質變」或「觸發停損」時才推播，避免警報疲勞
         last_risk = prev_stocks.get(symbol, {}).get("risk_level", "")
         is_quality_changed = (last_risk != eval_data["risk_level"])
         is_stop_loss = ("停損" in eval_data["risk_level"])
@@ -699,8 +660,8 @@ def main():
             except Exception:
                 pass
 
-        print("[完成] 機構級旗艦操盤平台執行完畢。")
+        print("[完成] 旗艦級操盤平台（含 2330.TW）執行完畢。")
 
 
 if __name__ == "__main__":
-    main()
+main()
