@@ -17,14 +17,14 @@
                     <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">機構級動態 EPS 估值與操盤室</h1>
                 </div>
                 <p class="text-xs sm:text-sm text-slate-400 mt-1">
-                    雙 API 備援 + AI 新聞情感分析 + 向量化回測 ｜ 更新時間: <span class="text-slate-200 font-mono">2026-10-18 07:37:10</span>
+                    雙 API 備援 + AI 新聞情感分析 + 向量化回測 ｜ 更新時間: <span class="text-slate-200 font-mono">2026-10-18 07:42:32</span>
                 </p>
             </div>
             <div class="flex flex-wrap gap-2">
-                <button onclick="filterCards('ALL')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white shadow">全部標的 (4)</button>
+                <button onclick="filterCards('ALL')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white shadow">全部標的 (15)</button>
                 <button onclick="filterCards('US')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">美股 US</button>
                 <button onclick="filterCards('TW')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">台股 TW</button>
-                <button onclick="filterCards('ALERT')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-rose-950 text-rose-300 border border-rose-800/80">警戒 (0)</button>
+                <button onclick="filterCards('ALERT')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-rose-950 text-rose-300 border border-rose-800/80">警戒 (7)</button>
             </div>
         </header>
 
@@ -32,16 +32,16 @@
         <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg">
                 <span class="text-xs text-slate-400 block mb-1">投資組合總市值 / 成本</span>
-                <div class="text-xl sm:text-2xl font-black text-white">$2,774,078</div>
-                <span class="text-xs text-slate-400">總投入: $1,261,300</span>
+                <div class="text-xl sm:text-2xl font-black text-white">$103,875</div>
+                <span class="text-xs text-slate-400">總投入: $105,080</span>
             </div>
             <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg">
                 <span class="text-xs text-slate-400 block mb-1">組合總未實現損益</span>
-                <div class="text-xl sm:text-2xl font-black text-emerald-400">$+1,512,778 (+119.94%)</div>
+                <div class="text-xl sm:text-2xl font-black text-rose-400">$-1,205 (-1.15%)</div>
             </div>
             <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg">
                 <span class="text-xs text-slate-400 block mb-1">高科技持倉濃度曝險 (Tech)</span>
-                <div class="text-xl sm:text-2xl font-black text-amber-400">88.2%</div>
+                <div class="text-xl sm:text-2xl font-black text-amber-400">12.4%</div>
                 <span class="text-xs text-slate-400">過度集中警報門檻 &gt;75%</span>
             </div>
             <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg">
@@ -81,78 +81,6 @@
         <!-- 個股豐富版卡片網格 -->
         <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             
-        <div class="stock-card bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between backdrop-blur-md transition hover:border-slate-700" data-market="US" data-risk="低風險 (買進區)">
-            <div>
-                <!-- 卡片標題 -->
-                <div class="px-5 py-3.5 flex justify-between items-center border-b border-slate-800/80" style="background: linear-gradient(90deg, #10B98125 0%, transparent 100%); border-left: 4px solid #10B981;">
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-lg font-black text-white">NVDA</span>
-                            <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">US</span>
-                        </div>
-                        <p class="text-xs text-slate-400">NVIDIA</p>
-                    </div>
-                    <span class="px-3 py-1 rounded-full text-xs font-extrabold text-white shadow" style="background-color: #10B981;">低風險 (買進區)</span>
-                </div>
-
-                <!-- 卡片內文 -->
-                <div class="p-5 space-y-4">
-                    <div class="flex justify-between items-end">
-                        <div>
-                            <span class="text-xs text-slate-400 block mb-1">現價 (動態合理價: <strong class="text-slate-200">$557.01</strong>)</span>
-                            <span class="text-3xl font-black text-white">$214.13</span>
-                        </div>
-                        <div class="text-right">
-                            <span class="text-xs text-slate-400 block mb-1">持倉損益 / 市值</span>
-                            <span class="text-xl font-black text-emerald-400">+12.7%</span>
-                            <span class="text-xs text-slate-400 block font-mono">$10,706</span>
-                        </div>
-                    </div>
-
-                    <!-- 安全邊際量尺 -->
-                    <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
-                        <div class="flex justify-between text-xs mb-1.5">
-                            <span class="text-slate-400">安全邊際量尺</span>
-                            <span class="font-bold" style="color: #10B981">邊際 61.56% / 溢價 -61.56%</span>
-                        </div>
-                        <div class="w-full h-2 bg-slate-800 rounded-full relative overflow-hidden">
-                            <div class="h-full rounded-full transition-all duration-500" style="width: 95.0%; background-color: #10B981;"></div>
-                        </div>
-                    </div>
-
-                    <!-- 30日走勢圖 -->
-                    <div class="h-28 w-full bg-slate-950/50 rounded-xl p-2 border border-slate-800/60">
-                        <canvas id="chart-0"></canvas>
-                    </div>
-
-                    <!-- 八宮格技術與風控指標 -->
-                    <div class="grid grid-cols-3 gap-2 text-xs bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
-                        <div><span class="text-slate-500">持有成本</span><div class="font-bold text-slate-200">$190.0</div></div>
-                        <div><span class="text-slate-500">200MA 均線</span><div class="font-bold text-slate-200">$202.66</div></div>
-                        <div><span class="text-slate-500">RSI (14)</span><div class="font-bold text-amber-400">37.6</div></div>
-                        <div><span class="text-slate-500">60D 波段高</span><div class="font-bold text-slate-200">$243.37</div></div>
-                        <div><span class="text-slate-500">高點回撤</span><div class="font-bold text-rose-400">-12.01%</div></div>
-                        <div><span class="text-slate-500">停損緩衝</span><div class="font-bold text-purple-400">+22.7%</div></div>
-                        <div><span class="text-slate-500">AI新聞情緒</span><div class="font-bold text-blue-400">0.0 分</div></div>
-                        <div><span class="text-slate-500">回測勝率</span><div class="font-bold text-emerald-400">45.4%</div></div>
-                        <div><span class="text-slate-500">策略回撤</span><div class="font-bold text-rose-400">-23.3%</div></div>
-                    </div>
-
-                    <!-- 回測數據與量化指令 -->
-                    <div class="p-3.5 rounded-xl border" style="background-color: #10B98115; border-color: #10B98140;">
-                        <div class="text-xs font-extrabold" style="color: #10B981;">⚡ 指令：啟動第 1 批建倉：買進 1/3</div>
-                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">安全邊際達 61.6% 且多頭排列。</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 卡片底部連結 -->
-            <div class="px-5 py-3 bg-slate-950/90 border-t border-slate-800 flex justify-between text-xs">
-                <a href="https://finance.yahoo.com/quote/NVDA" target="_blank" class="text-blue-400 hover:text-blue-300 font-semibold">Yahoo 報價 ↗</a>
-                <a href="https://www.tradingview.com/symbols/NVDA/" target="_blank" class="text-slate-400 hover:text-slate-200">TradingView 線圖 ↗</a>
-            </div>
-        </div>
-        
         <div class="stock-card bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between backdrop-blur-md transition hover:border-slate-700" data-market="US" data-risk="合理估值區">
             <div>
                 <!-- 卡片標題 -->
@@ -162,7 +90,7 @@
                             <span class="text-lg font-black text-white">AMAT</span>
                             <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">US</span>
                         </div>
-                        <p class="text-xs text-slate-400">Applied Materials</p>
+                        <p class="text-xs text-slate-400">應用材料 (持股: 19.0)</p>
                     </div>
                     <span class="px-3 py-1 rounded-full text-xs font-extrabold text-white shadow" style="background-color: #3B82F6;">合理估值區</span>
                 </div>
@@ -176,8 +104,8 @@
                         </div>
                         <div class="text-right">
                             <span class="text-xs text-slate-400 block mb-1">持倉損益 / 市值</span>
-                            <span class="text-xl font-black text-rose-400">-2.5%</span>
-                            <span class="text-xs text-slate-400 block font-mono">$16,372</span>
+                            <span class="text-xl font-black text-emerald-400">+29.4%</span>
+                            <span class="text-xs text-slate-400 block font-mono">$7,777</span>
                         </div>
                     </div>
 
@@ -194,17 +122,17 @@
 
                     <!-- 30日走勢圖 -->
                     <div class="h-28 w-full bg-slate-950/50 rounded-xl p-2 border border-slate-800/60">
-                        <canvas id="chart-1"></canvas>
+                        <canvas id="chart-0"></canvas>
                     </div>
 
                     <!-- 八宮格技術與風控指標 -->
                     <div class="grid grid-cols-3 gap-2 text-xs bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
-                        <div><span class="text-slate-500">持有成本</span><div class="font-bold text-slate-200">$420.0</div></div>
+                        <div><span class="text-slate-500">持有成本</span><div class="font-bold text-slate-200">$316.35</div></div>
                         <div><span class="text-slate-500">200MA 均線</span><div class="font-bold text-slate-200">$438.38</div></div>
                         <div><span class="text-slate-500">RSI (14)</span><div class="font-bold text-amber-400">29.2</div></div>
                         <div><span class="text-slate-500">60D 波段高</span><div class="font-bold text-slate-200">$563.16</div></div>
                         <div><span class="text-slate-500">高點回撤</span><div class="font-bold text-rose-400">-27.32%</div></div>
-                        <div><span class="text-slate-500">停損緩衝</span><div class="font-bold text-purple-400">+7.5%</div></div>
+                        <div><span class="text-slate-500">停損緩衝</span><div class="font-bold text-purple-400">+39.4%</div></div>
                         <div><span class="text-slate-500">AI新聞情緒</span><div class="font-bold text-blue-400">0.0 分</div></div>
                         <div><span class="text-slate-500">回測勝率</span><div class="font-bold text-emerald-400">54.1%</div></div>
                         <div><span class="text-slate-500">策略回撤</span><div class="font-bold text-rose-400">-35.5%</div></div>
@@ -225,31 +153,31 @@
             </div>
         </div>
         
-        <div class="stock-card bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between backdrop-blur-md transition hover:border-slate-700" data-market="TW" data-risk="低風險 (買進區)">
+        <div class="stock-card bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between backdrop-blur-md transition hover:border-slate-700" data-market="US" data-risk="合理估值區">
             <div>
                 <!-- 卡片標題 -->
-                <div class="px-5 py-3.5 flex justify-between items-center border-b border-slate-800/80" style="background: linear-gradient(90deg, #10B98125 0%, transparent 100%); border-left: 4px solid #10B981;">
+                <div class="px-5 py-3.5 flex justify-between items-center border-b border-slate-800/80" style="background: linear-gradient(90deg, #3B82F625 0%, transparent 100%); border-left: 4px solid #3B82F6;">
                     <div>
                         <div class="flex items-center gap-2">
-                            <span class="text-lg font-black text-white">2330.TW</span>
-                            <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">TW</span>
+                            <span class="text-lg font-black text-white">BRK-B</span>
+                            <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">US</span>
                         </div>
-                        <p class="text-xs text-slate-400">台積電</p>
+                        <p class="text-xs text-slate-400">波克夏 B (持股: 5.0)</p>
                     </div>
-                    <span class="px-3 py-1 rounded-full text-xs font-extrabold text-white shadow" style="background-color: #10B981;">低風險 (買進區)</span>
+                    <span class="px-3 py-1 rounded-full text-xs font-extrabold text-white shadow" style="background-color: #3B82F6;">合理估值區</span>
                 </div>
 
                 <!-- 卡片內文 -->
                 <div class="p-5 space-y-4">
                     <div class="flex justify-between items-end">
                         <div>
-                            <span class="text-xs text-slate-400 block mb-1">現價 (動態合理價: <strong class="text-slate-200">NT$2972.23</strong>)</span>
-                            <span class="text-3xl font-black text-white">NT$2420.0</span>
+                            <span class="text-xs text-slate-400 block mb-1">現價 (動態合理價: <strong class="text-slate-200">$444.32</strong>)</span>
+                            <span class="text-3xl font-black text-white">$532.02</span>
                         </div>
                         <div class="text-right">
                             <span class="text-xs text-slate-400 block mb-1">持倉損益 / 市值</span>
-                            <span class="text-xl font-black text-emerald-400">+163.0%</span>
-                            <span class="text-xs text-slate-400 block font-mono">NT$2,420,000</span>
+                            <span class="text-xl font-black text-emerald-400">+8.1%</span>
+                            <span class="text-xs text-slate-400 block font-mono">$2,660</span>
                         </div>
                     </div>
 
@@ -257,10 +185,82 @@
                     <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
                         <div class="flex justify-between text-xs mb-1.5">
                             <span class="text-slate-400">安全邊際量尺</span>
-                            <span class="font-bold" style="color: #10B981">邊際 18.58% / 溢價 -18.58%</span>
+                            <span class="font-bold" style="color: #3B82F6">邊際 -19.74% / 溢價 19.74%</span>
                         </div>
                         <div class="w-full h-2 bg-slate-800 rounded-full relative overflow-hidden">
-                            <div class="h-full rounded-full transition-all duration-500" style="width: 70.9%; background-color: #10B981;"></div>
+                            <div class="h-full rounded-full transition-all duration-500" style="width: 27.8%; background-color: #3B82F6;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 30日走勢圖 -->
+                    <div class="h-28 w-full bg-slate-950/50 rounded-xl p-2 border border-slate-800/60">
+                        <canvas id="chart-1"></canvas>
+                    </div>
+
+                    <!-- 八宮格技術與風控指標 -->
+                    <div class="grid grid-cols-3 gap-2 text-xs bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                        <div><span class="text-slate-500">持有成本</span><div class="font-bold text-slate-200">$492.03</div></div>
+                        <div><span class="text-slate-500">200MA 均線</span><div class="font-bold text-slate-200">$493.56</div></div>
+                        <div><span class="text-slate-500">RSI (14)</span><div class="font-bold text-amber-400">75.0</div></div>
+                        <div><span class="text-slate-500">60D 波段高</span><div class="font-bold text-slate-200">$537.74</div></div>
+                        <div><span class="text-slate-500">高點回撤</span><div class="font-bold text-rose-400">-1.06%</div></div>
+                        <div><span class="text-slate-500">停損緩衝</span><div class="font-bold text-purple-400">+18.1%</div></div>
+                        <div><span class="text-slate-500">AI新聞情緒</span><div class="font-bold text-blue-400">0.0 分</div></div>
+                        <div><span class="text-slate-500">回測勝率</span><div class="font-bold text-emerald-400">46.4%</div></div>
+                        <div><span class="text-slate-500">策略回撤</span><div class="font-bold text-rose-400">-13.7%</div></div>
+                    </div>
+
+                    <!-- 回測數據與量化指令 -->
+                    <div class="p-3.5 rounded-xl border" style="background-color: #3B82F615; border-color: #3B82F640;">
+                        <div class="text-xs font-extrabold" style="color: #3B82F6;">⚡ 指令：定期定額 / 維持續抱</div>
+                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">處於合理估值防禦帶內。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 卡片底部連結 -->
+            <div class="px-5 py-3 bg-slate-950/90 border-t border-slate-800 flex justify-between text-xs">
+                <a href="https://finance.yahoo.com/quote/BRK-B" target="_blank" class="text-blue-400 hover:text-blue-300 font-semibold">Yahoo 報價 ↗</a>
+                <a href="https://www.tradingview.com/symbols/BRK-B/" target="_blank" class="text-slate-400 hover:text-slate-200">TradingView 線圖 ↗</a>
+            </div>
+        </div>
+        
+        <div class="stock-card bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between backdrop-blur-md transition hover:border-slate-700" data-market="US" data-risk="合理估值區">
+            <div>
+                <!-- 卡片標題 -->
+                <div class="px-5 py-3.5 flex justify-between items-center border-b border-slate-800/80" style="background: linear-gradient(90deg, #3B82F625 0%, transparent 100%); border-left: 4px solid #3B82F6;">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg font-black text-white">COST</span>
+                            <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">US</span>
+                        </div>
+                        <p class="text-xs text-slate-400">好市多 (持股: 8.0)</p>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-xs font-extrabold text-white shadow" style="background-color: #3B82F6;">合理估值區</span>
+                </div>
+
+                <!-- 卡片內文 -->
+                <div class="p-5 space-y-4">
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <span class="text-xs text-slate-400 block mb-1">現價 (動態合理價: <strong class="text-slate-200">$875.57</strong>)</span>
+                            <span class="text-3xl font-black text-white">$989.11</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-slate-400 block mb-1">持倉損益 / 市值</span>
+                            <span class="text-xl font-black text-rose-400">-5.3%</span>
+                            <span class="text-xs text-slate-400 block font-mono">$7,913</span>
+                        </div>
+                    </div>
+
+                    <!-- 安全邊際量尺 -->
+                    <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
+                        <div class="flex justify-between text-xs mb-1.5">
+                            <span class="text-slate-400">安全邊際量尺</span>
+                            <span class="font-bold" style="color: #3B82F6">邊際 -12.97% / 溢價 12.97%</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-800 rounded-full relative overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-500" style="width: 35.4%; background-color: #3B82F6;"></div>
                         </div>
                     </div>
 
@@ -271,29 +271,317 @@
 
                     <!-- 八宮格技術與風控指標 -->
                     <div class="grid grid-cols-3 gap-2 text-xs bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
-                        <div><span class="text-slate-500">持有成本</span><div class="font-bold text-slate-200">NT$920.0</div></div>
-                        <div><span class="text-slate-500">200MA 均線</span><div class="font-bold text-slate-200">NT$2137.84</div></div>
-                        <div><span class="text-slate-500">RSI (14)</span><div class="font-bold text-amber-400">41.7</div></div>
-                        <div><span class="text-slate-500">60D 波段高</span><div class="font-bold text-slate-200">NT$2590.0</div></div>
-                        <div><span class="text-slate-500">高點回撤</span><div class="font-bold text-rose-400">-6.56%</div></div>
-                        <div><span class="text-slate-500">停損緩衝</span><div class="font-bold text-purple-400">+173.0%</div></div>
+                        <div><span class="text-slate-500">持有成本</span><div class="font-bold text-slate-200">$1044.55</div></div>
+                        <div><span class="text-slate-500">200MA 均線</span><div class="font-bold text-slate-200">$964.32</div></div>
+                        <div><span class="text-slate-500">RSI (14)</span><div class="font-bold text-amber-400">72.5</div></div>
+                        <div><span class="text-slate-500">60D 波段高</span><div class="font-bold text-slate-200">$1008.37</div></div>
+                        <div><span class="text-slate-500">高點回撤</span><div class="font-bold text-rose-400">-1.91%</div></div>
+                        <div><span class="text-slate-500">停損緩衝</span><div class="font-bold text-purple-400">+4.7%</div></div>
                         <div><span class="text-slate-500">AI新聞情緒</span><div class="font-bold text-blue-400">0.0 分</div></div>
-                        <div><span class="text-slate-500">回測勝率</span><div class="font-bold text-emerald-400">51.6%</div></div>
-                        <div><span class="text-slate-500">策略回撤</span><div class="font-bold text-rose-400">-18.2%</div></div>
+                        <div><span class="text-slate-500">回測勝率</span><div class="font-bold text-emerald-400">49.2%</div></div>
+                        <div><span class="text-slate-500">策略回撤</span><div class="font-bold text-rose-400">-16.4%</div></div>
                     </div>
 
                     <!-- 回測數據與量化指令 -->
-                    <div class="p-3.5 rounded-xl border" style="background-color: #10B98115; border-color: #10B98140;">
-                        <div class="text-xs font-extrabold" style="color: #10B981;">⚡ 指令：啟動第 1 批建倉：買進 1/3</div>
-                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">安全邊際達 18.6% 且多頭排列。</p>
+                    <div class="p-3.5 rounded-xl border" style="background-color: #3B82F615; border-color: #3B82F640;">
+                        <div class="text-xs font-extrabold" style="color: #3B82F6;">⚡ 指令：定期定額 / 維持續抱</div>
+                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">處於合理估值防禦帶內。</p>
                     </div>
                 </div>
             </div>
 
             <!-- 卡片底部連結 -->
             <div class="px-5 py-3 bg-slate-950/90 border-t border-slate-800 flex justify-between text-xs">
-                <a href="https://finance.yahoo.com/quote/2330.TW" target="_blank" class="text-blue-400 hover:text-blue-300 font-semibold">Yahoo 報價 ↗</a>
-                <a href="https://www.tradingview.com/symbols/2330/" target="_blank" class="text-slate-400 hover:text-slate-200">TradingView 線圖 ↗</a>
+                <a href="https://finance.yahoo.com/quote/COST" target="_blank" class="text-blue-400 hover:text-blue-300 font-semibold">Yahoo 報價 ↗</a>
+                <a href="https://www.tradingview.com/symbols/COST/" target="_blank" class="text-slate-400 hover:text-slate-200">TradingView 線圖 ↗</a>
+            </div>
+        </div>
+        
+        <div class="stock-card bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between backdrop-blur-md transition hover:border-slate-700" data-market="US" data-risk="低風險 (買進區)">
+            <div>
+                <!-- 卡片標題 -->
+                <div class="px-5 py-3.5 flex justify-between items-center border-b border-slate-800/80" style="background: linear-gradient(90deg, #10B98125 0%, transparent 100%); border-left: 4px solid #10B981;">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg font-black text-white">LLY</span>
+                            <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">US</span>
+                        </div>
+                        <p class="text-xs text-slate-400">禮來製藥 (持股: 2.0)</p>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-xs font-extrabold text-white shadow" style="background-color: #10B981;">低風險 (買進區)</span>
+                </div>
+
+                <!-- 卡片內文 -->
+                <div class="p-5 space-y-4">
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <span class="text-xs text-slate-400 block mb-1">現價 (動態合理價: <strong class="text-slate-200">$1887.55</strong>)</span>
+                            <span class="text-3xl font-black text-white">$1257.03</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-slate-400 block mb-1">持倉損益 / 市值</span>
+                            <span class="text-xl font-black text-emerald-400">+8.4%</span>
+                            <span class="text-xs text-slate-400 block font-mono">$2,514</span>
+                        </div>
+                    </div>
+
+                    <!-- 安全邊際量尺 -->
+                    <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
+                        <div class="flex justify-between text-xs mb-1.5">
+                            <span class="text-slate-400">安全邊際量尺</span>
+                            <span class="font-bold" style="color: #10B981">邊際 33.4% / 溢價 -33.4%</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-800 rounded-full relative overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-500" style="width: 87.6%; background-color: #10B981;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 30日走勢圖 -->
+                    <div class="h-28 w-full bg-slate-950/50 rounded-xl p-2 border border-slate-800/60">
+                        <canvas id="chart-3"></canvas>
+                    </div>
+
+                    <!-- 八宮格技術與風控指標 -->
+                    <div class="grid grid-cols-3 gap-2 text-xs bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                        <div><span class="text-slate-500">持有成本</span><div class="font-bold text-slate-200">$1159.82</div></div>
+                        <div><span class="text-slate-500">200MA 均線</span><div class="font-bold text-slate-200">$1077.69</div></div>
+                        <div><span class="text-slate-500">RSI (14)</span><div class="font-bold text-amber-400">68.6</div></div>
+                        <div><span class="text-slate-500">60D 波段高</span><div class="font-bold text-slate-200">$1292.65</div></div>
+                        <div><span class="text-slate-500">高點回撤</span><div class="font-bold text-rose-400">-2.76%</div></div>
+                        <div><span class="text-slate-500">停損緩衝</span><div class="font-bold text-purple-400">+18.4%</div></div>
+                        <div><span class="text-slate-500">AI新聞情緒</span><div class="font-bold text-blue-400">0.0 分</div></div>
+                        <div><span class="text-slate-500">回測勝率</span><div class="font-bold text-emerald-400">42.6%</div></div>
+                        <div><span class="text-slate-500">策略回撤</span><div class="font-bold text-rose-400">-34.5%</div></div>
+                    </div>
+
+                    <!-- 回測數據與量化指令 -->
+                    <div class="p-3.5 rounded-xl border" style="background-color: #10B98115; border-color: #10B98140;">
+                        <div class="text-xs font-extrabold" style="color: #10B981;">⚡ 指令：啟動第 1 批建倉：買進 1/3</div>
+                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">安全邊際達 33.4% 且多頭排列。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 卡片底部連結 -->
+            <div class="px-5 py-3 bg-slate-950/90 border-t border-slate-800 flex justify-between text-xs">
+                <a href="https://finance.yahoo.com/quote/LLY" target="_blank" class="text-blue-400 hover:text-blue-300 font-semibold">Yahoo 報價 ↗</a>
+                <a href="https://www.tradingview.com/symbols/LLY/" target="_blank" class="text-slate-400 hover:text-slate-200">TradingView 線圖 ↗</a>
+            </div>
+        </div>
+        
+        <div class="stock-card bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between backdrop-blur-md transition hover:border-slate-700" data-market="US" data-risk="低風險 (買進區)">
+            <div>
+                <!-- 卡片標題 -->
+                <div class="px-5 py-3.5 flex justify-between items-center border-b border-slate-800/80" style="background: linear-gradient(90deg, #10B98125 0%, transparent 100%); border-left: 4px solid #10B981;">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg font-black text-white">NVDA</span>
+                            <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">US</span>
+                        </div>
+                        <p class="text-xs text-slate-400">輝達 (持股: 16.0)</p>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-xs font-extrabold text-white shadow" style="background-color: #10B981;">低風險 (買進區)</span>
+                </div>
+
+                <!-- 卡片內文 -->
+                <div class="p-5 space-y-4">
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <span class="text-xs text-slate-400 block mb-1">現價 (動態合理價: <strong class="text-slate-200">$557.01</strong>)</span>
+                            <span class="text-3xl font-black text-white">$214.13</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-slate-400 block mb-1">持倉損益 / 市值</span>
+                            <span class="text-xl font-black text-rose-400">-3.2%</span>
+                            <span class="text-xs text-slate-400 block font-mono">$3,426</span>
+                        </div>
+                    </div>
+
+                    <!-- 安全邊際量尺 -->
+                    <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
+                        <div class="flex justify-between text-xs mb-1.5">
+                            <span class="text-slate-400">安全邊際量尺</span>
+                            <span class="font-bold" style="color: #10B981">邊際 61.56% / 溢價 -61.56%</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-800 rounded-full relative overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-500" style="width: 95.0%; background-color: #10B981;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 30日走勢圖 -->
+                    <div class="h-28 w-full bg-slate-950/50 rounded-xl p-2 border border-slate-800/60">
+                        <canvas id="chart-4"></canvas>
+                    </div>
+
+                    <!-- 八宮格技術與風控指標 -->
+                    <div class="grid grid-cols-3 gap-2 text-xs bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                        <div><span class="text-slate-500">持有成本</span><div class="font-bold text-slate-200">$221.22</div></div>
+                        <div><span class="text-slate-500">200MA 均線</span><div class="font-bold text-slate-200">$202.66</div></div>
+                        <div><span class="text-slate-500">RSI (14)</span><div class="font-bold text-amber-400">37.6</div></div>
+                        <div><span class="text-slate-500">60D 波段高</span><div class="font-bold text-slate-200">$243.37</div></div>
+                        <div><span class="text-slate-500">高點回撤</span><div class="font-bold text-rose-400">-12.01%</div></div>
+                        <div><span class="text-slate-500">停損緩衝</span><div class="font-bold text-purple-400">+6.8%</div></div>
+                        <div><span class="text-slate-500">AI新聞情緒</span><div class="font-bold text-blue-400">0.0 分</div></div>
+                        <div><span class="text-slate-500">回測勝率</span><div class="font-bold text-emerald-400">45.4%</div></div>
+                        <div><span class="text-slate-500">策略回撤</span><div class="font-bold text-rose-400">-23.3%</div></div>
+                    </div>
+
+                    <!-- 回測數據與量化指令 -->
+                    <div class="p-3.5 rounded-xl border" style="background-color: #10B98115; border-color: #10B98140;">
+                        <div class="text-xs font-extrabold" style="color: #10B981;">⚡ 指令：啟動第 1 批建倉：買進 1/3</div>
+                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">安全邊際達 61.6% 且多頭排列。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 卡片底部連結 -->
+            <div class="px-5 py-3 bg-slate-950/90 border-t border-slate-800 flex justify-between text-xs">
+                <a href="https://finance.yahoo.com/quote/NVDA" target="_blank" class="text-blue-400 hover:text-blue-300 font-semibold">Yahoo 報價 ↗</a>
+                <a href="https://www.tradingview.com/symbols/NVDA/" target="_blank" class="text-slate-400 hover:text-slate-200">TradingView 線圖 ↗</a>
+            </div>
+        </div>
+        
+        <div class="stock-card bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between backdrop-blur-md transition hover:border-slate-700" data-market="US" data-risk="停損警戒">
+            <div>
+                <!-- 卡片標題 -->
+                <div class="px-5 py-3.5 flex justify-between items-center border-b border-slate-800/80" style="background: linear-gradient(90deg, #EF444425 0%, transparent 100%); border-left: 4px solid #EF4444;">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg font-black text-white">VRT</span>
+                            <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">US</span>
+                        </div>
+                        <p class="text-xs text-slate-400">維諦技術 (持股: 8.0)</p>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-xs font-extrabold text-white shadow" style="background-color: #EF4444;">停損警戒</span>
+                </div>
+
+                <!-- 卡片內文 -->
+                <div class="p-5 space-y-4">
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <span class="text-xs text-slate-400 block mb-1">現價 (動態合理價: <strong class="text-slate-200">$275.79</strong>)</span>
+                            <span class="text-3xl font-black text-white">$206.42</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-slate-400 block mb-1">持倉損益 / 市值</span>
+                            <span class="text-xl font-black text-rose-400">-35.8%</span>
+                            <span class="text-xs text-slate-400 block font-mono">$1,651</span>
+                        </div>
+                    </div>
+
+                    <!-- 安全邊際量尺 -->
+                    <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
+                        <div class="flex justify-between text-xs mb-1.5">
+                            <span class="text-slate-400">安全邊際量尺</span>
+                            <span class="font-bold" style="color: #EF4444">邊際 25.15% / 溢價 -25.15%</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-800 rounded-full relative overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-500" style="width: 78.3%; background-color: #EF4444;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 30日走勢圖 -->
+                    <div class="h-28 w-full bg-slate-950/50 rounded-xl p-2 border border-slate-800/60">
+                        <canvas id="chart-5"></canvas>
+                    </div>
+
+                    <!-- 八宮格技術與風控指標 -->
+                    <div class="grid grid-cols-3 gap-2 text-xs bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                        <div><span class="text-slate-500">持有成本</span><div class="font-bold text-slate-200">$321.39</div></div>
+                        <div><span class="text-slate-500">200MA 均線</span><div class="font-bold text-slate-200">$268.2</div></div>
+                        <div><span class="text-slate-500">RSI (14)</span><div class="font-bold text-amber-400">27.3</div></div>
+                        <div><span class="text-slate-500">60D 波段高</span><div class="font-bold text-slate-200">$302.42</div></div>
+                        <div><span class="text-slate-500">高點回撤</span><div class="font-bold text-rose-400">-31.74%</div></div>
+                        <div><span class="text-slate-500">停損緩衝</span><div class="font-bold text-purple-400">-25.8%</div></div>
+                        <div><span class="text-slate-500">AI新聞情緒</span><div class="font-bold text-blue-400">0.0 分</div></div>
+                        <div><span class="text-slate-500">回測勝率</span><div class="font-bold text-emerald-400">47.8%</div></div>
+                        <div><span class="text-slate-500">策略回撤</span><div class="font-bold text-rose-400">-37.6%</div></div>
+                    </div>
+
+                    <!-- 回測數據與量化指令 -->
+                    <div class="p-3.5 rounded-xl border" style="background-color: #EF444415; border-color: #EF444440;">
+                        <div class="text-xs font-extrabold" style="color: #EF4444;">⚡ 指令：市價全數平倉 / 嚴格停損</div>
+                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">成本損益達 -35.8%，跌破防線。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 卡片底部連結 -->
+            <div class="px-5 py-3 bg-slate-950/90 border-t border-slate-800 flex justify-between text-xs">
+                <a href="https://finance.yahoo.com/quote/VRT" target="_blank" class="text-blue-400 hover:text-blue-300 font-semibold">Yahoo 報價 ↗</a>
+                <a href="https://www.tradingview.com/symbols/VRT/" target="_blank" class="text-slate-400 hover:text-slate-200">TradingView 線圖 ↗</a>
+            </div>
+        </div>
+        
+        <div class="stock-card bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between backdrop-blur-md transition hover:border-slate-700" data-market="US" data-risk="高風險 (嚴重昂貴)">
+            <div>
+                <!-- 卡片標題 -->
+                <div class="px-5 py-3.5 flex justify-between items-center border-b border-slate-800/80" style="background: linear-gradient(90deg, #EF444425 0%, transparent 100%); border-left: 4px solid #EF4444;">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg font-black text-white">GLD</span>
+                            <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">US</span>
+                        </div>
+                        <p class="text-xs text-slate-400">SPDR黃金ETF (持股: 0.0)</p>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-xs font-extrabold text-white shadow" style="background-color: #EF4444;">高風險 (嚴重昂貴)</span>
+                </div>
+
+                <!-- 卡片內文 -->
+                <div class="p-5 space-y-4">
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <span class="text-xs text-slate-400 block mb-1">現價 (動態合理價: <strong class="text-slate-200">$240.0</strong>)</span>
+                            <span class="text-3xl font-black text-white">$382.01</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-slate-400 block mb-1">持倉損益 / 市值</span>
+                            <span class="text-xl font-black text-emerald-400">+0.0%</span>
+                            <span class="text-xs text-slate-400 block font-mono">$0</span>
+                        </div>
+                    </div>
+
+                    <!-- 安全邊際量尺 -->
+                    <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
+                        <div class="flex justify-between text-xs mb-1.5">
+                            <span class="text-slate-400">安全邊際量尺</span>
+                            <span class="font-bold" style="color: #EF4444">邊際 -59.17% / 溢價 59.17%</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-800 rounded-full relative overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-500" style="width: 5.0%; background-color: #EF4444;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 30日走勢圖 -->
+                    <div class="h-28 w-full bg-slate-950/50 rounded-xl p-2 border border-slate-800/60">
+                        <canvas id="chart-6"></canvas>
+                    </div>
+
+                    <!-- 八宮格技術與風控指標 -->
+                    <div class="grid grid-cols-3 gap-2 text-xs bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                        <div><span class="text-slate-500">持有成本</span><div class="font-bold text-slate-200">$0.0</div></div>
+                        <div><span class="text-slate-500">200MA 均線</span><div class="font-bold text-slate-200">$414.98</div></div>
+                        <div><span class="text-slate-500">RSI (14)</span><div class="font-bold text-amber-400">45.5</div></div>
+                        <div><span class="text-slate-500">60D 波段高</span><div class="font-bold text-slate-200">$429.42</div></div>
+                        <div><span class="text-slate-500">高點回撤</span><div class="font-bold text-rose-400">-11.04%</div></div>
+                        <div><span class="text-slate-500">停損緩衝</span><div class="font-bold text-purple-400">無硬停損</div></div>
+                        <div><span class="text-slate-500">AI新聞情緒</span><div class="font-bold text-blue-400">0.0 分</div></div>
+                        <div><span class="text-slate-500">回測勝率</span><div class="font-bold text-emerald-400">52.2%</div></div>
+                        <div><span class="text-slate-500">策略回撤</span><div class="font-bold text-rose-400">-27.3%</div></div>
+                    </div>
+
+                    <!-- 回測數據與量化指令 -->
+                    <div class="p-3.5 rounded-xl border" style="background-color: #EF444415; border-color: #EF444440;">
+                        <div class="text-xs font-extrabold" style="color: #EF4444;">⚡ 指令：執行減碼：賣出持倉 1/3</div>
+                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">溢價率達 59.2%，估值透支。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 卡片底部連結 -->
+            <div class="px-5 py-3 bg-slate-950/90 border-t border-slate-800 flex justify-between text-xs">
+                <a href="https://finance.yahoo.com/quote/GLD" target="_blank" class="text-blue-400 hover:text-blue-300 font-semibold">Yahoo 報價 ↗</a>
+                <a href="https://www.tradingview.com/symbols/GLD/" target="_blank" class="text-slate-400 hover:text-slate-200">TradingView 線圖 ↗</a>
             </div>
         </div>
         
@@ -306,7 +594,7 @@
                             <span class="text-lg font-black text-white">0050.TW</span>
                             <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">TW</span>
                         </div>
-                        <p class="text-xs text-slate-400">元大台灣50</p>
+                        <p class="text-xs text-slate-400">元大台灣50 (持股: 150.0)</p>
                     </div>
                     <span class="px-3 py-1 rounded-full text-xs font-extrabold text-white shadow" style="background-color: #3B82F6;">合理估值區</span>
                 </div>
@@ -315,13 +603,13 @@
                 <div class="p-5 space-y-4">
                     <div class="flex justify-between items-end">
                         <div>
-                            <span class="text-xs text-slate-400 block mb-1">現價 (動態合理價: <strong class="text-slate-200">NT$115.0</strong>)</span>
+                            <span class="text-xs text-slate-400 block mb-1">現價 (動態合理價: <strong class="text-slate-200">NT$120.0</strong>)</span>
                             <span class="text-3xl font-black text-white">NT$109.0</span>
                         </div>
                         <div class="text-right">
                             <span class="text-xs text-slate-400 block mb-1">持倉損益 / 市值</span>
-                            <span class="text-xl font-black text-emerald-400">+3.8%</span>
-                            <span class="text-xs text-slate-400 block font-mono">NT$327,000</span>
+                            <span class="text-xl font-black text-emerald-400">+48.5%</span>
+                            <span class="text-xs text-slate-400 block font-mono">NT$16,350</span>
                         </div>
                     </div>
 
@@ -329,21 +617,21 @@
                     <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
                         <div class="flex justify-between text-xs mb-1.5">
                             <span class="text-slate-400">安全邊際量尺</span>
-                            <span class="font-bold" style="color: #3B82F6">邊際 5.22% / 溢價 -5.22%</span>
+                            <span class="font-bold" style="color: #3B82F6">邊際 9.17% / 溢價 -9.17%</span>
                         </div>
                         <div class="w-full h-2 bg-slate-800 rounded-full relative overflow-hidden">
-                            <div class="h-full rounded-full transition-all duration-500" style="width: 55.9%; background-color: #3B82F6;"></div>
+                            <div class="h-full rounded-full transition-all duration-500" style="width: 60.3%; background-color: #3B82F6;"></div>
                         </div>
                     </div>
 
                     <!-- 30日走勢圖 -->
                     <div class="h-28 w-full bg-slate-950/50 rounded-xl p-2 border border-slate-800/60">
-                        <canvas id="chart-3"></canvas>
+                        <canvas id="chart-7"></canvas>
                     </div>
 
                     <!-- 八宮格技術與風控指標 -->
                     <div class="grid grid-cols-3 gap-2 text-xs bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
-                        <div><span class="text-slate-500">持有成本</span><div class="font-bold text-slate-200">NT$105.0</div></div>
+                        <div><span class="text-slate-500">持有成本</span><div class="font-bold text-slate-200">NT$73.4</div></div>
                         <div><span class="text-slate-500">200MA 均線</span><div class="font-bold text-slate-200">NT$91.79</div></div>
                         <div><span class="text-slate-500">RSI (14)</span><div class="font-bold text-amber-400">43.1</div></div>
                         <div><span class="text-slate-500">60D 波段高</span><div class="font-bold text-slate-200">NT$116.6</div></div>
@@ -369,12 +657,516 @@
             </div>
         </div>
         
+        <div class="stock-card bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between backdrop-blur-md transition hover:border-slate-700" data-market="TW" data-risk="停損警戒">
+            <div>
+                <!-- 卡片標題 -->
+                <div class="px-5 py-3.5 flex justify-between items-center border-b border-slate-800/80" style="background: linear-gradient(90deg, #EF444425 0%, transparent 100%); border-left: 4px solid #EF4444;">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg font-black text-white">2337.TW</span>
+                            <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">TW</span>
+                        </div>
+                        <p class="text-xs text-slate-400">旺宏 (持股: 50.0)</p>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-xs font-extrabold text-white shadow" style="background-color: #EF4444;">停損警戒</span>
+                </div>
+
+                <!-- 卡片內文 -->
+                <div class="p-5 space-y-4">
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <span class="text-xs text-slate-400 block mb-1">現價 (動態合理價: <strong class="text-slate-200">NT$763.19</strong>)</span>
+                            <span class="text-3xl font-black text-white">NT$107.0</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-slate-400 block mb-1">持倉損益 / 市值</span>
+                            <span class="text-xl font-black text-rose-400">-26.2%</span>
+                            <span class="text-xs text-slate-400 block font-mono">NT$5,350</span>
+                        </div>
+                    </div>
+
+                    <!-- 安全邊際量尺 -->
+                    <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
+                        <div class="flex justify-between text-xs mb-1.5">
+                            <span class="text-slate-400">安全邊際量尺</span>
+                            <span class="font-bold" style="color: #EF4444">邊際 85.98% / 溢價 -85.98%</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-800 rounded-full relative overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-500" style="width: 95.0%; background-color: #EF4444;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 30日走勢圖 -->
+                    <div class="h-28 w-full bg-slate-950/50 rounded-xl p-2 border border-slate-800/60">
+                        <canvas id="chart-8"></canvas>
+                    </div>
+
+                    <!-- 八宮格技術與風控指標 -->
+                    <div class="grid grid-cols-3 gap-2 text-xs bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                        <div><span class="text-slate-500">持有成本</span><div class="font-bold text-slate-200">NT$145.0</div></div>
+                        <div><span class="text-slate-500">200MA 均線</span><div class="font-bold text-slate-200">NT$120.3</div></div>
+                        <div><span class="text-slate-500">RSI (14)</span><div class="font-bold text-amber-400">37.2</div></div>
+                        <div><span class="text-slate-500">60D 波段高</span><div class="font-bold text-slate-200">NT$144.5</div></div>
+                        <div><span class="text-slate-500">高點回撤</span><div class="font-bold text-rose-400">-25.95%</div></div>
+                        <div><span class="text-slate-500">停損緩衝</span><div class="font-bold text-purple-400">-16.2%</div></div>
+                        <div><span class="text-slate-500">AI新聞情緒</span><div class="font-bold text-blue-400">0.0 分</div></div>
+                        <div><span class="text-slate-500">回測勝率</span><div class="font-bold text-emerald-400">54.5%</div></div>
+                        <div><span class="text-slate-500">策略回撤</span><div class="font-bold text-rose-400">-37.5%</div></div>
+                    </div>
+
+                    <!-- 回測數據與量化指令 -->
+                    <div class="p-3.5 rounded-xl border" style="background-color: #EF444415; border-color: #EF444440;">
+                        <div class="text-xs font-extrabold" style="color: #EF4444;">⚡ 指令：市價全數平倉 / 嚴格停損</div>
+                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">成本損益達 -26.2%，跌破防線。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 卡片底部連結 -->
+            <div class="px-5 py-3 bg-slate-950/90 border-t border-slate-800 flex justify-between text-xs">
+                <a href="https://finance.yahoo.com/quote/2337.TW" target="_blank" class="text-blue-400 hover:text-blue-300 font-semibold">Yahoo 報價 ↗</a>
+                <a href="https://www.tradingview.com/symbols/2337/" target="_blank" class="text-slate-400 hover:text-slate-200">TradingView 線圖 ↗</a>
+            </div>
+        </div>
+        
+        <div class="stock-card bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between backdrop-blur-md transition hover:border-slate-700" data-market="TW" data-risk="停損警戒">
+            <div>
+                <!-- 卡片標題 -->
+                <div class="px-5 py-3.5 flex justify-between items-center border-b border-slate-800/80" style="background: linear-gradient(90deg, #EF444425 0%, transparent 100%); border-left: 4px solid #EF4444;">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg font-black text-white">2002.TW</span>
+                            <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">TW</span>
+                        </div>
+                        <p class="text-xs text-slate-400">中鋼 (持股: 1000.0)</p>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-xs font-extrabold text-white shadow" style="background-color: #EF4444;">停損警戒</span>
+                </div>
+
+                <!-- 卡片內文 -->
+                <div class="p-5 space-y-4">
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <span class="text-xs text-slate-400 block mb-1">現價 (動態合理價: <strong class="text-slate-200">NT$6.28</strong>)</span>
+                            <span class="text-3xl font-black text-white">NT$19.55</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-slate-400 block mb-1">持倉損益 / 市值</span>
+                            <span class="text-xl font-black text-rose-400">-21.8%</span>
+                            <span class="text-xs text-slate-400 block font-mono">NT$19,550</span>
+                        </div>
+                    </div>
+
+                    <!-- 安全邊際量尺 -->
+                    <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
+                        <div class="flex justify-between text-xs mb-1.5">
+                            <span class="text-slate-400">安全邊際量尺</span>
+                            <span class="font-bold" style="color: #EF4444">邊際 -211.31% / 溢價 211.31%</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-800 rounded-full relative overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-500" style="width: 5.0%; background-color: #EF4444;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 30日走勢圖 -->
+                    <div class="h-28 w-full bg-slate-950/50 rounded-xl p-2 border border-slate-800/60">
+                        <canvas id="chart-9"></canvas>
+                    </div>
+
+                    <!-- 八宮格技術與風控指標 -->
+                    <div class="grid grid-cols-3 gap-2 text-xs bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                        <div><span class="text-slate-500">持有成本</span><div class="font-bold text-slate-200">NT$25.0</div></div>
+                        <div><span class="text-slate-500">200MA 均線</span><div class="font-bold text-slate-200">NT$19.08</div></div>
+                        <div><span class="text-slate-500">RSI (14)</span><div class="font-bold text-amber-400">63.3</div></div>
+                        <div><span class="text-slate-500">60D 波段高</span><div class="font-bold text-slate-200">NT$19.9</div></div>
+                        <div><span class="text-slate-500">高點回撤</span><div class="font-bold text-rose-400">-1.76%</div></div>
+                        <div><span class="text-slate-500">停損緩衝</span><div class="font-bold text-purple-400">-11.8%</div></div>
+                        <div><span class="text-slate-500">AI新聞情緒</span><div class="font-bold text-blue-400">0.0 分</div></div>
+                        <div><span class="text-slate-500">回測勝率</span><div class="font-bold text-emerald-400">44.6%</div></div>
+                        <div><span class="text-slate-500">策略回撤</span><div class="font-bold text-rose-400">-21.0%</div></div>
+                    </div>
+
+                    <!-- 回測數據與量化指令 -->
+                    <div class="p-3.5 rounded-xl border" style="background-color: #EF444415; border-color: #EF444440;">
+                        <div class="text-xs font-extrabold" style="color: #EF4444;">⚡ 指令：市價全數平倉 / 嚴格停損</div>
+                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">成本損益達 -21.8%，跌破防線。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 卡片底部連結 -->
+            <div class="px-5 py-3 bg-slate-950/90 border-t border-slate-800 flex justify-between text-xs">
+                <a href="https://finance.yahoo.com/quote/2002.TW" target="_blank" class="text-blue-400 hover:text-blue-300 font-semibold">Yahoo 報價 ↗</a>
+                <a href="https://www.tradingview.com/symbols/2002/" target="_blank" class="text-slate-400 hover:text-slate-200">TradingView 線圖 ↗</a>
+            </div>
+        </div>
+        
+        <div class="stock-card bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between backdrop-blur-md transition hover:border-slate-700" data-market="TW" data-risk="合理估值區">
+            <div>
+                <!-- 卡片標題 -->
+                <div class="px-5 py-3.5 flex justify-between items-center border-b border-slate-800/80" style="background: linear-gradient(90deg, #3B82F625 0%, transparent 100%); border-left: 4px solid #3B82F6;">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg font-black text-white">1232.TW</span>
+                            <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">TW</span>
+                        </div>
+                        <p class="text-xs text-slate-400">大統益 (持股: 50.0)</p>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-xs font-extrabold text-white shadow" style="background-color: #3B82F6;">合理估值區</span>
+                </div>
+
+                <!-- 卡片內文 -->
+                <div class="p-5 space-y-4">
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <span class="text-xs text-slate-400 block mb-1">現價 (動態合理價: <strong class="text-slate-200">NT$162.18</strong>)</span>
+                            <span class="text-3xl font-black text-white">NT$157.0</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-slate-400 block mb-1">持倉損益 / 市值</span>
+                            <span class="text-xl font-black text-emerald-400">+9.0%</span>
+                            <span class="text-xs text-slate-400 block font-mono">NT$7,850</span>
+                        </div>
+                    </div>
+
+                    <!-- 安全邊際量尺 -->
+                    <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
+                        <div class="flex justify-between text-xs mb-1.5">
+                            <span class="text-slate-400">安全邊際量尺</span>
+                            <span class="font-bold" style="color: #3B82F6">邊際 3.19% / 溢價 -3.19%</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-800 rounded-full relative overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-500" style="width: 53.6%; background-color: #3B82F6;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 30日走勢圖 -->
+                    <div class="h-28 w-full bg-slate-950/50 rounded-xl p-2 border border-slate-800/60">
+                        <canvas id="chart-10"></canvas>
+                    </div>
+
+                    <!-- 八宮格技術與風控指標 -->
+                    <div class="grid grid-cols-3 gap-2 text-xs bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                        <div><span class="text-slate-500">持有成本</span><div class="font-bold text-slate-200">NT$144.0</div></div>
+                        <div><span class="text-slate-500">200MA 均線</span><div class="font-bold text-slate-200">NT$146.07</div></div>
+                        <div><span class="text-slate-500">RSI (14)</span><div class="font-bold text-amber-400">62.6</div></div>
+                        <div><span class="text-slate-500">60D 波段高</span><div class="font-bold text-slate-200">NT$160.0</div></div>
+                        <div><span class="text-slate-500">高點回撤</span><div class="font-bold text-rose-400">-1.88%</div></div>
+                        <div><span class="text-slate-500">停損緩衝</span><div class="font-bold text-purple-400">+19.0%</div></div>
+                        <div><span class="text-slate-500">AI新聞情緒</span><div class="font-bold text-blue-400">0.0 分</div></div>
+                        <div><span class="text-slate-500">回測勝率</span><div class="font-bold text-emerald-400">39.4%</div></div>
+                        <div><span class="text-slate-500">策略回撤</span><div class="font-bold text-rose-400">-10.1%</div></div>
+                    </div>
+
+                    <!-- 回測數據與量化指令 -->
+                    <div class="p-3.5 rounded-xl border" style="background-color: #3B82F615; border-color: #3B82F640;">
+                        <div class="text-xs font-extrabold" style="color: #3B82F6;">⚡ 指令：定期定額 / 維持續抱</div>
+                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">處於合理估值防禦帶內。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 卡片底部連結 -->
+            <div class="px-5 py-3 bg-slate-950/90 border-t border-slate-800 flex justify-between text-xs">
+                <a href="https://finance.yahoo.com/quote/1232.TW" target="_blank" class="text-blue-400 hover:text-blue-300 font-semibold">Yahoo 報價 ↗</a>
+                <a href="https://www.tradingview.com/symbols/1232/" target="_blank" class="text-slate-400 hover:text-slate-200">TradingView 線圖 ↗</a>
+            </div>
+        </div>
+        
+        <div class="stock-card bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between backdrop-blur-md transition hover:border-slate-700" data-market="TW" data-risk="高風險 (嚴重昂貴)">
+            <div>
+                <!-- 卡片標題 -->
+                <div class="px-5 py-3.5 flex justify-between items-center border-b border-slate-800/80" style="background: linear-gradient(90deg, #EF444425 0%, transparent 100%); border-left: 4px solid #EF4444;">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg font-black text-white">1904.TW</span>
+                            <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">TW</span>
+                        </div>
+                        <p class="text-xs text-slate-400">正隆 (持股: 1.0)</p>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-xs font-extrabold text-white shadow" style="background-color: #EF4444;">高風險 (嚴重昂貴)</span>
+                </div>
+
+                <!-- 卡片內文 -->
+                <div class="p-5 space-y-4">
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <span class="text-xs text-slate-400 block mb-1">現價 (動態合理價: <strong class="text-slate-200">NT$15.9</strong>)</span>
+                            <span class="text-3xl font-black text-white">NT$25.35</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-slate-400 block mb-1">持倉損益 / 市值</span>
+                            <span class="text-xl font-black text-rose-400">-1.6%</span>
+                            <span class="text-xs text-slate-400 block font-mono">NT$25</span>
+                        </div>
+                    </div>
+
+                    <!-- 安全邊際量尺 -->
+                    <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
+                        <div class="flex justify-between text-xs mb-1.5">
+                            <span class="text-slate-400">安全邊際量尺</span>
+                            <span class="font-bold" style="color: #EF4444">邊際 -59.43% / 溢價 59.43%</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-800 rounded-full relative overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-500" style="width: 5.0%; background-color: #EF4444;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 30日走勢圖 -->
+                    <div class="h-28 w-full bg-slate-950/50 rounded-xl p-2 border border-slate-800/60">
+                        <canvas id="chart-11"></canvas>
+                    </div>
+
+                    <!-- 八宮格技術與風控指標 -->
+                    <div class="grid grid-cols-3 gap-2 text-xs bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                        <div><span class="text-slate-500">持有成本</span><div class="font-bold text-slate-200">NT$25.75</div></div>
+                        <div><span class="text-slate-500">200MA 均線</span><div class="font-bold text-slate-200">NT$20.45</div></div>
+                        <div><span class="text-slate-500">RSI (14)</span><div class="font-bold text-amber-400">56.3</div></div>
+                        <div><span class="text-slate-500">60D 波段高</span><div class="font-bold text-slate-200">NT$26.45</div></div>
+                        <div><span class="text-slate-500">高點回撤</span><div class="font-bold text-rose-400">-4.16%</div></div>
+                        <div><span class="text-slate-500">停損緩衝</span><div class="font-bold text-purple-400">+8.4%</div></div>
+                        <div><span class="text-slate-500">AI新聞情緒</span><div class="font-bold text-blue-400">0.0 分</div></div>
+                        <div><span class="text-slate-500">回測勝率</span><div class="font-bold text-emerald-400">50.0%</div></div>
+                        <div><span class="text-slate-500">策略回撤</span><div class="font-bold text-rose-400">-13.6%</div></div>
+                    </div>
+
+                    <!-- 回測數據與量化指令 -->
+                    <div class="p-3.5 rounded-xl border" style="background-color: #EF444415; border-color: #EF444440;">
+                        <div class="text-xs font-extrabold" style="color: #EF4444;">⚡ 指令：執行減碼：賣出持倉 1/3</div>
+                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">溢價率達 59.4%，估值透支。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 卡片底部連結 -->
+            <div class="px-5 py-3 bg-slate-950/90 border-t border-slate-800 flex justify-between text-xs">
+                <a href="https://finance.yahoo.com/quote/1904.TW" target="_blank" class="text-blue-400 hover:text-blue-300 font-semibold">Yahoo 報價 ↗</a>
+                <a href="https://www.tradingview.com/symbols/1904/" target="_blank" class="text-slate-400 hover:text-slate-200">TradingView 線圖 ↗</a>
+            </div>
+        </div>
+        
+        <div class="stock-card bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between backdrop-blur-md transition hover:border-slate-700" data-market="TW" data-risk="停損警戒">
+            <div>
+                <!-- 卡片標題 -->
+                <div class="px-5 py-3.5 flex justify-between items-center border-b border-slate-800/80" style="background: linear-gradient(90deg, #EF444425 0%, transparent 100%); border-left: 4px solid #EF4444;">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg font-black text-white">2616.TW</span>
+                            <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">TW</span>
+                        </div>
+                        <p class="text-xs text-slate-400">山隆 (持股: 1.0)</p>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-xs font-extrabold text-white shadow" style="background-color: #EF4444;">停損警戒</span>
+                </div>
+
+                <!-- 卡片內文 -->
+                <div class="p-5 space-y-4">
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <span class="text-xs text-slate-400 block mb-1">現價 (動態合理價: <strong class="text-slate-200">NT$31.0</strong>)</span>
+                            <span class="text-3xl font-black text-white">NT$13.15</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-slate-400 block mb-1">持倉損益 / 市值</span>
+                            <span class="text-xl font-black text-rose-400">-40.5%</span>
+                            <span class="text-xs text-slate-400 block font-mono">NT$13</span>
+                        </div>
+                    </div>
+
+                    <!-- 安全邊際量尺 -->
+                    <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
+                        <div class="flex justify-between text-xs mb-1.5">
+                            <span class="text-slate-400">安全邊際量尺</span>
+                            <span class="font-bold" style="color: #EF4444">邊際 57.58% / 溢價 -57.58%</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-800 rounded-full relative overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-500" style="width: 95.0%; background-color: #EF4444;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 30日走勢圖 -->
+                    <div class="h-28 w-full bg-slate-950/50 rounded-xl p-2 border border-slate-800/60">
+                        <canvas id="chart-12"></canvas>
+                    </div>
+
+                    <!-- 八宮格技術與風控指標 -->
+                    <div class="grid grid-cols-3 gap-2 text-xs bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                        <div><span class="text-slate-500">持有成本</span><div class="font-bold text-slate-200">NT$22.1</div></div>
+                        <div><span class="text-slate-500">200MA 均線</span><div class="font-bold text-slate-200">NT$13.99</div></div>
+                        <div><span class="text-slate-500">RSI (14)</span><div class="font-bold text-amber-400">40.1</div></div>
+                        <div><span class="text-slate-500">60D 波段高</span><div class="font-bold text-slate-200">NT$13.98</div></div>
+                        <div><span class="text-slate-500">高點回撤</span><div class="font-bold text-rose-400">-5.94%</div></div>
+                        <div><span class="text-slate-500">停損緩衝</span><div class="font-bold text-purple-400">-30.5%</div></div>
+                        <div><span class="text-slate-500">AI新聞情緒</span><div class="font-bold text-blue-400">0.0 分</div></div>
+                        <div><span class="text-slate-500">回測勝率</span><div class="font-bold text-emerald-400">36.4%</div></div>
+                        <div><span class="text-slate-500">策略回撤</span><div class="font-bold text-rose-400">-39.7%</div></div>
+                    </div>
+
+                    <!-- 回測數據與量化指令 -->
+                    <div class="p-3.5 rounded-xl border" style="background-color: #EF444415; border-color: #EF444440;">
+                        <div class="text-xs font-extrabold" style="color: #EF4444;">⚡ 指令：市價全數平倉 / 嚴格停損</div>
+                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">成本損益達 -40.5%，跌破防線。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 卡片底部連結 -->
+            <div class="px-5 py-3 bg-slate-950/90 border-t border-slate-800 flex justify-between text-xs">
+                <a href="https://finance.yahoo.com/quote/2616.TW" target="_blank" class="text-blue-400 hover:text-blue-300 font-semibold">Yahoo 報價 ↗</a>
+                <a href="https://www.tradingview.com/symbols/2616/" target="_blank" class="text-slate-400 hover:text-slate-200">TradingView 線圖 ↗</a>
+            </div>
+        </div>
+        
+        <div class="stock-card bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between backdrop-blur-md transition hover:border-slate-700" data-market="TW" data-risk="合理估值區">
+            <div>
+                <!-- 卡片標題 -->
+                <div class="px-5 py-3.5 flex justify-between items-center border-b border-slate-800/80" style="background: linear-gradient(90deg, #3B82F625 0%, transparent 100%); border-left: 4px solid #3B82F6;">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg font-black text-white">009816.TW</span>
+                            <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">TW</span>
+                        </div>
+                        <p class="text-xs text-slate-400">凱基台灣TOP50 (持股: 959.0)</p>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-xs font-extrabold text-white shadow" style="background-color: #3B82F6;">合理估值區</span>
+                </div>
+
+                <!-- 卡片內文 -->
+                <div class="p-5 space-y-4">
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <span class="text-xs text-slate-400 block mb-1">現價 (動態合理價: <strong class="text-slate-200">NT$16.0</strong>)</span>
+                            <span class="text-3xl font-black text-white">NT$16.2</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-slate-400 block mb-1">持倉損益 / 市值</span>
+                            <span class="text-xl font-black text-emerald-400">+4.6%</span>
+                            <span class="text-xs text-slate-400 block font-mono">NT$15,536</span>
+                        </div>
+                    </div>
+
+                    <!-- 安全邊際量尺 -->
+                    <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
+                        <div class="flex justify-between text-xs mb-1.5">
+                            <span class="text-slate-400">安全邊際量尺</span>
+                            <span class="font-bold" style="color: #3B82F6">邊際 -1.25% / 溢價 1.25%</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-800 rounded-full relative overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-500" style="width: 48.6%; background-color: #3B82F6;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 30日走勢圖 -->
+                    <div class="h-28 w-full bg-slate-950/50 rounded-xl p-2 border border-slate-800/60">
+                        <canvas id="chart-13"></canvas>
+                    </div>
+
+                    <!-- 八宮格技術與風控指標 -->
+                    <div class="grid grid-cols-3 gap-2 text-xs bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                        <div><span class="text-slate-500">持有成本</span><div class="font-bold text-slate-200">NT$15.49</div></div>
+                        <div><span class="text-slate-500">200MA 均線</span><div class="font-bold text-slate-200">NT$13.83</div></div>
+                        <div><span class="text-slate-500">RSI (14)</span><div class="font-bold text-amber-400">45.8</div></div>
+                        <div><span class="text-slate-500">60D 波段高</span><div class="font-bold text-slate-200">NT$17.09</div></div>
+                        <div><span class="text-slate-500">高點回撤</span><div class="font-bold text-rose-400">-5.21%</div></div>
+                        <div><span class="text-slate-500">停損緩衝</span><div class="font-bold text-purple-400">無硬停損</div></div>
+                        <div><span class="text-slate-500">AI新聞情緒</span><div class="font-bold text-blue-400">0.0 分</div></div>
+                        <div><span class="text-slate-500">回測勝率</span><div class="font-bold text-emerald-400">51.8%</div></div>
+                        <div><span class="text-slate-500">策略回撤</span><div class="font-bold text-rose-400">-10.1%</div></div>
+                    </div>
+
+                    <!-- 回測數據與量化指令 -->
+                    <div class="p-3.5 rounded-xl border" style="background-color: #3B82F615; border-color: #3B82F640;">
+                        <div class="text-xs font-extrabold" style="color: #3B82F6;">⚡ 指令：定期定額 / 維持續抱</div>
+                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">處於合理估值防禦帶內。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 卡片底部連結 -->
+            <div class="px-5 py-3 bg-slate-950/90 border-t border-slate-800 flex justify-between text-xs">
+                <a href="https://finance.yahoo.com/quote/009816.TW" target="_blank" class="text-blue-400 hover:text-blue-300 font-semibold">Yahoo 報價 ↗</a>
+                <a href="https://www.tradingview.com/symbols/009816/" target="_blank" class="text-slate-400 hover:text-slate-200">TradingView 線圖 ↗</a>
+            </div>
+        </div>
+        
+        <div class="stock-card bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between backdrop-blur-md transition hover:border-slate-700" data-market="TW" data-risk="高風險 (嚴重昂貴)">
+            <div>
+                <!-- 卡片標題 -->
+                <div class="px-5 py-3.5 flex justify-between items-center border-b border-slate-800/80" style="background: linear-gradient(90deg, #EF444425 0%, transparent 100%); border-left: 4px solid #EF4444;">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg font-black text-white">6182.TWO</span>
+                            <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">TW</span>
+                        </div>
+                        <p class="text-xs text-slate-400">合晶 (持股: 120.0)</p>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-xs font-extrabold text-white shadow" style="background-color: #EF4444;">高風險 (嚴重昂貴)</span>
+                </div>
+
+                <!-- 卡片內文 -->
+                <div class="p-5 space-y-4">
+                    <div class="flex justify-between items-end">
+                        <div>
+                            <span class="text-xs text-slate-400 block mb-1">現價 (動態合理價: <strong class="text-slate-200">NT$58.6</strong>)</span>
+                            <span class="text-3xl font-black text-white">NT$110.5</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-slate-400 block mb-1">持倉損益 / 市值</span>
+                            <span class="text-xl font-black text-rose-400">-8.3%</span>
+                            <span class="text-xs text-slate-400 block font-mono">NT$13,260</span>
+                        </div>
+                    </div>
+
+                    <!-- 安全邊際量尺 -->
+                    <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
+                        <div class="flex justify-between text-xs mb-1.5">
+                            <span class="text-slate-400">安全邊際量尺</span>
+                            <span class="font-bold" style="color: #EF4444">邊際 -88.57% / 溢價 88.57%</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-800 rounded-full relative overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-500" style="width: 5.0%; background-color: #EF4444;"></div>
+                        </div>
+                    </div>
+
+                    <!-- 30日走勢圖 -->
+                    <div class="h-28 w-full bg-slate-950/50 rounded-xl p-2 border border-slate-800/60">
+                        <canvas id="chart-14"></canvas>
+                    </div>
+
+                    <!-- 八宮格技術與風控指標 -->
+                    <div class="grid grid-cols-3 gap-2 text-xs bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                        <div><span class="text-slate-500">持有成本</span><div class="font-bold text-slate-200">NT$120.5</div></div>
+                        <div><span class="text-slate-500">200MA 均線</span><div class="font-bold text-slate-200">NT$76.77</div></div>
+                        <div><span class="text-slate-500">RSI (14)</span><div class="font-bold text-amber-400">43.2</div></div>
+                        <div><span class="text-slate-500">60D 波段高</span><div class="font-bold text-slate-200">NT$143.0</div></div>
+                        <div><span class="text-slate-500">高點回撤</span><div class="font-bold text-rose-400">-22.73%</div></div>
+                        <div><span class="text-slate-500">停損緩衝</span><div class="font-bold text-purple-400">+1.7%</div></div>
+                        <div><span class="text-slate-500">AI新聞情緒</span><div class="font-bold text-blue-400">0.0 分</div></div>
+                        <div><span class="text-slate-500">回測勝率</span><div class="font-bold text-emerald-400">49.0%</div></div>
+                        <div><span class="text-slate-500">策略回撤</span><div class="font-bold text-rose-400">-41.9%</div></div>
+                    </div>
+
+                    <!-- 回測數據與量化指令 -->
+                    <div class="p-3.5 rounded-xl border" style="background-color: #EF444415; border-color: #EF444440;">
+                        <div class="text-xs font-extrabold" style="color: #EF4444;">⚡ 指令：執行減碼：賣出持倉 1/3</div>
+                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">溢價率達 88.6%，估值透支。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 卡片底部連結 -->
+            <div class="px-5 py-3 bg-slate-950/90 border-t border-slate-800 flex justify-between text-xs">
+                <a href="https://finance.yahoo.com/quote/6182.TWO" target="_blank" class="text-blue-400 hover:text-blue-300 font-semibold">Yahoo 報價 ↗</a>
+                <a href="https://www.tradingview.com/symbols/6182O/" target="_blank" class="text-slate-400 hover:text-slate-200">TradingView 線圖 ↗</a>
+            </div>
+        </div>
+        
         </main>
     </div>
 
     <script>
-        const chartConfigs = [{"id": "chart-0", "dates": ["09/04", "09/08", "09/09", "09/10", "09/11", "09/14", "09/15", "09/16", "09/17", "09/18", "09/21", "09/22", "09/23", "09/24", "09/25", "09/28", "09/29", "09/30", "10/01", "10/02", "10/05", "10/06", "10/07", "10/08", "10/09", "10/12", "10/13", "10/14", "10/15", "10/16"], "prices": [230.1, 225.48, 223.42, 218.36, 218.29, 210.96, 212.17, 213.9, 219.34, 222.27, 227.38, 228.87, 225.51, 224.58, 225.07, 228.86, 227.21, 228.38, 230.86, 233.95, 238.9, 239.24, 237.47, 230.48, 229.28, 226.32, 228.52, 221.3, 217.23, 214.13], "fair": 557.01, "color": "#10B981"}, {"id": "chart-1", "dates": ["09/04", "09/08", "09/09", "09/10", "09/11", "09/14", "09/15", "09/16", "09/17", "09/18", "09/21", "09/22", "09/23", "09/24", "09/25", "09/28", "09/29", "09/30", "10/01", "10/02", "10/05", "10/06", "10/07", "10/08", "10/09", "10/12", "10/13", "10/14", "10/15", "10/16"], "prices": [454.71, 472.79, 468.85, 454.01, 456.49, 424.21, 421.17, 415.38, 417.4, 444.57, 464.24, 472.46, 474.38, 474.25, 485.0, 486.76, 512.01, 511.38, 529.3, 540.04, 542.28, 530.27, 520.65, 509.57, 507.03, 497.53, 464.24, 446.63, 430.01, 409.29], "fair": 406.05, "color": "#3B82F6"}, {"id": "chart-2", "dates": ["09/02", "09/03", "09/04", "09/07", "09/08", "09/09", "09/10", "09/11", "09/14", "09/15", "09/16", "09/17", "09/18", "09/21", "09/22", "09/23", "09/24", "09/29", "09/30", "10/01", "10/02", "10/05", "10/06", "10/07", "10/08", "10/12", "10/13", "10/14", "10/15", "10/16"], "prices": [2378.0, 2382.99, 2402.93, 2452.78, 2462.75, 2457.77, 2442.81, 2402.93, 2373.01, 2378.0, 2380.0, 2425.0, 2460.0, 2480.0, 2460.0, 2500.0, 2475.0, 2475.0, 2480.0, 2510.0, 2500.0, 2575.0, 2585.0, 2585.0, 2550.0, 2540.0, 2490.0, 2490.0, 2440.0, 2420.0], "fair": 2972.23, "color": "#10B981"}, {"id": "chart-3", "dates": ["09/02", "09/03", "09/04", "09/07", "09/08", "09/09", "09/10", "09/11", "09/14", "09/15", "09/16", "09/17", "09/18", "09/21", "09/22", "09/23", "09/24", "09/29", "09/30", "10/01", "10/02", "10/05", "10/06", "10/07", "10/08", "10/12", "10/13", "10/14", "10/15", "10/16"], "prices": [106.8, 106.2, 107.9, 109.9, 109.65, 109.65, 109.15, 107.7, 106.9, 106.25, 106.9, 108.05, 109.85, 111.35, 111.85, 112.45, 112.4, 111.3, 112.05, 112.9, 112.8, 115.95, 116.5, 116.05, 114.95, 114.8, 112.4, 113.0, 108.9, 109.0], "fair": 115.0, "color": "#3B82F6"}];
-        const pieData = {"labels": ["NVDA", "AMAT", "2330.TW", "0050.TW"], "values": [10706.5, 16371.6, 2420000.0, 327000.0]};
+        const chartConfigs = [{"id": "chart-0", "dates": ["09/04", "09/08", "09/09", "09/10", "09/11", "09/14", "09/15", "09/16", "09/17", "09/18", "09/21", "09/22", "09/23", "09/24", "09/25", "09/28", "09/29", "09/30", "10/01", "10/02", "10/05", "10/06", "10/07", "10/08", "10/09", "10/12", "10/13", "10/14", "10/15", "10/16"], "prices": [454.71, 472.79, 468.85, 454.01, 456.49, 424.21, 421.17, 415.38, 417.4, 444.57, 464.24, 472.46, 474.38, 474.25, 485.0, 486.76, 512.01, 511.38, 529.3, 540.04, 542.28, 530.27, 520.65, 509.57, 507.03, 497.53, 464.24, 446.63, 430.01, 409.29], "fair": 406.05, "color": "#3B82F6"}, {"id": "chart-1", "dates": ["09/04", "09/08", "09/09", "09/10", "09/11", "09/14", "09/15", "09/16", "09/17", "09/18", "09/21", "09/22", "09/23", "09/24", "09/25", "09/28", "09/29", "09/30", "10/01", "10/02", "10/05", "10/06", "10/07", "10/08", "10/09", "10/12", "10/13", "10/14", "10/15", "10/16"], "prices": [506.03, 505.83, 506.72, 507.0, 510.37, 514.95, 516.76, 519.8, 509.2, 509.77, 502.01, 503.49, 507.17, 505.18, 505.48, 503.09, 502.35, 497.95, 500.5, 502.65, 504.26, 505.54, 506.25, 511.05, 515.62, 517.6, 520.59, 526.35, 525.68, 532.02], "fair": 444.32, "color": "#3B82F6"}, {"id": "chart-2", "dates": ["09/04", "09/08", "09/09", "09/10", "09/11", "09/14", "09/15", "09/16", "09/17", "09/18", "09/21", "09/22", "09/23", "09/24", "09/25", "09/28", "09/29", "09/30", "10/01", "10/02", "10/05", "10/06", "10/07", "10/08", "10/09", "10/12", "10/13", "10/14", "10/15", "10/16"], "prices": [915.74, 910.18, 902.6, 902.38, 904.77, 918.91, 901.35, 893.74, 893.93, 895.31, 898.48, 899.41, 904.7, 896.48, 922.77, 922.92, 924.59, 910.34, 914.94, 920.65, 923.52, 935.68, 942.25, 947.92, 946.92, 959.44, 954.63, 982.0, 978.01, 989.11], "fair": 875.57, "color": "#3B82F6"}, {"id": "chart-3", "dates": ["09/04", "09/08", "09/09", "09/10", "09/11", "09/14", "09/15", "09/16", "09/17", "09/18", "09/21", "09/22", "09/23", "09/24", "09/25", "09/28", "09/29", "09/30", "10/01", "10/02", "10/05", "10/06", "10/07", "10/08", "10/09", "10/12", "10/13", "10/14", "10/15", "10/16"], "prices": [1149.36, 1123.91, 1124.21, 1123.0, 1115.7, 1138.28, 1136.11, 1137.82, 1152.44, 1152.93, 1164.89, 1170.14, 1150.99, 1181.89, 1183.46, 1184.78, 1184.63, 1157.08, 1149.85, 1142.85, 1143.12, 1157.49, 1188.72, 1169.6, 1179.27, 1182.62, 1166.51, 1208.74, 1251.61, 1257.03], "fair": 1887.55, "color": "#10B981"}, {"id": "chart-4", "dates": ["09/04", "09/08", "09/09", "09/10", "09/11", "09/14", "09/15", "09/16", "09/17", "09/18", "09/21", "09/22", "09/23", "09/24", "09/25", "09/28", "09/29", "09/30", "10/01", "10/02", "10/05", "10/06", "10/07", "10/08", "10/09", "10/12", "10/13", "10/14", "10/15", "10/16"], "prices": [230.1, 225.48, 223.42, 218.36, 218.29, 210.96, 212.17, 213.9, 219.34, 222.27, 227.38, 228.87, 225.51, 224.58, 225.07, 228.86, 227.21, 228.38, 230.86, 233.95, 238.9, 239.24, 237.47, 230.48, 229.28, 226.32, 228.52, 221.3, 217.23, 214.13], "fair": 557.01, "color": "#10B981"}, {"id": "chart-5", "dates": ["09/04", "09/08", "09/09", "09/10", "09/11", "09/14", "09/15", "09/16", "09/17", "09/18", "09/21", "09/22", "09/23", "09/24", "09/25", "09/28", "09/29", "09/30", "10/01", "10/02", "10/05", "10/06", "10/07", "10/08", "10/09", "10/12", "10/13", "10/14", "10/15", "10/16"], "prices": [280.46, 290.76, 262.83, 248.07, 257.0, 237.39, 234.61, 239.41, 241.49, 249.39, 250.86, 253.46, 248.78, 245.3, 253.28, 244.04, 248.34, 241.31, 246.12, 252.18, 253.62, 253.14, 246.49, 243.73, 242.78, 239.36, 237.29, 222.83, 214.75, 206.42], "fair": 275.79, "color": "#EF4444"}, {"id": "chart-6", "dates": ["09/04", "09/08", "09/09", "09/10", "09/11", "09/14", "09/15", "09/16", "09/17", "09/18", "09/21", "09/22", "09/23", "09/24", "09/25", "09/28", "09/29", "09/30", "10/01", "10/02", "10/05", "10/06", "10/07", "10/08", "10/09", "10/12", "10/13", "10/14", "10/15", "10/16"], "prices": [406.77, 399.72, 403.35, 396.36, 398.77, 392.84, 394.15, 391.74, 398.36, 401.17, 398.38, 400.07, 392.88, 391.69, 393.41, 377.91, 382.89, 380.84, 382.76, 380.14, 379.55, 382.27, 375.88, 378.62, 384.58, 382.15, 381.67, 375.99, 382.71, 382.01], "fair": 240.0, "color": "#EF4444"}, {"id": "chart-7", "dates": ["09/02", "09/03", "09/04", "09/07", "09/08", "09/09", "09/10", "09/11", "09/14", "09/15", "09/16", "09/17", "09/18", "09/21", "09/22", "09/23", "09/24", "09/29", "09/30", "10/01", "10/02", "10/05", "10/06", "10/07", "10/08", "10/12", "10/13", "10/14", "10/15", "10/16"], "prices": [106.8, 106.2, 107.9, 109.9, 109.65, 109.65, 109.15, 107.7, 106.9, 106.25, 106.9, 108.05, 109.85, 111.35, 111.85, 112.45, 112.4, 111.3, 112.05, 112.9, 112.8, 115.95, 116.5, 116.05, 114.95, 114.8, 112.4, 113.0, 108.9, 109.0], "fair": 120.0, "color": "#3B82F6"}, {"id": "chart-8", "dates": ["09/02", "09/03", "09/04", "09/07", "09/08", "09/09", "09/10", "09/11", "09/14", "09/15", "09/16", "09/17", "09/18", "09/21", "09/22", "09/23", "09/24", "09/29", "09/30", "10/01", "10/02", "10/05", "10/06", "10/07", "10/08", "10/12", "10/13", "10/14", "10/15", "10/16"], "prices": [123.0, 117.0, 121.5, 124.5, 126.0, 126.5, 122.5, 119.0, 116.0, 114.5, 119.0, 116.5, 121.0, 120.0, 118.0, 119.0, 117.0, 118.5, 122.5, 121.0, 122.0, 121.5, 119.5, 118.0, 116.0, 115.5, 106.5, 110.0, 104.5, 107.0], "fair": 763.19, "color": "#EF4444"}, {"id": "chart-9", "dates": ["09/02", "09/03", "09/04", "09/07", "09/08", "09/09", "09/10", "09/11", "09/14", "09/15", "09/16", "09/17", "09/18", "09/21", "09/22", "09/23", "09/24", "09/29", "09/30", "10/01", "10/02", "10/05", "10/06", "10/07", "10/08", "10/12", "10/13", "10/14", "10/15", "10/16"], "prices": [19.05, 19.0, 19.1, 19.0, 19.1, 19.25, 19.1, 18.9, 18.8, 18.65, 18.65, 18.7, 18.75, 18.65, 18.65, 18.65, 18.65, 18.8, 19.2, 18.95, 19.0, 18.9, 18.95, 18.95, 18.95, 19.2, 19.15, 19.5, 19.25, 19.55], "fair": 6.28, "color": "#EF4444"}, {"id": "chart-10", "dates": ["09/02", "09/03", "09/04", "09/07", "09/08", "09/09", "09/10", "09/11", "09/14", "09/15", "09/16", "09/17", "09/18", "09/21", "09/22", "09/23", "09/24", "09/29", "09/30", "10/01", "10/02", "10/05", "10/06", "10/07", "10/08", "10/12", "10/13", "10/14", "10/15", "10/16"], "prices": [156.5, 155.5, 157.0, 157.5, 157.0, 156.5, 156.5, 156.0, 153.5, 154.5, 154.0, 154.5, 155.5, 154.5, 154.5, 154.5, 154.5, 154.0, 153.5, 153.0, 153.5, 153.5, 153.0, 154.0, 154.5, 154.0, 154.0, 155.5, 156.5, 157.0], "fair": 162.18, "color": "#3B82F6"}, {"id": "chart-11", "dates": ["09/02", "09/03", "09/04", "09/07", "09/08", "09/09", "09/10", "09/11", "09/14", "09/15", "09/16", "09/17", "09/18", "09/21", "09/22", "09/23", "09/24", "09/29", "09/30", "10/01", "10/02", "10/05", "10/06", "10/07", "10/08", "10/12", "10/13", "10/14", "10/15", "10/16"], "prices": [24.55, 25.1, 24.8, 24.45, 24.45, 24.55, 25.55, 24.8, 24.8, 24.4, 24.4, 25.0, 24.75, 24.55, 25.0, 24.85, 24.9, 24.25, 24.6, 24.1, 24.2, 24.0, 24.5, 25.25, 25.0, 25.25, 25.5, 25.7, 25.6, 25.35], "fair": 15.9, "color": "#EF4444"}, {"id": "chart-12", "dates": ["09/02", "09/03", "09/04", "09/07", "09/08", "09/09", "09/10", "09/11", "09/14", "09/15", "09/16", "09/17", "09/18", "09/21", "09/22", "09/23", "09/24", "09/29", "09/30", "10/01", "10/02", "10/05", "10/06", "10/07", "10/08", "10/12", "10/13", "10/14", "10/15", "10/16"], "prices": [13.45, 13.45, 13.45, 13.4, 13.35, 13.35, 13.3, 13.35, 13.3, 13.25, 13.25, 13.3, 13.3, 13.3, 13.35, 13.25, 13.2, 13.2, 13.3, 13.3, 13.2, 13.15, 13.15, 13.15, 13.15, 13.15, 13.1, 13.15, 13.15, 13.15], "fair": 31.0, "color": "#EF4444"}, {"id": "chart-13", "dates": ["09/02", "09/03", "09/04", "09/07", "09/08", "09/09", "09/10", "09/11", "09/14", "09/15", "09/16", "09/17", "09/18", "09/21", "09/22", "09/23", "09/24", "09/29", "09/30", "10/01", "10/02", "10/05", "10/06", "10/07", "10/08", "10/12", "10/13", "10/14", "10/15", "10/16"], "prices": [15.65, 15.62, 15.9, 16.17, 16.12, 16.11, 16.03, 15.88, 15.82, 15.75, 15.89, 16.04, 16.25, 16.47, 16.52, 16.6, 16.57, 16.4, 16.49, 16.6, 16.58, 16.99, 17.06, 17.04, 16.87, 16.89, 16.61, 16.65, 16.19, 16.2], "fair": 16.0, "color": "#3B82F6"}, {"id": "chart-14", "dates": ["09/02", "09/03", "09/04", "09/07", "09/08", "09/09", "09/10", "09/11", "09/14", "09/15", "09/16", "09/17", "09/18", "09/21", "09/22", "09/23", "09/24", "09/29", "09/30", "10/01", "10/02", "10/05", "10/06", "10/07", "10/08", "10/12", "10/13", "10/14", "10/15", "10/16"], "prices": [110.5, 104.5, 111.0, 111.5, 109.0, 110.5, 108.5, 104.5, 103.5, 105.5, 112.0, 110.5, 116.0, 115.0, 119.0, 115.5, 120.5, 121.0, 133.0, 130.0, 135.0, 131.5, 128.0, 135.0, 129.0, 124.0, 116.0, 119.0, 110.0, 110.5], "fair": 58.6, "color": "#EF4444"}];
+        const pieData = {"labels": ["AMAT", "BRK-B", "COST", "LLY", "NVDA", "VRT", "0050.TW", "2337.TW", "2002.TW", "1232.TW", "1904.TW", "2616.TW", "009816.TW", "6182.TWO"], "values": [7776.51, 2660.1, 7912.88, 2514.06, 3426.08, 1651.36, 16350.0, 5350.0, 19550.0, 7850.0, 25.35, 13.15, 15535.8, 13260.0]};
 
         window.addEventListener('DOMContentLoaded', () => {
             chartConfigs.forEach(cfg => {
@@ -403,9 +1195,9 @@
                     type: 'doughnut',
                     data: {
                         labels: pieData.labels,
-                        datasets: [{ data: pieData.values, backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'], borderWidth: 0 }]
+                        datasets: [{ data: pieData.values, backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1', '#14B8A6', '#F97316', '#A855F7'], borderWidth: 0 }]
                     },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#94A3B8', boxWidth: 10, font: { size: 10 } } } } }
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#94A3B8', boxWidth: 8, font: { size: 9 } } } } }
                 });
             }
         });
