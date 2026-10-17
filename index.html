@@ -13,21 +13,21 @@
             <div>
                 <div class="flex items-center gap-2.5">
                     <span class="h-3 w-3 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white">量化估值與華爾街避險預警系統</h1>
+                    <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white">量化估值與華爾街大戶避險系統</h1>
                 </div>
                 <p class="text-xs sm:text-sm text-slate-400 mt-1">
-                    每小時智慧巡檢 ｜ 整合費半 ^SOX、GLD 攻擊量能、美元指數 DXY 與 60D 移動停利 ｜ 更新: <span class="text-slate-200 font-mono">2026-10-18 07:00:50</span>
+                    每小時智慧巡檢 ｜ 整合大戶避險 ETF (SPXU)、費半 ^SOX、台積電與黃金雷達 ｜ 更新: <span class="text-slate-200 font-mono">2026-10-18 07:01:49</span>
                 </p>
             </div>
             <div class="flex flex-wrap gap-2">
-                <button onclick="filterCards('ALL')" class="filter-btn px-3.5 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white transition">全部標的 (3)</button>
+                <button onclick="filterCards('ALL')" class="filter-btn px-3.5 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white transition">全部標的 (4)</button>
                 <button onclick="filterCards('US')" class="filter-btn px-3.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition">美股 US</button>
                 <button onclick="filterCards('TW')" class="filter-btn px-3.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition">台股 TW</button>
-                <button onclick="filterCards('ALERT')" class="filter-btn px-3.5 py-1.5 rounded-lg text-xs font-bold bg-rose-950 text-rose-300 border border-rose-800/60 hover:bg-rose-900 transition">中高風險警戒 (1)</button>
+                <button onclick="filterCards('ALERT')" class="filter-btn px-3.5 py-1.5 rounded-lg text-xs font-bold bg-rose-950 text-rose-300 border border-rose-800/60 hover:bg-rose-900 transition">中高風險警戒 (2)</button>
             </div>
         </header>
 
-        <!-- 🛡️ 華爾街總經避險與半導體雷達 -->
+        <!-- 🛡️ 華爾街大戶避險與半導體雷達 -->
         <section class="my-6 rounded-2xl border p-5 shadow-2xl" style="background: linear-gradient(135deg, #10B98118 0%, #0F172A 65%); border-color: #10B98160;">
             <div class="flex flex-col lg:flex-row justify-between gap-6">
                 <div class="flex-1 space-y-4">
@@ -35,41 +35,41 @@
                         <div class="flex items-center gap-2.5">
                             <span class="text-xl">🛡️</span>
                             <div>
-                                <h2 class="text-base sm:text-lg font-black text-white tracking-wide">華爾街總經避險與半導體雷達</h2>
-                                <p class="text-xs text-slate-400">同步監控黃金 GLD 攻擊量能、費城半導體 (^SOX 季線) 與美元指數 (DXY)</p>
+                                <h2 class="text-base sm:text-lg font-black text-white tracking-wide">華爾街大戶避險與半導體雷達</h2>
+                                <p class="text-xs text-slate-400">同步監控大戶空頭 ETF (SPXU) 爆量、黃金攻擊量能、費半 (^SOX) 與美元指數 (DXY)</p>
                             </div>
                         </div>
                         <span class="px-3.5 py-1 rounded-full text-xs font-extrabold text-white shadow" style="background-color: #10B981;">
-                            資金安穩：未見異常黃金避險潮
+                            資金安穩：未見異常避險潮
                         </span>
                     </div>
 
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div class="bg-slate-950/70 border border-slate-800/80 p-3 rounded-xl">
+                            <span class="text-[11px] text-slate-400 block">大戶避險 ETF (SPXU) 量比</span>
+                            <span class="text-lg font-black text-slate-200">1.45x</span>
+                            <span class="text-[11px] text-slate-400 block mt-0.5">&ge;1.5x 代表機構重押避險</span>
+                        </div>
                         <div class="bg-slate-950/70 border border-slate-800/80 p-3 rounded-xl">
                             <span class="text-[11px] text-slate-400 block">費城半導體 (^SOX)</span>
                             <span class="text-lg font-black text-emerald-400">$11137.3</span>
                             <span class="text-xs text-slate-400 block mt-0.5">狀態: 多頭維持季線上</span>
                         </div>
                         <div class="bg-slate-950/70 border border-slate-800/80 p-3 rounded-xl">
-                            <span class="text-[11px] text-slate-400 block">黃金攻擊量比 / GLD</span>
+                            <span class="text-[11px] text-slate-400 block">黃金攻擊量比 / 金價</span>
                             <span class="text-lg font-black text-white">1.0x</span>
-                            <span class="text-[11px] text-slate-400 block mt-0.5">金現價: $4181.1</span>
+                            <span class="text-[11px] text-slate-400 block mt-0.5">現價: $4181.1</span>
                         </div>
                         <div class="bg-slate-950/70 border border-slate-800/80 p-3 rounded-xl">
-                            <span class="text-[11px] text-slate-400 block">美元指數 (DXY)</span>
-                            <span class="text-lg font-black text-blue-400">101.84</span>
-                            <span class="text-[11px] text-slate-400 block mt-0.5">VIX 恐慌: 19.99</span>
-                        </div>
-                        <div class="bg-slate-950/70 border border-slate-800/80 p-3 rounded-xl">
-                            <span class="text-[11px] text-slate-400 block">金股輪動差 (GLD-SPY)</span>
-                            <span class="text-lg font-black text-slate-300">-4.98%</span>
-                            <span class="text-[11px] text-slate-400 block mt-0.5">美債10Y: 5.1%</span>
+                            <span class="text-[11px] text-slate-400 block">VIX 恐慌 / 美元指數</span>
+                            <span class="text-lg font-black text-rose-400">19.99</span>
+                            <span class="text-[11px] text-slate-400 block mt-0.5">DXY: 101.84</span>
                         </div>
                     </div>
 
                     <div class="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800">
-                        <div class="text-xs font-extrabold" style="color: #10B981;">✅ 華爾街資金留駐股市，黃金攻擊量能正常，維持標準估值門檻運作</div>
-                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">GLD 量比 1.0x，金股差 -5.0% (VIX 19.99, 費半多頭)。</p>
+                        <div class="text-xs font-extrabold" style="color: #10B981;">✅ 華爾街資金留駐股市，大戶避險與黃金量能正常，維持標準估值門檻運作</div>
+                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">SPXU 量比 1.45x，GLD 量比 1.0x (VIX 19.99, 費半多頭)。</p>
                     </div>
                 </div>
 
@@ -93,15 +93,15 @@
         <section class="grid grid-cols-2 md:grid-cols-4 gap-4 my-6">
             <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl">
                 <span class="text-xs text-slate-400">監控核心標的</span>
-                <div class="text-2xl font-black text-white mt-1">3 <span class="text-xs font-normal text-slate-400">檔</span></div>
+                <div class="text-2xl font-black text-white mt-1">4 <span class="text-xs font-normal text-slate-400">檔</span></div>
             </div>
             <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl">
                 <span class="text-xs text-slate-400">組合平均損益率</span>
-                <div class="text-2xl font-black text-emerald-400 mt-1">+4.65%</div>
+                <div class="text-2xl font-black text-emerald-400 mt-1">+44.25%</div>
             </div>
             <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl">
                 <span class="text-xs text-slate-400">中高風險 / 減碼警戒</span>
-                <div class="text-2xl font-black text-amber-400 mt-1">1 <span class="text-xs font-normal text-slate-400">檔</span></div>
+                <div class="text-2xl font-black text-amber-400 mt-1">2 <span class="text-xs font-normal text-slate-400">檔</span></div>
             </div>
             <div class="bg-slate-900/80 border border-slate-800 p-4 rounded-2xl">
                 <span class="text-xs text-slate-400">低風險 / 安全買進區</span>
@@ -284,9 +284,9 @@
 
                     <div class="p-3.5 rounded-xl border" style="background-color: #F9731615; border-color: #F9731640;">
                         <div class="text-xs font-extrabold flex items-center gap-1.5" style="color: #F97316;">
-                            <span>⚡ 量化指令：禁止接刀，等待費半站回 200MA 或個股現價站上 20MA</span>
+                            <span>⚡ 量化指令：禁止接刀，等待費半站回 200MA 或現價站上 20MA</span>
                         </div>
-                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">安全邊際充足 (14.7%)，但受制於個股跌破 200MA 或費半空頭 (^SOX 跌破季線)，嚴防價值陷阱。</p>
+                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">安全邊際充足 (14.7%)，但受制於個股跌破 200MA 或費半空頭 (^SOX)，嚴防價值陷阱。</p>
                     </div>
                 </div>
             </div>
@@ -294,6 +294,99 @@
             <div class="px-5 py-3 bg-slate-950/80 border-t border-slate-800/80 flex justify-between items-center text-xs">
                 <a href="https://finance.yahoo.com/quote/AMAT" target="_blank" class="text-blue-400 hover:text-blue-300 font-semibold">Yahoo 報價 ↗</a>
                 <a href="https://www.tradingview.com/symbols/AMAT/" target="_blank" class="text-slate-400 hover:text-slate-200">TradingView 線圖 ↗</a>
+            </div>
+        </div>
+        
+        <div class="stock-card bg-slate-900/90 border border-slate-800 rounded-2xl shadow-xl overflow-hidden flex flex-col justify-between transition-all duration-200 hover:border-slate-700"
+             data-market="TW" data-risk="HIGH">
+            <div>
+                <div class="px-5 py-3.5 flex justify-between items-center border-b border-slate-800/80" style="background: linear-gradient(90deg, #EF444422 0%, transparent 100%); border-left: 4px solid #EF4444;">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg font-black tracking-wide text-white">2330.TW</span>
+                            <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">TW</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-0.5">台積電</p>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-xs font-bold text-white shadow-sm" style="background-color: #EF4444;">
+                        高風險 (嚴重昂貴)
+                    </span>
+                </div>
+
+                <div class="p-5">
+                    <div class="flex justify-between items-end mb-4">
+                        <div>
+                            <span class="text-xs text-slate-400 block mb-1">當前市價 (盤中漲跌)</span>
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-3xl font-black text-white">NT$2420.0</span>
+                                <span class="text-sm font-bold text-rose-400">-0.82%</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-slate-400 block mb-1">持倉損益率</span>
+                            <span class="text-2xl font-black text-emerald-400">+163.04%</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-4 bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
+                        <div class="flex justify-between text-xs mb-1.5">
+                            <span class="text-slate-400">合理價 <strong class="text-slate-200">NT$1050.0</strong> (高風險 &gt;25%)</span>
+                            <span class="font-bold" style="color: #EF4444">邊際 -130.48% / 溢價 130.48%</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-800 rounded-full relative overflow-hidden">
+                            <div class="absolute inset-y-0 left-0 bg-gradient-to-r from-rose-500 via-blue-500 to-emerald-500 w-full opacity-30"></div>
+                            <div class="h-full rounded-full transition-all duration-500" style="width: 5.0%; background-color: #EF4444;"></div>
+                        </div>
+                        <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+                            <span>昂貴溢價區 (-40%)</span>
+                            <span>合理價 (0%)</span>
+                            <span>安全買進區 (+40%)</span>
+                        </div>
+                    </div>
+
+                    <div class="h-28 w-full mb-4 bg-slate-950/40 rounded-xl p-2 border border-slate-800/40">
+                        <canvas id="chart-2"></canvas>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2 text-xs bg-slate-950/50 p-3 rounded-xl border border-slate-800/50 mb-4">
+                        <div>
+                            <span class="text-slate-500 block">持有成本</span>
+                            <span class="font-bold text-slate-200">NT$920.0</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block">200MA 均線</span>
+                            <span class="font-bold text-slate-200">NT$2137.84</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block">20MA 均線</span>
+                            <span class="font-bold text-slate-200">NT$2491.0</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block">60D 波段高點</span>
+                            <span class="font-bold text-slate-200">NT$2590.0</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block">高點回撤</span>
+                            <span class="font-bold text-rose-400">-6.56%</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 block">RSI (14)</span>
+                            <span class="font-bold text-amber-400">41.7</span>
+                        </div>
+                    </div>
+
+                    <div class="p-3.5 rounded-xl border" style="background-color: #EF444415; border-color: #EF444440;">
+                        <div class="text-xs font-extrabold flex items-center gap-1.5" style="color: #EF4444;">
+                            <span>⚡ 量化指令：執行第 2 階減碼：賣出持倉 1/3</span>
+                        </div>
+                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">溢價率達 130.5% (門檻 >25%)，估值透支，分批收回現金。</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-5 py-3 bg-slate-950/80 border-t border-slate-800/80 flex justify-between items-center text-xs">
+                <a href="https://finance.yahoo.com/quote/2330.TW" target="_blank" class="text-blue-400 hover:text-blue-300 font-semibold">Yahoo 報價 ↗</a>
+                <a href="https://www.tradingview.com/symbols/2330/" target="_blank" class="text-slate-400 hover:text-slate-200">TradingView 線圖 ↗</a>
             </div>
         </div>
         
@@ -345,7 +438,7 @@
                     </div>
 
                     <div class="h-28 w-full mb-4 bg-slate-950/40 rounded-xl p-2 border border-slate-800/40">
-                        <canvas id="chart-2"></canvas>
+                        <canvas id="chart-3"></canvas>
                     </div>
 
                     <div class="grid grid-cols-3 gap-2 text-xs bg-slate-950/50 p-3 rounded-xl border border-slate-800/50 mb-4">
@@ -394,7 +487,7 @@
     </div>
 
     <script>
-        const chartConfigs = [{"id": "chart-0", "symbol": "NVDA", "dates": ["09/04", "09/08", "09/09", "09/10", "09/11", "09/14", "09/15", "09/16", "09/17", "09/18", "09/21", "09/22", "09/23", "09/24", "09/25", "09/28", "09/29", "09/30", "10/01", "10/02", "10/05", "10/06", "10/07", "10/08", "10/09", "10/12", "10/13", "10/14", "10/15", "10/16"], "prices": [230.1, 225.48, 223.42, 218.36, 218.29, 210.96, 212.17, 213.9, 219.34, 222.27, 227.38, 228.87, 225.51, 224.58, 225.07, 228.86, 227.21, 228.38, 230.86, 233.95, 238.9, 239.24, 237.47, 230.48, 229.28, 226.32, 228.52, 221.3, 217.23, 214.13], "fair": 220.0, "color": "#3B82F6"}, {"id": "chart-1", "symbol": "AMAT", "dates": ["09/04", "09/08", "09/09", "09/10", "09/11", "09/14", "09/15", "09/16", "09/17", "09/18", "09/21", "09/22", "09/23", "09/24", "09/25", "09/28", "09/29", "09/30", "10/01", "10/02", "10/05", "10/06", "10/07", "10/08", "10/09", "10/12", "10/13", "10/14", "10/15", "10/16"], "prices": [454.71, 472.79, 468.85, 454.01, 456.49, 424.21, 421.17, 415.38, 417.4, 444.57, 464.24, 472.46, 474.38, 474.25, 485.0, 486.76, 512.01, 511.38, 529.3, 540.04, 542.28, 530.27, 520.65, 509.57, 507.03, 497.53, 464.24, 446.63, 430.01, 409.29], "fair": 480.0, "color": "#F97316"}, {"id": "chart-2", "symbol": "0050.TW", "dates": ["09/02", "09/03", "09/04", "09/07", "09/08", "09/09", "09/10", "09/11", "09/14", "09/15", "09/16", "09/17", "09/18", "09/21", "09/22", "09/23", "09/24", "09/29", "09/30", "10/01", "10/02", "10/05", "10/06", "10/07", "10/08", "10/12", "10/13", "10/14", "10/15", "10/16"], "prices": [106.8, 106.2, 107.9, 109.9, 109.65, 109.65, 109.15, 107.7, 106.9, 106.25, 106.9, 108.05, 109.85, 111.35, 111.85, 112.45, 112.4, 111.3, 112.05, 112.9, 112.8, 115.95, 116.5, 116.05, 114.95, 114.8, 112.4, 113.0, 108.9, 109.0], "fair": 115.0, "color": "#3B82F6"}];
+        const chartConfigs = [{"id": "chart-0", "symbol": "NVDA", "dates": ["09/04", "09/08", "09/09", "09/10", "09/11", "09/14", "09/15", "09/16", "09/17", "09/18", "09/21", "09/22", "09/23", "09/24", "09/25", "09/28", "09/29", "09/30", "10/01", "10/02", "10/05", "10/06", "10/07", "10/08", "10/09", "10/12", "10/13", "10/14", "10/15", "10/16"], "prices": [230.1, 225.48, 223.42, 218.36, 218.29, 210.96, 212.17, 213.9, 219.34, 222.27, 227.38, 228.87, 225.51, 224.58, 225.07, 228.86, 227.21, 228.38, 230.86, 233.95, 238.9, 239.24, 237.47, 230.48, 229.28, 226.32, 228.52, 221.3, 217.23, 214.13], "fair": 220.0, "color": "#3B82F6"}, {"id": "chart-1", "symbol": "AMAT", "dates": ["09/04", "09/08", "09/09", "09/10", "09/11", "09/14", "09/15", "09/16", "09/17", "09/18", "09/21", "09/22", "09/23", "09/24", "09/25", "09/28", "09/29", "09/30", "10/01", "10/02", "10/05", "10/06", "10/07", "10/08", "10/09", "10/12", "10/13", "10/14", "10/15", "10/16"], "prices": [454.71, 472.79, 468.85, 454.01, 456.49, 424.21, 421.17, 415.38, 417.4, 444.57, 464.24, 472.46, 474.38, 474.25, 485.0, 486.76, 512.01, 511.38, 529.3, 540.04, 542.28, 530.27, 520.65, 509.57, 507.03, 497.53, 464.24, 446.63, 430.01, 409.29], "fair": 480.0, "color": "#F97316"}, {"id": "chart-2", "symbol": "2330.TW", "dates": ["09/02", "09/03", "09/04", "09/07", "09/08", "09/09", "09/10", "09/11", "09/14", "09/15", "09/16", "09/17", "09/18", "09/21", "09/22", "09/23", "09/24", "09/29", "09/30", "10/01", "10/02", "10/05", "10/06", "10/07", "10/08", "10/12", "10/13", "10/14", "10/15", "10/16"], "prices": [2378.0, 2382.99, 2402.93, 2452.78, 2462.75, 2457.77, 2442.81, 2402.93, 2373.01, 2378.0, 2380.0, 2425.0, 2460.0, 2480.0, 2460.0, 2500.0, 2475.0, 2475.0, 2480.0, 2510.0, 2500.0, 2575.0, 2585.0, 2585.0, 2550.0, 2540.0, 2490.0, 2490.0, 2440.0, 2420.0], "fair": 1050.0, "color": "#EF4444"}, {"id": "chart-3", "symbol": "0050.TW", "dates": ["09/02", "09/03", "09/04", "09/07", "09/08", "09/09", "09/10", "09/11", "09/14", "09/15", "09/16", "09/17", "09/18", "09/21", "09/22", "09/23", "09/24", "09/29", "09/30", "10/01", "10/02", "10/05", "10/06", "10/07", "10/08", "10/12", "10/13", "10/14", "10/15", "10/16"], "prices": [106.8, 106.2, 107.9, 109.9, 109.65, 109.65, 109.15, 107.7, 106.9, 106.25, 106.9, 108.05, 109.85, 111.35, 111.85, 112.45, 112.4, 111.3, 112.05, 112.9, 112.8, 115.95, 116.5, 116.05, 114.95, 114.8, 112.4, 113.0, 108.9, 109.0], "fair": 115.0, "color": "#3B82F6"}];
         const macroChartCfg = {"dates": ["09/04", "09/08", "09/09", "09/10", "09/11", "09/14", "09/15", "09/16", "09/17", "09/18", "09/21", "09/22", "09/23", "09/24", "09/25", "09/28", "09/29", "09/30", "10/01", "10/02", "10/05", "10/06", "10/07", "10/08", "10/09", "10/12", "10/13", "10/14", "10/15", "10/16"], "gld": [0.0, -1.73, -0.84, -2.56, -1.97, -3.42, -3.1, -3.69, -2.07, -1.38, -2.06, -1.65, -3.41, -3.71, -3.28, -7.09, -5.87, -6.37, -5.9, -6.55, -6.69, -6.02, -7.59, -6.92, -5.46, -6.05, -6.17, -7.57, -5.91, -6.09], "spy": [0.0, -0.55, -1.01, -1.6, -0.77, -1.21, -1.66, -2.1, -0.99, -0.86, 0.68, 0.66, -0.06, -0.14, 0.4, -0.35, -0.53, -0.74, -0.56, 0.18, 0.85, 1.41, 1.16, 0.74, 1.34, 1.28, 1.27, 0.17, 0.46, -0.65]};
 
         window.addEventListener('DOMContentLoaded', () => {
