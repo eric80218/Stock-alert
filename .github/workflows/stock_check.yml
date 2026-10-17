@@ -1,15 +1,26 @@
 name: Stock Quantitative Check
 
 on:
+  # 只要修改 main.py 或 workflow 檔案並存檔，立即自動觸發執行
+  push:
+    branches:
+      - main
+    paths:
+      - 'main.py'
+      - '.github/workflows/stock_check.yml'
+
+  # 台美股雙時區定時排程
   schedule:
-    # 1. 台股收盤後檢驗 (週一至週五 台灣時間 14:00 -> UTC 06:00)
+    # 1. 台股收盤後 (週一至週五 台灣時間 14:00 -> UTC 06:00)
     - cron: '0 6 * * 1-5'
-    # 2. 美股收盤後檢驗 (週二至週六 台灣時間 05:00 -> UTC 21:00 週一至週五)
+    # 2. 美股收盤後 (週二至週六 台灣時間 05:00 -> UTC 21:00)
     - cron: '0 21 * * 1-5'
-  workflow_dispatch: # 保留 GitHub 網頁上的手動「Run workflow」按鈕
+
+  # 保留手動觸發按鈕
+  workflow_dispatch:
 
 permissions:
-  contents: write # 確保 Actions 有權限將 state.json 與 index.html push 回倉庫
+  contents: write
 
 jobs:
   check-stocks:
@@ -22,12 +33,11 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          # 已移除 cache: 'pip'，不再要求根目錄必須存在 requirements.txt
 
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install yfinance requests
+          pip install yfinance requests pandas
 
       - name: Run Quantitative Engine
         env:
@@ -41,10 +51,9 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add state.json index.html
-          # 檢查是否有實際變更，避免無異動時 commit 失敗拋錯
           if ! git diff --cached --quiet; then
-            git commit -m "chore: auto-update quant state [skip ci]"
+            git commit -m "chore: update quant state and dashboard"
             git push
           else
-            echo "檔案內容無異動，略過 commit 與 push。"
+            echo "資料無異動，略過提交。"
           fi
