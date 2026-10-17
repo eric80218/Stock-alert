@@ -1,23 +1,23 @@
 name: Stock Quantitative Check
 
 on:
-  # 只要修改 main.py 或 workflow 檔案並存檔，立即自動觸發執行
   push:
     branches:
       - main
     paths:
       - 'main.py'
       - '.github/workflows/stock_check.yml'
-
-  # 台美股雙時區定時排程
   schedule:
     # 1. 台股收盤後 (週一至週五 台灣時間 14:00 -> UTC 06:00)
     - cron: '0 6 * * 1-5'
     # 2. 美股收盤後 (週二至週六 台灣時間 05:00 -> UTC 21:00)
     - cron: '0 21 * * 1-5'
-
-  # 保留手動觸發按鈕
   workflow_dispatch:
+
+# 防止同時觸發兩個工作流程導致 Git Push 衝突
+concurrency:
+  group: stock-quant-group
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -43,6 +43,7 @@ jobs:
         env:
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
           LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
         run: |
           python main.py
 
@@ -53,7 +54,8 @@ jobs:
           git add state.json index.html
           if ! git diff --cached --quiet; then
             git commit -m "chore: update quant state and dashboard"
-            git push
+            git pull --rebase --autostash origin main
+            git push origin main
           else
             echo "資料無異動，略過提交。"
           fi
