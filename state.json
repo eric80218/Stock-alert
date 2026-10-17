@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-18 07:42:32",
+  "updated_at": "2026-10-18 07:48:16",
   "macro_gold": {
     "bubble_level": "資金安穩：市場多頭運行",
     "color": "#10B981",
@@ -13,7 +13,98 @@
     "premium_shift": 0.0,
     "must_push": false
   },
-  "stocks": {},
+  "stocks": {
+    "AMAT": {
+      "risk_level": "合理估值區",
+      "current_price": 409.29,
+      "peak_price": 563.16,
+      "updated_at": "2026-10-18 07:48:12"
+    },
+    "BRK-B": {
+      "risk_level": "合理估值區",
+      "current_price": 532.02,
+      "peak_price": 537.74,
+      "updated_at": "2026-10-18 07:48:13"
+    },
+    "COST": {
+      "risk_level": "合理估值區",
+      "current_price": 989.11,
+      "peak_price": 1008.37,
+      "updated_at": "2026-10-18 07:48:13"
+    },
+    "LLY": {
+      "risk_level": "低風險 (買進區)",
+      "current_price": 1257.03,
+      "peak_price": 1292.65,
+      "updated_at": "2026-10-18 07:48:13"
+    },
+    "NVDA": {
+      "risk_level": "低風險 (買進區)",
+      "current_price": 214.13,
+      "peak_price": 243.37,
+      "updated_at": "2026-10-18 07:48:14"
+    },
+    "VRT": {
+      "risk_level": "停損警戒",
+      "current_price": 206.42,
+      "peak_price": 302.42,
+      "updated_at": "2026-10-18 07:48:14"
+    },
+    "GLD": {
+      "risk_level": "高風險 (嚴重昂貴)",
+      "current_price": 382.01,
+      "peak_price": 429.42,
+      "updated_at": "2026-10-18 07:48:14"
+    },
+    "0050.TW": {
+      "risk_level": "合理估值區",
+      "current_price": 109.0,
+      "peak_price": 116.6,
+      "updated_at": "2026-10-18 07:48:14"
+    },
+    "2337.TW": {
+      "risk_level": "停損警戒",
+      "current_price": 107.0,
+      "peak_price": 144.5,
+      "updated_at": "2026-10-18 07:48:15"
+    },
+    "2002.TW": {
+      "risk_level": "停損警戒",
+      "current_price": 19.55,
+      "peak_price": 19.9,
+      "updated_at": "2026-10-18 07:48:15"
+    },
+    "1232.TW": {
+      "risk_level": "合理估值區",
+      "current_price": 157.0,
+      "peak_price": 160.0,
+      "updated_at": "2026-10-18 07:48:15"
+    },
+    "1904.TW": {
+      "risk_level": "高風險 (嚴重昂貴)",
+      "current_price": 25.35,
+      "peak_price": 26.45,
+      "updated_at": "2026-10-18 07:48:16"
+    },
+    "2616.TW": {
+      "risk_level": "停損警戒",
+      "current_price": 13.15,
+      "peak_price": 13.98,
+      "updated_at": "2026-10-18 07:48:16"
+    },
+    "009816.TW": {
+      "risk_level": "合理估值區",
+      "current_price": 16.2,
+      "peak_price": 17.09,
+      "updated_at": "2026-10-18 07:48:16"
+    },
+    "6182.TWO": {
+      "risk_level": "高風險 (嚴重昂貴)",
+      "current_price": 110.5,
+      "peak_price": 143.0,
+      "updated_at": "2026-10-18 07:48:16"
+    }
+  },
   "results": [
     {
       "symbol": "AMAT",
@@ -24,8 +115,8 @@
       "fair_value": 406.05,
       "cost": 316.35,
       "shares": 19.0,
-      "market_value": 7776.51,
-      "invested_cost": 6010.65,
+      "market_value_twd": 252176.68,
+      "invested_cost_twd": 194913.37,
       "safety_margin": -0.8,
       "premium_rate": 0.8,
       "pnl_rate": 29.38,
@@ -119,8 +210,8 @@
       "fair_value": 444.32,
       "cost": 492.03,
       "shares": 5.0,
-      "market_value": 2660.1,
-      "invested_cost": 2460.15,
+      "market_value_twd": 86261.73,
+      "invested_cost_twd": 79777.75,
       "safety_margin": -19.74,
       "premium_rate": 19.74,
       "pnl_rate": 8.13,
@@ -214,8 +305,8 @@
       "fair_value": 875.57,
       "cost": 1044.55,
       "shares": 8.0,
-      "market_value": 7912.88,
-      "invested_cost": 8356.4,
+      "market_value_twd": 256598.88,
+      "invested_cost_twd": 270981.35,
       "safety_margin": -12.97,
       "premium_rate": 12.97,
       "pnl_rate": -5.31,
@@ -309,8 +400,8 @@
       "fair_value": 1887.55,
       "cost": 1159.82,
       "shares": 2.0,
-      "market_value": 2514.06,
-      "invested_cost": 2319.64,
+      "market_value_twd": 81525.94,
+      "invested_cost_twd": 75221.29,
       "safety_margin": 33.4,
       "premium_rate": -33.4,
       "pnl_rate": 8.38,
@@ -404,8 +495,8 @@
       "fair_value": 557.01,
       "cost": 221.22,
       "shares": 16.0,
-      "market_value": 3426.08,
-      "invested_cost": 3539.52,
+      "market_value_twd": 111100.93,
+      "invested_cost_twd": 114779.56,
       "safety_margin": 61.56,
       "premium_rate": -61.56,
       "pnl_rate": -3.2,
@@ -499,8 +590,8 @@
       "fair_value": 275.79,
       "cost": 321.39,
       "shares": 8.0,
-      "market_value": 1651.36,
-      "invested_cost": 2571.12,
+      "market_value_twd": 53550.3,
+      "invested_cost_twd": 83376.28,
       "safety_margin": 25.15,
       "premium_rate": -25.15,
       "pnl_rate": -35.77,
@@ -594,8 +685,8 @@
       "fair_value": 240.0,
       "cost": 0.0,
       "shares": 0.0,
-      "market_value": 0.0,
-      "invested_cost": 0.0,
+      "market_value_twd": 0.0,
+      "invested_cost_twd": 0.0,
       "safety_margin": -59.17,
       "premium_rate": 59.17,
       "pnl_rate": 0.0,
@@ -689,8 +780,8 @@
       "fair_value": 120.0,
       "cost": 73.4,
       "shares": 150.0,
-      "market_value": 16350.0,
-      "invested_cost": 11010.0,
+      "market_value_twd": 16350.0,
+      "invested_cost_twd": 11010.0,
       "safety_margin": 9.17,
       "premium_rate": -9.17,
       "pnl_rate": 48.5,
@@ -784,8 +875,8 @@
       "fair_value": 763.19,
       "cost": 145.0,
       "shares": 50.0,
-      "market_value": 5350.0,
-      "invested_cost": 7250.0,
+      "market_value_twd": 5350.0,
+      "invested_cost_twd": 7250.0,
       "safety_margin": 85.98,
       "premium_rate": -85.98,
       "pnl_rate": -26.21,
@@ -879,8 +970,8 @@
       "fair_value": 6.28,
       "cost": 25.0,
       "shares": 1000.0,
-      "market_value": 19550.0,
-      "invested_cost": 25000.0,
+      "market_value_twd": 19550.0,
+      "invested_cost_twd": 25000.0,
       "safety_margin": -211.31,
       "premium_rate": 211.31,
       "pnl_rate": -21.8,
@@ -974,8 +1065,8 @@
       "fair_value": 162.18,
       "cost": 144.0,
       "shares": 50.0,
-      "market_value": 7850.0,
-      "invested_cost": 7200.0,
+      "market_value_twd": 7850.0,
+      "invested_cost_twd": 7200.0,
       "safety_margin": 3.19,
       "premium_rate": -3.19,
       "pnl_rate": 9.03,
@@ -1069,8 +1160,8 @@
       "fair_value": 15.9,
       "cost": 25.75,
       "shares": 1.0,
-      "market_value": 25.35,
-      "invested_cost": 25.75,
+      "market_value_twd": 25.35,
+      "invested_cost_twd": 25.75,
       "safety_margin": -59.43,
       "premium_rate": 59.43,
       "pnl_rate": -1.55,
@@ -1164,8 +1255,8 @@
       "fair_value": 31.0,
       "cost": 22.1,
       "shares": 1.0,
-      "market_value": 13.15,
-      "invested_cost": 22.1,
+      "market_value_twd": 13.15,
+      "invested_cost_twd": 22.1,
       "safety_margin": 57.58,
       "premium_rate": -57.58,
       "pnl_rate": -40.5,
@@ -1259,8 +1350,8 @@
       "fair_value": 16.0,
       "cost": 15.49,
       "shares": 959.0,
-      "market_value": 15535.8,
-      "invested_cost": 14854.91,
+      "market_value_twd": 15535.8,
+      "invested_cost_twd": 14854.91,
       "safety_margin": -1.25,
       "premium_rate": 1.25,
       "pnl_rate": 4.58,
@@ -1354,8 +1445,8 @@
       "fair_value": 58.6,
       "cost": 120.5,
       "shares": 120.0,
-      "market_value": 13260.0,
-      "invested_cost": 14460.0,
+      "market_value_twd": 13260.0,
+      "invested_cost_twd": 14460.0,
       "safety_margin": -88.57,
       "premium_rate": 88.57,
       "pnl_rate": -8.3,
