@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-18 06:43:14",
+  "updated_at": "2026-10-18 06:45:25",
   "macro_gold": {
     "bubble_level": "資金安穩：未見異常黃金避險潮",
     "bubble_tag": "LOW",
@@ -9,26 +9,26 @@
     "gold_vs_spy_spread": -4.98,
     "vix": 19.99,
     "us10y": 5.1,
-    "updated_at": "2026-10-18 06:43:14"
+    "updated_at": "2026-10-18 06:45:25"
   },
   "stocks": {
     "NVDA": {
       "risk_level": "合理估值區",
       "current_price": 214.13,
       "peak_price": 243.37,
-      "updated_at": "2026-10-18 06:43:14"
+      "updated_at": "2026-10-18 06:45:25"
     },
     "AMAT": {
       "risk_level": "偏空觀察 (左側禁買)",
       "current_price": 409.29,
       "peak_price": 563.16,
-      "updated_at": "2026-10-18 06:43:14"
+      "updated_at": "2026-10-18 06:45:25"
     },
     "0050.TW": {
       "risk_level": "合理估值區",
       "current_price": 109.0,
       "peak_price": 116.6,
-      "updated_at": "2026-10-18 06:43:14"
+      "updated_at": "2026-10-18 06:45:25"
     }
   },
   "results": [
