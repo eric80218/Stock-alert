@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-18 07:10:32",
+  "updated_at": "2026-10-18 07:16:38",
   "macro_gold": {
     "bubble_level": "資金安穩：未見異常避險潮",
     "bubble_tag": "LOW",
@@ -14,7 +14,7 @@
     "is_sox_bear": false,
     "dxy_price": 101.84,
     "flash_alert_date": "",
-    "updated_at": "2026-10-18 07:10:32"
+    "updated_at": "2026-10-18 07:16:38"
   },
   "stocks": {
     "NVDA": {
@@ -22,28 +22,28 @@
       "current_price": 214.13,
       "peak_price": 243.37,
       "flash_alert_date": "",
-      "updated_at": "2026-10-18 07:10:30"
+      "updated_at": "2026-10-18 07:16:37"
     },
     "AMAT": {
       "risk_level": "合理估值區",
       "current_price": 409.29,
       "peak_price": 563.16,
       "flash_alert_date": "2026-10-18",
-      "updated_at": "2026-10-18 07:10:30"
+      "updated_at": "2026-10-18 07:16:38"
     },
     "2330.TW": {
       "risk_level": "低風險 (買進區)",
       "current_price": 2420.0,
       "peak_price": 2590.0,
       "flash_alert_date": "",
-      "updated_at": "2026-10-18 07:10:31"
+      "updated_at": "2026-10-18 07:16:38"
     },
     "0050.TW": {
       "risk_level": "合理估值區",
       "current_price": 109.0,
       "peak_price": 116.6,
       "flash_alert_date": "",
-      "updated_at": "2026-10-18 07:10:31"
+      "updated_at": "2026-10-18 07:16:38"
     }
   },
   "results": [
@@ -73,7 +73,7 @@
       "action": "啟動第 1 批建倉：買進 1/3",
       "color": "#10B981",
       "desc": "安全邊際達 61.6% 且多頭排列。",
-      "must_push": true,
+      "must_push": false,
       "flash_alert_date": "",
       "history_dates": [
         "09/04",
@@ -259,7 +259,7 @@
       "action": "啟動第 1 批建倉：買進 1/3",
       "color": "#10B981",
       "desc": "安全邊際達 18.6% 且多頭排列。",
-      "must_push": true,
+      "must_push": false,
       "flash_alert_date": "",
       "history_dates": [
         "09/02",
