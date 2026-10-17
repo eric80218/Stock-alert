@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-18 07:10:09",
+  "updated_at": "2026-10-18 07:10:32",
   "macro_gold": {
     "bubble_level": "資金安穩：未見異常避險潮",
     "bubble_tag": "LOW",
@@ -14,36 +14,36 @@
     "is_sox_bear": false,
     "dxy_price": 101.84,
     "flash_alert_date": "",
-    "updated_at": "2026-10-18 07:10:09"
+    "updated_at": "2026-10-18 07:10:32"
   },
   "stocks": {
     "NVDA": {
-      "risk_level": "合理估值區",
+      "risk_level": "低風險 (買進區)",
       "current_price": 214.13,
       "peak_price": 243.37,
       "flash_alert_date": "",
-      "updated_at": "2026-10-18 07:10:08"
+      "updated_at": "2026-10-18 07:10:30"
     },
     "AMAT": {
-      "risk_level": "偏空觀察 (左側禁買)",
+      "risk_level": "合理估值區",
       "current_price": 409.29,
       "peak_price": 563.16,
       "flash_alert_date": "2026-10-18",
-      "updated_at": "2026-10-18 07:10:08"
+      "updated_at": "2026-10-18 07:10:30"
     },
     "2330.TW": {
-      "risk_level": "高風險 (嚴重昂貴)",
+      "risk_level": "低風險 (買進區)",
       "current_price": 2420.0,
       "peak_price": 2590.0,
       "flash_alert_date": "",
-      "updated_at": "2026-10-18 07:10:08"
+      "updated_at": "2026-10-18 07:10:31"
     },
     "0050.TW": {
       "risk_level": "合理估值區",
       "current_price": 109.0,
       "peak_price": 116.6,
       "flash_alert_date": "",
-      "updated_at": "2026-10-18 07:10:09"
+      "updated_at": "2026-10-18 07:10:31"
     }
   },
   "results": [
@@ -61,19 +61,19 @@
       "rsi14": 37.6,
       "peak_price": 243.37,
       "drawdown_from_peak": -12.01,
-      "fair_value": 220.0,
+      "fair_value": 557.01,
       "cost": 190.0,
-      "safety_margin": 2.67,
-      "premium_rate": -2.67,
+      "safety_margin": 61.56,
+      "premium_rate": -61.56,
       "pnl_rate": 12.7,
       "high_risk_threshold": 25.0,
       "med_risk_threshold": 12.0,
-      "risk_level": "合理估值區",
-      "risk_tag": "NORMAL",
-      "action": "定期定額 / 維持續抱",
-      "color": "#3B82F6",
-      "desc": "股價處於合理估值防禦帶內 (中風險警戒線為溢價 >12%)。",
-      "must_push": false,
+      "risk_level": "低風險 (買進區)",
+      "risk_tag": "LOW",
+      "action": "啟動第 1 批建倉：買進 1/3",
+      "color": "#10B981",
+      "desc": "安全邊際達 61.6% 且多頭排列。",
+      "must_push": true,
       "flash_alert_date": "",
       "history_dates": [
         "09/04",
@@ -154,18 +154,18 @@
       "rsi14": 29.2,
       "peak_price": 563.16,
       "drawdown_from_peak": -27.32,
-      "fair_value": 480.0,
+      "fair_value": 406.05,
       "cost": 420.0,
-      "safety_margin": 14.73,
-      "premium_rate": -14.73,
+      "safety_margin": -0.8,
+      "premium_rate": 0.8,
       "pnl_rate": -2.55,
       "high_risk_threshold": 25.0,
       "med_risk_threshold": 12.0,
-      "risk_level": "偏空觀察 (左側禁買)",
-      "risk_tag": "MEDIUM",
-      "action": "禁止接刀，等待費半站回 200MA 或現價站上 20MA",
-      "color": "#F97316",
-      "desc": "安全邊際充足 (14.7%)，但受制於個股跌破 200MA 或費半空頭 (^SOX)，嚴防價值陷阱。",
+      "risk_level": "合理估值區",
+      "risk_tag": "NORMAL",
+      "action": "定期定額 / 維持續抱",
+      "color": "#3B82F6",
+      "desc": "處於合理估值防禦帶內 (警戒線 >12%)。",
       "must_push": false,
       "flash_alert_date": "2026-10-18",
       "history_dates": [
@@ -247,19 +247,19 @@
       "rsi14": 41.7,
       "peak_price": 2590.0,
       "drawdown_from_peak": -6.56,
-      "fair_value": 1050.0,
+      "fair_value": 2972.23,
       "cost": 920.0,
-      "safety_margin": -130.48,
-      "premium_rate": 130.48,
+      "safety_margin": 18.58,
+      "premium_rate": -18.58,
       "pnl_rate": 163.04,
       "high_risk_threshold": 25.0,
       "med_risk_threshold": 12.0,
-      "risk_level": "高風險 (嚴重昂貴)",
-      "risk_tag": "HIGH",
-      "action": "執行第 2 階減碼：賣出持倉 1/3",
-      "color": "#EF4444",
-      "desc": "溢價率達 130.5% (門檻 >25%)，估值透支，分批收回現金。",
-      "must_push": false,
+      "risk_level": "低風險 (買進區)",
+      "risk_tag": "LOW",
+      "action": "啟動第 1 批建倉：買進 1/3",
+      "color": "#10B981",
+      "desc": "安全邊際達 18.6% 且多頭排列。",
+      "must_push": true,
       "flash_alert_date": "",
       "history_dates": [
         "09/02",
@@ -351,7 +351,7 @@
       "risk_tag": "NORMAL",
       "action": "定期定額 / 維持續抱",
       "color": "#3B82F6",
-      "desc": "股價處於合理估值防禦帶內 (中風險警戒線為溢價 >12%)。",
+      "desc": "處於合理估值防禦帶內 (警戒線 >12%)。",
       "must_push": false,
       "flash_alert_date": "",
       "history_dates": [
