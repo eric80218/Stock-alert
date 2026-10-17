@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-18 06:52:49",
+  "updated_at": "2026-10-18 07:00:50",
   "macro_gold": {
     "bubble_level": "資金安穩：未見異常黃金避險潮",
     "bubble_tag": "LOW",
@@ -13,7 +13,7 @@
     "is_sox_bear": false,
     "dxy_price": 101.84,
     "flash_alert_date": "",
-    "updated_at": "2026-10-18 06:52:49"
+    "updated_at": "2026-10-18 07:00:50"
   },
   "stocks": {
     "NVDA": {
@@ -21,21 +21,21 @@
       "current_price": 214.13,
       "peak_price": 243.37,
       "flash_alert_date": "",
-      "updated_at": "2026-10-18 06:52:44"
+      "updated_at": "2026-10-18 07:00:50"
     },
     "AMAT": {
       "risk_level": "偏空觀察 (左側禁買)",
       "current_price": 409.29,
       "peak_price": 563.16,
       "flash_alert_date": "2026-10-18",
-      "updated_at": "2026-10-18 06:52:44"
+      "updated_at": "2026-10-18 07:00:50"
     },
     "0050.TW": {
       "risk_level": "合理估值區",
       "current_price": 109.0,
       "peak_price": 116.6,
       "flash_alert_date": "",
-      "updated_at": "2026-10-18 06:52:45"
+      "updated_at": "2026-10-18 07:00:50"
     }
   },
   "results": [
@@ -155,10 +155,10 @@
       "med_risk_threshold": 12.0,
       "risk_level": "偏空觀察 (左側禁買)",
       "risk_tag": "MEDIUM",
-      "action": "⚡【盤中急殺 -4.8%】禁止接刀，等待費半站回 200MA 或個股現價站上 20MA",
+      "action": "禁止接刀，等待費半站回 200MA 或個股現價站上 20MA",
       "color": "#F97316",
       "desc": "安全邊際充足 (14.7%)，但受制於個股跌破 200MA 或費半空頭 (^SOX 跌破季線)，嚴防價值陷阱。",
-      "must_push": true,
+      "must_push": false,
       "flash_alert_date": "2026-10-18",
       "history_dates": [
         "09/04",
