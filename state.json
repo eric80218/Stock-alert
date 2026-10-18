@@ -1,10 +1,10 @@
 {
-  "updated_at": "2026-10-18 08:40:29",
+  "updated_at": "2026-10-18 13:20:15",
   "macro_gold": {
     "bubble_level": "資金安穩：市場多頭運行",
     "color": "#10B981",
     "action": "✅ 華爾街機構資金留駐股市，維持標準估值運作。",
-    "desc": "華爾街資金動態監控：SPXU 量比 1.45x, VIX 恐慌指數 19.99, 費半 多頭。",
+    "desc": "SPXU 量比 1.45x, VIX 恐慌指數 19.99, 費半 多頭。",
     "vix": 19.99,
     "dxy_price": 101.84,
     "spxu_vol_ratio": 1.45,
@@ -18,91 +18,91 @@
       "risk_level": "低風險 (買進區)",
       "current_price": 2420.0,
       "peak_price": 2590.0,
-      "updated_at": "2026-10-18 08:40:22"
+      "updated_at": "2026-10-18 13:20:11"
     },
     "NVDA": {
       "risk_level": "低風險 (買進區)",
       "current_price": 214.13,
       "peak_price": 243.37,
-      "updated_at": "2026-10-18 08:40:22"
+      "updated_at": "2026-10-18 13:20:11"
     },
     "AMAT": {
-      "risk_level": "合理估值區",
+      "risk_level": "移動停利警戒",
       "current_price": 409.29,
       "peak_price": 563.16,
-      "updated_at": "2026-10-18 08:40:23"
+      "updated_at": "2026-10-18 13:20:12"
     },
     "BRK-B": {
       "risk_level": "合理估值區",
       "current_price": 532.02,
       "peak_price": 537.74,
-      "updated_at": "2026-10-18 08:40:24"
+      "updated_at": "2026-10-18 13:20:12"
     },
     "COST": {
       "risk_level": "合理估值區",
       "current_price": 989.11,
       "peak_price": 1008.37,
-      "updated_at": "2026-10-18 08:40:24"
+      "updated_at": "2026-10-18 13:20:13"
     },
     "LLY": {
       "risk_level": "低風險 (買進區)",
       "current_price": 1257.03,
       "peak_price": 1292.65,
-      "updated_at": "2026-10-18 08:40:25"
+      "updated_at": "2026-10-18 13:20:13"
     },
     "GLD": {
       "risk_level": "高風險 (嚴重昂貴)",
       "current_price": 382.01,
       "peak_price": 429.42,
-      "updated_at": "2026-10-18 08:40:25"
+      "updated_at": "2026-10-18 13:20:13"
     },
     "0050.TW": {
       "risk_level": "合理估值區",
       "current_price": 109.0,
       "peak_price": 116.6,
-      "updated_at": "2026-10-18 08:40:25"
+      "updated_at": "2026-10-18 13:20:14"
     },
     "2337.TW": {
       "risk_level": "停損警戒",
       "current_price": 107.0,
       "peak_price": 144.5,
-      "updated_at": "2026-10-18 08:40:26"
+      "updated_at": "2026-10-18 13:20:14"
     },
     "2002.TW": {
       "risk_level": "停損警戒",
       "current_price": 19.55,
       "peak_price": 19.9,
-      "updated_at": "2026-10-18 08:40:26"
+      "updated_at": "2026-10-18 13:20:14"
     },
     "1232.TW": {
       "risk_level": "合理估值區",
       "current_price": 157.0,
       "peak_price": 160.0,
-      "updated_at": "2026-10-18 08:40:27"
+      "updated_at": "2026-10-18 13:20:14"
     },
     "1904.TW": {
       "risk_level": "高風險 (嚴重昂貴)",
       "current_price": 25.35,
       "peak_price": 26.45,
-      "updated_at": "2026-10-18 08:40:28"
+      "updated_at": "2026-10-18 13:20:15"
     },
     "2616.TW": {
       "risk_level": "停損警戒",
       "current_price": 13.15,
       "peak_price": 13.98,
-      "updated_at": "2026-10-18 08:40:28"
+      "updated_at": "2026-10-18 13:20:15"
     },
     "009816.TW": {
       "risk_level": "合理估值區",
       "current_price": 16.2,
       "peak_price": 17.09,
-      "updated_at": "2026-10-18 08:40:29"
+      "updated_at": "2026-10-18 13:20:15"
     },
     "6182.TWO": {
       "risk_level": "高風險 (嚴重昂貴)",
       "current_price": 110.5,
       "peak_price": 143.0,
-      "updated_at": "2026-10-18 08:40:29"
+      "updated_at": "2026-10-18 13:20:15"
     }
   },
   "results": [
@@ -112,6 +112,7 @@
       "market": "TW",
       "currency": "NT$",
       "current_price": 2420.0,
+      "day_change_pct": -0.82,
       "fair_value": 2972.23,
       "cost": 0.0,
       "shares": 0.0,
@@ -128,8 +129,8 @@
       "stop_buffer_pct": 99.9,
       "risk_level": "低風險 (買進區)",
       "color": "#10B981",
-      "action": "啟動第 1 批建倉：買進 1/3",
-      "desc": "安全邊際達 18.6% 且多頭排列。",
+      "action": "啟動分批建倉：買進 1/3",
+      "desc": "安全邊際達 18.6% 且半導體非空頭，具估值吸引力。",
       "nlp_score": 0.0,
       "backtest": {
         "return_pct": 25.5,
@@ -207,11 +208,12 @@
       "market": "US",
       "currency": "$",
       "current_price": 214.13,
+      "day_change_pct": -1.43,
       "fair_value": 557.01,
       "cost": 221.22,
       "shares": 16.0,
-      "market_value_twd": 111100.93,
-      "invested_cost_twd": 114779.56,
+      "market_value_twd": 111107.77,
+      "invested_cost_twd": 112556.74,
       "safety_margin": 61.56,
       "premium_rate": -61.56,
       "pnl_rate": -3.2,
@@ -223,9 +225,9 @@
       "stop_buffer_pct": 6.8,
       "risk_level": "低風險 (買進區)",
       "color": "#10B981",
-      "action": "啟動第 1 批建倉：買進 1/3",
-      "desc": "安全邊際達 61.6% 且多頭排列。",
-      "nlp_score": 1.0,
+      "action": "啟動分批建倉：買進 1/3",
+      "desc": "安全邊際達 61.6% 且半導體非空頭，具估值吸引力。",
+      "nlp_score": 3.0,
       "backtest": {
         "return_pct": -14.6,
         "max_drawdown": -23.3,
@@ -302,11 +304,12 @@
       "market": "US",
       "currency": "$",
       "current_price": 409.29,
+      "day_change_pct": -4.82,
       "fair_value": 406.05,
       "cost": 316.35,
       "shares": 19.0,
-      "market_value_twd": 252176.68,
-      "invested_cost_twd": 194913.37,
+      "market_value_twd": 252192.22,
+      "invested_cost_twd": 191138.67,
       "safety_margin": -0.8,
       "premium_rate": 0.8,
       "pnl_rate": 29.38,
@@ -316,11 +319,11 @@
       "peak_price": 563.16,
       "drawdown_from_peak": -27.32,
       "stop_buffer_pct": 39.4,
-      "risk_level": "合理估值區",
-      "color": "#3B82F6",
-      "action": "定期定額 / 維持續抱",
-      "desc": "處於合理估值防禦帶內。",
-      "nlp_score": -2.0,
+      "risk_level": "移動停利警戒",
+      "color": "#F97316",
+      "action": "執行移動停利：獲利了結 1/2",
+      "desc": "自波段高點回撤達 -27.3% (門檻 -15.0%)，保護帳面獲利。",
+      "nlp_score": 1.0,
       "backtest": {
         "return_pct": 30.2,
         "max_drawdown": -35.5,
@@ -397,11 +400,12 @@
       "market": "US",
       "currency": "$",
       "current_price": 532.02,
+      "day_change_pct": 1.21,
       "fair_value": 444.32,
       "cost": 492.03,
       "shares": 5.0,
-      "market_value_twd": 86261.73,
-      "invested_cost_twd": 79777.75,
+      "market_value_twd": 86267.04,
+      "invested_cost_twd": 78232.77,
       "safety_margin": -19.74,
       "premium_rate": 19.74,
       "pnl_rate": 8.13,
@@ -414,7 +418,7 @@
       "risk_level": "合理估值區",
       "color": "#3B82F6",
       "action": "定期定額 / 維持續抱",
-      "desc": "處於合理估值防禦帶內。",
+      "desc": "單日漲跌 +1.21%，處於合理估值防禦帶內。",
       "nlp_score": 0.0,
       "backtest": {
         "return_pct": -8.5,
@@ -492,11 +496,12 @@
       "market": "US",
       "currency": "$",
       "current_price": 989.11,
+      "day_change_pct": 1.13,
       "fair_value": 875.57,
       "cost": 1044.55,
       "shares": 8.0,
-      "market_value_twd": 256598.88,
-      "invested_cost_twd": 270981.35,
+      "market_value_twd": 256614.7,
+      "invested_cost_twd": 265733.52,
       "safety_margin": -12.97,
       "premium_rate": 12.97,
       "pnl_rate": -5.31,
@@ -509,7 +514,7 @@
       "risk_level": "合理估值區",
       "color": "#3B82F6",
       "action": "定期定額 / 維持續抱",
-      "desc": "處於合理估值防禦帶內。",
+      "desc": "單日漲跌 +1.13%，處於合理估值防禦帶內。",
       "nlp_score": 5.0,
       "backtest": {
         "return_pct": 2.6,
@@ -587,11 +592,12 @@
       "market": "US",
       "currency": "$",
       "current_price": 1257.03,
+      "day_change_pct": 0.43,
       "fair_value": 1887.55,
       "cost": 1159.82,
       "shares": 2.0,
-      "market_value_twd": 81525.94,
-      "invested_cost_twd": 75221.29,
+      "market_value_twd": 81530.97,
+      "invested_cost_twd": 73764.55,
       "safety_margin": 33.4,
       "premium_rate": -33.4,
       "pnl_rate": 8.38,
@@ -603,9 +609,9 @@
       "stop_buffer_pct": 18.4,
       "risk_level": "低風險 (買進區)",
       "color": "#10B981",
-      "action": "啟動第 1 批建倉：買進 1/3",
-      "desc": "安全邊際達 33.4% 且多頭排列。",
-      "nlp_score": 2.0,
+      "action": "啟動分批建倉：買進 1/3",
+      "desc": "安全邊際達 33.4% 且半導體非空頭，具估值吸引力。",
+      "nlp_score": 0.0,
       "backtest": {
         "return_pct": -13.2,
         "max_drawdown": -34.5,
@@ -678,10 +684,11 @@
     },
     {
       "symbol": "GLD",
-      "name": "SPDR黃金ETF",
+      "name": "SPDR黃金ETF (僅監控)",
       "market": "US",
       "currency": "$",
       "current_price": 382.01,
+      "day_change_pct": -0.18,
       "fair_value": 240.0,
       "cost": 0.0,
       "shares": 0.0,
@@ -699,7 +706,7 @@
       "risk_level": "高風險 (嚴重昂貴)",
       "color": "#EF4444",
       "action": "執行減碼：賣出持倉 1/3",
-      "desc": "溢價率達 59.2%，估值透支。",
+      "desc": "溢價率達 59.2%，超過動態風險門檻 (27.0%)。",
       "nlp_score": 5.0,
       "backtest": {
         "return_pct": -2.2,
@@ -777,6 +784,7 @@
       "market": "TW",
       "currency": "NT$",
       "current_price": 109.0,
+      "day_change_pct": 0.09,
       "fair_value": 120.0,
       "cost": 73.4,
       "shares": 150.0,
@@ -794,7 +802,7 @@
       "risk_level": "合理估值區",
       "color": "#3B82F6",
       "action": "定期定額 / 維持續抱",
-      "desc": "處於合理估值防禦帶內。",
+      "desc": "單日漲跌 +0.09%，處於合理估值防禦帶內。",
       "nlp_score": 0.0,
       "backtest": {
         "return_pct": 40.5,
@@ -872,6 +880,7 @@
       "market": "TW",
       "currency": "NT$",
       "current_price": 107.0,
+      "day_change_pct": 2.39,
       "fair_value": 763.19,
       "cost": 145.0,
       "shares": 50.0,
@@ -889,7 +898,7 @@
       "risk_level": "停損警戒",
       "color": "#EF4444",
       "action": "市價全數平倉 / 嚴格停損",
-      "desc": "成本損益達 -26.2%，跌破防線。",
+      "desc": "帳面損益達 -26.2%，跌破 -10.0% 硬停損防線。",
       "nlp_score": 0.0,
       "backtest": {
         "return_pct": 120.4,
@@ -967,6 +976,7 @@
       "market": "TW",
       "currency": "NT$",
       "current_price": 19.55,
+      "day_change_pct": 1.56,
       "fair_value": 6.28,
       "cost": 25.0,
       "shares": 1000.0,
@@ -984,7 +994,7 @@
       "risk_level": "停損警戒",
       "color": "#EF4444",
       "action": "市價全數平倉 / 嚴格停損",
-      "desc": "成本損益達 -21.8%，跌破防線。",
+      "desc": "帳面損益達 -21.8%，跌破 -10.0% 硬停損防線。",
       "nlp_score": 0.0,
       "backtest": {
         "return_pct": -13.0,
@@ -1062,6 +1072,7 @@
       "market": "TW",
       "currency": "NT$",
       "current_price": 157.0,
+      "day_change_pct": 0.32,
       "fair_value": 162.18,
       "cost": 144.0,
       "shares": 50.0,
@@ -1079,7 +1090,7 @@
       "risk_level": "合理估值區",
       "color": "#3B82F6",
       "action": "定期定額 / 維持續抱",
-      "desc": "處於合理估值防禦帶內。",
+      "desc": "單日漲跌 +0.32%，處於合理估值防禦帶內。",
       "nlp_score": 0.0,
       "backtest": {
         "return_pct": -0.3,
@@ -1157,6 +1168,7 @@
       "market": "TW",
       "currency": "NT$",
       "current_price": 25.35,
+      "day_change_pct": -0.98,
       "fair_value": 15.9,
       "cost": 25.75,
       "shares": 1.0,
@@ -1174,7 +1186,7 @@
       "risk_level": "高風險 (嚴重昂貴)",
       "color": "#EF4444",
       "action": "執行減碼：賣出持倉 1/3",
-      "desc": "溢價率達 59.4%，估值透支。",
+      "desc": "溢價率達 59.4%，超過動態風險門檻 (25.0%)。",
       "nlp_score": 0.0,
       "backtest": {
         "return_pct": -0.7,
@@ -1252,6 +1264,7 @@
       "market": "TW",
       "currency": "NT$",
       "current_price": 13.15,
+      "day_change_pct": 0.0,
       "fair_value": 31.0,
       "cost": 22.1,
       "shares": 1.0,
@@ -1269,7 +1282,7 @@
       "risk_level": "停損警戒",
       "color": "#EF4444",
       "action": "市價全數平倉 / 嚴格停損",
-      "desc": "成本損益達 -40.5%，跌破防線。",
+      "desc": "帳面損益達 -40.5%，跌破 -10.0% 硬停損防線。",
       "nlp_score": 0.0,
       "backtest": {
         "return_pct": -8.0,
@@ -1347,6 +1360,7 @@
       "market": "TW",
       "currency": "NT$",
       "current_price": 16.2,
+      "day_change_pct": 0.06,
       "fair_value": 16.0,
       "cost": 15.49,
       "shares": 959.0,
@@ -1364,7 +1378,7 @@
       "risk_level": "合理估值區",
       "color": "#3B82F6",
       "action": "定期定額 / 維持續抱",
-      "desc": "處於合理估值防禦帶內。",
+      "desc": "單日漲跌 +0.06%，處於合理估值防禦帶內。",
       "nlp_score": 0.0,
       "backtest": {
         "return_pct": 27.2,
@@ -1442,6 +1456,7 @@
       "market": "TW",
       "currency": "NT$",
       "current_price": 110.5,
+      "day_change_pct": 0.45,
       "fair_value": 58.6,
       "cost": 120.5,
       "shares": 120.0,
@@ -1459,7 +1474,7 @@
       "risk_level": "高風險 (嚴重昂貴)",
       "color": "#EF4444",
       "action": "執行減碼：賣出持倉 1/3",
-      "desc": "溢價率達 88.6%，估值透支。",
+      "desc": "溢價率達 88.6%，超過動態風險門檻 (25.0%)。",
       "nlp_score": 0.0,
       "backtest": {
         "return_pct": 257.8,
