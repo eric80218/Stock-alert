@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (Ultimate Autonomous Low-Frequency Edition)
-- 針對 1～2 天看一次盤的習慣量身打造：
-  1. DCA 定期定額自動記帳引擎 (每22號自動將0050/009816/基富通扣款轉為股數與成本累加)
-  2. 近 48 小時資產增減對比 + 頭號功臣與最大拖累自動挑選
-  3. 卡片一鍵智慧排序 (風險優先、市值大小、今日漲跌、安全邊際)
-  4. 智慧 LINE 推播：每21號交割款預警 + 每週五收盤 Alpha 投資週報
-  5. 寬螢幕流暢排版 (Fluid Layout) + 無跳轉背景 API 雲端重算
+Quantitative Risk & Valuation Engine (Ultimate Autonomous Low-Frequency Edition - Fixed)
+- 已修復第 868 行 JavaScript 縮排錯誤 (IndentationError)
+- 具備 DCA 定期定額自動記帳、48hr 增減對比、一鍵智慧排序、21號扣款與週五週報
 """
 
 import os
@@ -150,7 +146,6 @@ def calc_dca_days_left(dca_day: int) -> int:
 
 
 def check_and_execute_dca(watchlist: dict, current_prices: dict, usd_twd: float):
-    """自動定期定額（DCA）記帳引擎：每月扣款日自動累加股數與調整平均成本"""
     today = datetime.datetime.now(TW_TZ)
     state = load_state()
     dca_log = state.get("dca_execution_log", {})
@@ -177,7 +172,6 @@ def check_and_execute_dca(watchlist: dict, current_prices: dict, usd_twd: float)
                         updated = True
     if updated:
         state["dca_execution_log"] = dca_log
-        # 同步儲存更新後的狀態
         with open(STATE_FILE, "w", encoding="utf-8") as f:
             json.dump(state, f, ensure_ascii=False, indent=2)
 
@@ -662,7 +656,7 @@ def compute_portfolio_equity_and_benchmark(eval_results: list, sp500_series: pd.
 
 
 # ==========================================
-# 6. 產生寬螢幕滿版操盤室網頁儀表板 (含 4 大智慧排序按鈕與 48hr 增減對比)
+# 6. 產生寬螢幕滿版操盤室網頁儀表板
 # ==========================================
 def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equity_data: dict):
     updated_time = now_tw_str()
@@ -676,7 +670,6 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
     total_pnl_pct = round((total_pnl_amount / total_invested_cost * 100), 2) if total_invested_cost > 0 else 0.0
     total_pnl_color = "text-emerald-400" if total_pnl_amount >= 0 else "text-rose-400"
 
-    # 計算較前次快照之增減金額
     prev_state = load_state()
     prev_total_val = float(prev_state.get("prev_total_market_val", total_market_val))
     diff_val = total_market_val - prev_total_val
@@ -739,8 +732,6 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
                 badges_html += f'<span class="text-[10px] px-1.5 py-0.5 rounded bg-teal-900/90 border border-teal-600 text-teal-100 font-bold">🗓️ 月扣 NT${r["dca_monthly_twd"]:,}</span>'
 
         earnings_grid_text = f"{r['earnings_date_str']} ({edays}天)" if (edays is not None and edays >= 0) else r["earnings_date_str"]
-
-        # 設定排序專用的權重分數 (風險、市值、漲跌幅、安全邊際)
         risk_score_map = {"停損警戒": 5, "移動停利警戒": 4, "單日閃崩警戒": 3, "高風險 (嚴重昂貴)": 2, "低風險 (買進區)": 1, "合理估值區": 0, "定期定額累積": 0}
         r_score = risk_score_map.get(r["risk_level"], 0)
 
@@ -849,7 +840,6 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
                 <button onclick="filterCards('TW')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">台股</button>
                 <button onclick="filterCards('FUND')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">基金</button>
                 <button onclick="filterCards('ALERT')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-950 text-rose-300 border border-rose-800/80">警戒 (""" + str(high_risk_count) + """)</button>
-                <!-- 智慧排序按鈕群 -->
                 <div class="flex items-center bg-slate-900 border border-slate-700 rounded-lg overflow-hidden ml-2 shadow">
                     <button onclick="sortCards('risk')" class="px-2.5 py-1.5 text-[11px] font-bold text-amber-300 hover:bg-slate-800 border-r border-slate-700" title="風險優先排序">🔥 風險優先</button>
                     <button onclick="sortCards('mval')" class="px-2.5 py-1.5 text-[11px] font-bold text-slate-300 hover:bg-slate-800 border-r border-slate-700" title="依持倉市值排序">💎 市值大小</button>
@@ -859,7 +849,6 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
             </div>
         </header>
 
-        <!-- 頂部 5 大對沖基金級 KPI (含 48小時增減對比) -->
         <section class="grid grid-cols-2 lg:grid-cols-5 gap-4">
             <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg">
                 <span class="text-xs text-slate-400 block mb-1">總市值 (NT$) / 較前次增減</span>
@@ -888,7 +877,6 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
             </div>
         </section>
 
-        <!-- 總經雷達 + 30日組合淨值 vs S&P500 基準線 + 持倉圓餅圖 -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
             <section class="lg:col-span-4 rounded-2xl border p-5 shadow-2xl flex flex-col justify-between" style="background: linear-gradient(135deg, """ + m_color + """22 0%, #0F172A 75%); border-color: """ + m_color + """60;">
                 <div>
@@ -999,7 +987,6 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
                 });
             }
 
-            // 預設自動以風險優先排序卡片
             sortCards('risk');
         });
 
@@ -1024,7 +1011,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
         }
 
         function configGithubToken() {
-            const current = localStorage.getItem('gh_pat_token'] || '';
+            const current = localStorage.getItem('gh_pat_token') || '';
             const input = prompt('【選填】請輸入您的 GitHub Personal Access Token (勾選 repo 與 workflow 權限)。\\nToken 僅安全儲存在您當前瀏覽器的 localStorage 中，設定後點擊重新整理即可直接在背景喚醒 GitHub Actions 重算：', current);
             if (input !== null) {
                 localStorage.setItem('gh_pat_token', input.trim());
@@ -1081,11 +1068,11 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
 </html>"""
     with open(DASHBOARD_FILE, "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"[完成] 全自動低頻檢視版操盤室儀表板已輸出至 {DASHBOARD_FILE}")
+    print(f"[完成] 寬螢幕流暢版（含完整安聯基金與排程）操盤室儀表板已輸出至 {DASHBOARD_FILE}")
 
 
 # ==========================================
-# 7. 主執行入口 (含 DCA 自動記帳與 21號/每週五 LINE 推播)
+# 7. 主執行入口
 # ==========================================
 def main():
     user_id = os.environ.get("LINE_USER_ID")
@@ -1097,7 +1084,6 @@ def main():
     macro = fetch_macro_gold_radar(prev_state.get("macro_gold", {}))
     usd_twd = get_USD_TWD_rate()
 
-    # 執行 DCA 定期定額自動記帳與累加檢查
     current_prices_cache = {}
     for s_sym, s_meta in WATCHLIST.items():
         s_data = fetch_stock_data_with_redundancy(s_sym, s_meta["market"])
@@ -1153,10 +1139,8 @@ def main():
                                       {"type": "text", "text": eval_data["desc"], "size": "xs", "color": "#4B5563", "wrap": True}]}
             })
 
-    # 定期排程 LINE 推播（每月 21 號交割款提醒、每週五收盤 Alpha 週報）
     today_now = datetime.datetime.now(TW_TZ)
     if user_id and token:
-        # 每月 21 號提醒
         if today_now.day == 21:
             bubbles_to_push.append({
                 "type": "bubble", "size": "mega",
@@ -1165,7 +1149,6 @@ def main():
                 "body": {"type": "box", "layout": "vertical", "spacing": "sm",
                          "contents": [{"type": "text", "text": "明天 (22號) 將執行 0050、009816 定期定額扣款共 NT$10,000（另有基富通月扣 NT$3,000），請確認交割帳戶餘額充足！", "size": "xs", "wrap": True, "color": "#334155"}]}
             })
-        # 每週五收盤週報 (週六早上執行)
         elif today_now.weekday() == 5 and today_now.hour < 10:
             current_total_val = sum(r["market_value_twd"] for r in eval_results if r["shares"] > 0)
             bubbles_to_push.append({
@@ -1198,7 +1181,7 @@ def main():
             except Exception:
                 pass
 
-        print("[完成] 全自動低頻檢視版操盤平台執行完畢。")
+        print("[完成] 寬螢幕流暢版（含完整安聯基金與排程）操盤平台執行完畢。")
 
 
 if __name__ == "__main__":
