@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-18 08:32:34",
+  "updated_at": "2026-10-18 08:36:25",
   "macro_gold": {
     "bubble_level": "資金安穩：市場多頭運行",
     "color": "#10B981",
@@ -18,91 +18,91 @@
       "risk_level": "低風險 (買進區)",
       "current_price": 2420.0,
       "peak_price": 2590.0,
-      "updated_at": "2026-10-18 08:32:26"
+      "updated_at": "2026-10-18 08:36:19"
     },
     "NVDA": {
       "risk_level": "低風險 (買進區)",
       "current_price": 214.13,
       "peak_price": 243.37,
-      "updated_at": "2026-10-18 08:32:27"
+      "updated_at": "2026-10-18 08:36:20"
     },
     "AMAT": {
       "risk_level": "合理估值區",
       "current_price": 409.29,
       "peak_price": 563.16,
-      "updated_at": "2026-10-18 08:32:27"
+      "updated_at": "2026-10-18 08:36:20"
     },
     "BRK-B": {
       "risk_level": "合理估值區",
       "current_price": 532.02,
       "peak_price": 537.74,
-      "updated_at": "2026-10-18 08:32:28"
+      "updated_at": "2026-10-18 08:36:21"
     },
     "COST": {
       "risk_level": "合理估值區",
       "current_price": 989.11,
       "peak_price": 1008.37,
-      "updated_at": "2026-10-18 08:32:29"
+      "updated_at": "2026-10-18 08:36:21"
     },
     "LLY": {
       "risk_level": "低風險 (買進區)",
       "current_price": 1257.03,
       "peak_price": 1292.65,
-      "updated_at": "2026-10-18 08:32:29"
+      "updated_at": "2026-10-18 08:36:21"
     },
     "GLD": {
       "risk_level": "高風險 (嚴重昂貴)",
       "current_price": 382.01,
       "peak_price": 429.42,
-      "updated_at": "2026-10-18 08:32:30"
+      "updated_at": "2026-10-18 08:36:22"
     },
     "0050.TW": {
       "risk_level": "合理估值區",
       "current_price": 109.0,
       "peak_price": 116.6,
-      "updated_at": "2026-10-18 08:32:30"
+      "updated_at": "2026-10-18 08:36:22"
     },
     "2337.TW": {
       "risk_level": "停損警戒",
       "current_price": 107.0,
       "peak_price": 144.5,
-      "updated_at": "2026-10-18 08:32:30"
+      "updated_at": "2026-10-18 08:36:22"
     },
     "2002.TW": {
       "risk_level": "停損警戒",
       "current_price": 19.55,
       "peak_price": 19.9,
-      "updated_at": "2026-10-18 08:32:31"
+      "updated_at": "2026-10-18 08:36:23"
     },
     "1232.TW": {
       "risk_level": "合理估值區",
       "current_price": 157.0,
       "peak_price": 160.0,
-      "updated_at": "2026-10-18 08:32:32"
+      "updated_at": "2026-10-18 08:36:23"
     },
     "1904.TW": {
       "risk_level": "高風險 (嚴重昂貴)",
       "current_price": 25.35,
       "peak_price": 26.45,
-      "updated_at": "2026-10-18 08:32:32"
+      "updated_at": "2026-10-18 08:36:24"
     },
     "2616.TW": {
       "risk_level": "停損警戒",
       "current_price": 13.15,
       "peak_price": 13.98,
-      "updated_at": "2026-10-18 08:32:33"
+      "updated_at": "2026-10-18 08:36:24"
     },
     "009816.TW": {
       "risk_level": "合理估值區",
       "current_price": 16.2,
       "peak_price": 17.09,
-      "updated_at": "2026-10-18 08:32:33"
+      "updated_at": "2026-10-18 08:36:24"
     },
     "6182.TWO": {
       "risk_level": "高風險 (嚴重昂貴)",
       "current_price": 110.5,
       "peak_price": 143.0,
-      "updated_at": "2026-10-18 08:32:34"
+      "updated_at": "2026-10-18 08:36:25"
     }
   },
   "results": [
