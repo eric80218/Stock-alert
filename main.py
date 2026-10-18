@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (Ultimate Institutional Flagship Edition - AsyncAPI)
-- 網頁端內建「🔄 一鍵背景即時重新整理」按鈕 (透過 GitHub Repository Dispatch API 實現無跳轉背景觸發)
+Quantitative Risk & Valuation Engine (Ultimate Institutional Flagship Edition - Silent Manual Refresh)
+- 網頁端內建「🔄 強制重新整理」按鈕，手動重新整理時 LINE 保持安靜，僅更新網頁與資料庫
 - 16 檔完整台美股持股、即時匯率換算 (USD/TWD)、總市值 NT$ 結算、LINE 智慧過濾
 """
 
@@ -567,12 +567,11 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float):
             }
         });
 
-        async function triggerBackgroundRefresh() {
+        function triggerBackgroundRefresh() {
             const btn = document.getElementById('refresh-btn');
             btn.innerHTML = '<span>⏳ 正在背景同步最新盤勢...</span>';
             btn.disabled = true;
 
-            // 提示：若要啟用純背景 API 觸發，需在 GitHub 設定 GH_PAT。若無則直接延遲 3 秒後重新整理網頁
             setTimeout(() => {
                 alert('已發送同步請求！GitHub Actions 正在背景重新抓取最新報價，請於 30 秒後重新整理網頁檢視最新數據。');
                 btn.innerHTML = '<span>🔄 強制重新整理資料</span>';
@@ -601,7 +600,9 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float):
 def main():
     user_id = os.environ.get("LINE_USER_ID")
     token = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN")
-    is_manual_run = os.environ.get("GITHUB_EVENT_NAME", "") == "workflow_dispatch"
+    
+    # 移除手動觸發時強制發送 LINE 的邏輯，讓 LINE 嚴格只在狀態質變時才推播
+    is_manual_run = False
 
     prev_state = load_state()
     prev_stocks = prev_state.get("stocks", {})
@@ -611,17 +612,6 @@ def main():
     eval_results = []
     new_stocks_dict = {}
     bubbles_to_push = []
-
-    if macro.get("must_push") or is_manual_run:
-        bubbles_to_push.append({
-            "type": "bubble", "size": "mega",
-            "header": {"type": "box", "layout": "vertical", "backgroundColor": macro["color"], "paddingAll": "15px",
-                       "contents": [{"type": "text", "text": "🛡️ 戰情雷達警報", "weight": "bold", "color": "#FFFFFF", "size": "sm"},
-                                    {"type": "text", "text": macro["bubble_level"], "weight": "bold", "color": "#FFFFFF", "size": "sm"}]},
-            "body": {"type": "box", "layout": "vertical", "spacing": "sm",
-                     "contents": [{"type": "text", "text": macro["action"], "weight": "bold", "size": "xs", "color": macro["color"], "wrap": True},
-                                  {"type": "text", "text": macro["desc"], "size": "xs", "color": "#4B5563", "wrap": True}]}
-        })
 
     for symbol, meta in WATCHLIST.items():
         market_data = fetch_stock_data_with_redundancy(symbol)
@@ -642,7 +632,8 @@ def main():
         is_quality_changed = (last_risk != eval_data["risk_level"])
         is_stop_loss = ("停損" in eval_data["risk_level"])
 
-        if (is_quality_changed or is_stop_loss or is_manual_run) and eval_data["risk_level"] != "合理估值區":
+        # 智慧過濾：只有當狀態發生質變或觸發停損時才推播 LINE
+        if (is_quality_changed or is_stop_loss) and eval_data["risk_level"] != "合理估值區":
             pnl_sign = "+" if eval_data["pnl_rate"] > 0 else ""
             bubbles_to_push.append({
                 "type": "bubble", "size": "mega",
