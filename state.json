@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-19 05:05:00",
+  "updated_at": "2026-10-19 05:11:34",
   "macro_gold": {
     "bubble_level": "資金安穩：市場多頭運行",
     "color": "#10B981",
@@ -18,97 +18,97 @@
       "risk_level": "定期定額累積",
       "current_price": 141.45,
       "peak_price": 143.5,
-      "updated_at": "2026-10-19 05:04:55"
+      "updated_at": "2026-10-19 05:11:29"
     },
     "0050.TW": {
       "risk_level": "定期定額累積",
       "current_price": 109.0,
       "peak_price": 116.6,
-      "updated_at": "2026-10-19 05:04:55"
+      "updated_at": "2026-10-19 05:11:29"
     },
     "009816.TW": {
       "risk_level": "定期定額累積",
       "current_price": 16.2,
       "peak_price": 17.09,
-      "updated_at": "2026-10-19 05:04:56"
+      "updated_at": "2026-10-19 05:11:29"
     },
     "2330.TW": {
       "risk_level": "低風險 (買進區)",
       "current_price": 2420.0,
       "peak_price": 2590.0,
-      "updated_at": "2026-10-19 05:04:56"
+      "updated_at": "2026-10-19 05:11:30"
     },
     "NVDA": {
       "risk_level": "低風險 (買進區)",
       "current_price": 214.13,
       "peak_price": 243.37,
-      "updated_at": "2026-10-19 05:04:56"
+      "updated_at": "2026-10-19 05:11:30"
     },
     "AMAT": {
       "risk_level": "移動停利警戒",
       "current_price": 409.29,
       "peak_price": 563.16,
-      "updated_at": "2026-10-19 05:04:57"
+      "updated_at": "2026-10-19 05:11:31"
     },
     "BRK-B": {
       "risk_level": "合理估值區",
       "current_price": 532.02,
       "peak_price": 537.74,
-      "updated_at": "2026-10-19 05:04:57"
+      "updated_at": "2026-10-19 05:11:31"
     },
     "COST": {
       "risk_level": "合理估值區",
       "current_price": 989.11,
       "peak_price": 1008.37,
-      "updated_at": "2026-10-19 05:04:58"
+      "updated_at": "2026-10-19 05:11:32"
     },
     "LLY": {
       "risk_level": "低風險 (買進區)",
       "current_price": 1257.03,
       "peak_price": 1292.65,
-      "updated_at": "2026-10-19 05:04:58"
+      "updated_at": "2026-10-19 05:11:32"
     },
     "GLD": {
       "risk_level": "合理估值區",
       "current_price": 382.01,
       "peak_price": 429.42,
-      "updated_at": "2026-10-19 05:04:58"
+      "updated_at": "2026-10-19 05:11:33"
     },
     "2337.TW": {
       "risk_level": "停損警戒",
       "current_price": 107.0,
       "peak_price": 144.5,
-      "updated_at": "2026-10-19 05:04:59"
+      "updated_at": "2026-10-19 05:11:33"
     },
     "2002.TW": {
-      "risk_level": "停損警戒",
+      "risk_level": "高風險 (嚴重昂貴)",
       "current_price": 19.55,
       "peak_price": 19.9,
-      "updated_at": "2026-10-19 05:04:59"
+      "updated_at": "2026-10-19 05:11:33"
     },
     "1232.TW": {
       "risk_level": "合理估值區",
       "current_price": 157.0,
       "peak_price": 160.0,
-      "updated_at": "2026-10-19 05:04:59"
+      "updated_at": "2026-10-19 05:11:33"
     },
     "1904.TW": {
       "risk_level": "高風險 (嚴重昂貴)",
       "current_price": 25.35,
       "peak_price": 26.45,
-      "updated_at": "2026-10-19 05:05:00"
+      "updated_at": "2026-10-19 05:11:34"
     },
     "2616.TW": {
       "risk_level": "停損警戒",
       "current_price": 13.15,
       "peak_price": 13.98,
-      "updated_at": "2026-10-19 05:05:00"
+      "updated_at": "2026-10-19 05:11:34"
     },
     "6182.TWO": {
       "risk_level": "高風險 (嚴重昂貴)",
       "current_price": 110.5,
       "peak_price": 143.0,
-      "updated_at": "2026-10-19 05:05:00"
+      "updated_at": "2026-10-19 05:11:34"
     }
   },
   "results": [
@@ -224,10 +224,10 @@
       "current_price": 109.0,
       "day_change_pct": 0.09,
       "fair_value": 120.0,
-      "cost": 73.4,
+      "cost": 84.17,
       "shares": 150.0,
       "market_value_twd": 16350.0,
-      "invested_cost_twd": 11010.0,
+      "invested_cost_twd": 12625.5,
       "dividend_yield_pct": 1.43,
       "annual_dividend_twd": 234.0,
       "dca_monthly_twd": 5000,
@@ -237,7 +237,7 @@
       "earnings_days_left": null,
       "safety_margin": 9.17,
       "premium_rate": -9.17,
-      "pnl_rate": 48.5,
+      "pnl_rate": 29.5,
       "ma200": 91.79,
       "ma20": 112.17,
       "rsi14": 43.1,
@@ -328,10 +328,10 @@
       "current_price": 16.2,
       "day_change_pct": 0.06,
       "fair_value": 16.0,
-      "cost": 15.49,
+      "cost": 15.75,
       "shares": 959.0,
       "market_value_twd": 15535.8,
-      "invested_cost_twd": 14854.91,
+      "invested_cost_twd": 15104.25,
       "dividend_yield_pct": 4.2,
       "annual_dividend_twd": 653.0,
       "dca_monthly_twd": 5000,
@@ -341,7 +341,7 @@
       "earnings_days_left": null,
       "safety_margin": -1.25,
       "premium_rate": 1.25,
-      "pnl_rate": 4.58,
+      "pnl_rate": 2.86,
       "ma200": 13.83,
       "ma20": 16.55,
       "rsi14": 45.8,
@@ -1264,10 +1264,10 @@
       "current_price": 19.55,
       "day_change_pct": 1.56,
       "fair_value": 6.28,
-      "cost": 25.0,
+      "cost": 21.05,
       "shares": 1000.0,
       "market_value_twd": 19550.0,
-      "invested_cost_twd": 25000.0,
+      "invested_cost_twd": 21050.0,
       "dividend_yield_pct": 0.77,
       "annual_dividend_twd": 151.0,
       "dca_monthly_twd": 0,
@@ -1277,18 +1277,18 @@
       "earnings_days_left": null,
       "safety_margin": -211.31,
       "premium_rate": 211.31,
-      "pnl_rate": -21.8,
+      "pnl_rate": -7.13,
       "ma200": 19.08,
       "ma20": 18.95,
       "rsi14": 63.3,
       "peak_price": 19.9,
       "drawdown_from_peak": -1.76,
-      "stop_buffer_pct": -11.8,
-      "risk_level": "停損警戒",
+      "stop_buffer_pct": 2.9,
+      "risk_level": "高風險 (嚴重昂貴)",
       "color": "#EF4444",
-      "action": "市價全數平倉 / 嚴格停損",
-      "desc": "帳面損益達 -21.8%，跌破 -10.0% 硬停損防線。",
-      "sizing_note": "👉 試算：全數出清 1000 股 (約收回 NT$19,550)",
+      "action": "執行減碼：賣出持倉 1/3",
+      "desc": "溢價率達 211.3%，超過動態風險門檻 (25.0%)。",
+      "sizing_note": "👉 試算：建議減碼 333 股 (約收回 NT$6,510)",
       "nlp_score": 0.0,
       "backtest": {
         "return_pct": -13.0,
@@ -1472,10 +1472,10 @@
       "current_price": 25.35,
       "day_change_pct": -0.98,
       "fair_value": 15.9,
-      "cost": 25.75,
+      "cost": 25.0,
       "shares": 1.0,
       "market_value_twd": 25.35,
-      "invested_cost_twd": 25.75,
+      "invested_cost_twd": 25.0,
       "dividend_yield_pct": 1.78,
       "annual_dividend_twd": 0.0,
       "dca_monthly_twd": 0,
@@ -1485,13 +1485,13 @@
       "earnings_days_left": null,
       "safety_margin": -59.43,
       "premium_rate": 59.43,
-      "pnl_rate": -1.55,
+      "pnl_rate": 1.4,
       "ma200": 20.45,
       "ma20": 24.84,
       "rsi14": 56.3,
       "peak_price": 26.45,
       "drawdown_from_peak": -4.16,
-      "stop_buffer_pct": 8.4,
+      "stop_buffer_pct": 11.4,
       "risk_level": "高風險 (嚴重昂貴)",
       "color": "#EF4444",
       "action": "執行減碼：賣出持倉 1/3",
@@ -1576,10 +1576,10 @@
       "current_price": 13.15,
       "day_change_pct": 0.0,
       "fair_value": 31.0,
-      "cost": 22.1,
+      "cost": 22.0,
       "shares": 1.0,
       "market_value_twd": 13.15,
-      "invested_cost_twd": 22.1,
+      "invested_cost_twd": 22.0,
       "dividend_yield_pct": 2.28,
       "annual_dividend_twd": 0.0,
       "dca_monthly_twd": 0,
@@ -1589,17 +1589,17 @@
       "earnings_days_left": null,
       "safety_margin": 57.58,
       "premium_rate": -57.58,
-      "pnl_rate": -40.5,
+      "pnl_rate": -40.23,
       "ma200": 13.99,
       "ma20": 13.21,
       "rsi14": 40.1,
       "peak_price": 13.98,
       "drawdown_from_peak": -5.94,
-      "stop_buffer_pct": -30.5,
+      "stop_buffer_pct": -30.2,
       "risk_level": "停損警戒",
       "color": "#EF4444",
       "action": "市價全數平倉 / 嚴格停損",
-      "desc": "帳面損益達 -40.5%，跌破 -10.0% 硬停損防線。",
+      "desc": "帳面損益達 -40.2%，跌破 -10.0% 硬停損防線。",
       "sizing_note": "👉 試算：全數出清 1 股 (約收回 NT$13)",
       "nlp_score": 0.0,
       "backtest": {
