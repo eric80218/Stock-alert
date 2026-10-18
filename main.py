@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (Ultimate Institutional Flagship Edition - Fixed)
-- 已修正結尾語法縮排錯誤 (IndentationError)
-- 16 檔完整持股（含 2330.TW）、即時匯率換算 (USD/TWD)、總市值 NT$ 結算、LINE 智慧過濾
+Quantitative Risk & Valuation Engine (Ultimate Institutional Flagship Edition - Final)
+- 已調整持股狀態：VRT 已出清移除，2330.TW 設為純監控標的 (shares: 0)
+- 即時匯率換算 (USD/TWD)、總市值 NT$ 結算、LINE 智慧過濾與資產配置
 """
 
 import os
@@ -17,13 +17,13 @@ import pandas as pd
 import yfinance as yf
 
 # ==========================================
-# 1. 完整持股監控清單與部位設定
+# 1. 完整持股與監控清單設定
 # ==========================================
 WATCHLIST = {
     "2330.TW": {
-        "name": "台積電", "market": "TW", "currency": "NT$", "is_etf": False,
-        "shares": 1000, "target_pe": 20.0, "fallback_fair_value": 1350.0,
-        "cost": 920.0, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 3.0,
+        "name": "台積電 (僅監控)", "market": "TW", "currency": "NT$", "is_etf": False,
+        "shares": 0, "target_pe": 20.0, "fallback_fair_value": 1350.0,
+        "cost": 0.0, "stop_loss_pct": None, "trailing_stop_pct": -15.0, "flash_pct": 3.0,
     },
     "NVDA": {
         "name": "輝達", "market": "US", "currency": "$", "is_etf": False,
@@ -49,11 +49,6 @@ WATCHLIST = {
         "name": "禮來製藥", "market": "US", "currency": "$", "is_etf": False,
         "shares": 2.0, "target_pe": 40.0, "fallback_fair_value": 1150.0,
         "cost": 1159.82, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 4.0,
-    },
-    "VRT": {
-        "name": "維諦技術", "market": "US", "currency": "$", "is_etf": False,
-        "shares": 8.0, "target_pe": 30.0, "fallback_fair_value": 260.0,
-        "cost": 321.39, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 4.0,
     },
     "GLD": {
         "name": "SPDR黃金ETF", "market": "US", "currency": "$", "is_etf": True,
@@ -361,21 +356,22 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float):
     updated_time, total_count = now_tw_str(), len(eval_results)
     high_risk_count = sum(1 for r in eval_results if r["risk_level"] in ["停損警戒", "高風險 (嚴重昂貴)"])
     
-    total_market_val = sum(r["market_value_twd"] for r in eval_results)
-    total_invested_cost = sum(r["invested_cost_twd"] for r in eval_results)
+    # 總市值計算僅加總 shares > 0 的實際持股
+    total_market_val = sum(r["market_value_twd"] for r in eval_results if r["shares"] > 0)
+    total_invested_cost = sum(r["invested_cost_twd"] for r in eval_results if r["shares"] > 0)
     total_pnl_amount = total_market_val - total_invested_cost
     total_pnl_pct = round((total_pnl_amount / total_invested_cost * 100), 2) if total_invested_cost > 0 else 0.0
     total_pnl_color = "text-emerald-400" if total_pnl_amount >= 0 else "text-rose-400"
     
-    tech_val = sum(r["market_value_twd"] for r in eval_results if r["symbol"] in ["NVDA", "AMAT", "2330.TW", "VRT"])
+    tech_val = sum(r["market_value_twd"] for r in eval_results if r["symbol"] in ["NVDA", "AMAT", "2330.TW"] and r["shares"] > 0)
     tech_exposure_pct = round((tech_val / total_market_val * 100), 1) if total_market_val > 0 else 0.0
 
     m_color = macro["color"]
     sox_cls = "text-rose-400" if macro["is_sox_bear"] else "text-emerald-400"
     spxu_cls = "text-rose-400" if macro["spxu_vol_ratio"] >= 1.5 else "text-slate-200"
 
-    pie_labels = [r["symbol"] for r in eval_results if r["market_value_twd"] > 0]
-    pie_values = [r["market_value_twd"] for r in eval_results if r["market_value_twd"] > 0]
+    pie_labels = [r["symbol"] for r in eval_results if r["shares"] > 0 and r["market_value_twd"] > 0]
+    pie_values = [r["market_value_twd"] for r in eval_results if r["shares"] > 0 and r["market_value_twd"] > 0]
 
     cards_html = ""
     for idx, r in enumerate(eval_results):
