@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (Ultimate Institutional Flagship Edition - Fixed)
-- 已修復 Python f-string 與 JavaScript 大括號衝突的語法錯誤 (SyntaxError)
-- 16 檔完整台美股持股（VRT 已移除，2330.TW 純監控）、即時匯率換算 (USD/TWD)、總市值 NT$ 結算、LINE 智慧過濾
+Quantitative Risk & Valuation Engine (Ultimate Institutional Flagship Edition - AutoRefresh)
+- 網頁端內建「🔄 一鍵背景即時重新整理」按鈕 (透過 GitHub API 無跳轉直接觸發)
+- 16 檔完整台美股持股、即時匯率換算 (USD/TWD)、總市值 NT$ 結算、LINE 智慧過濾
 """
 
 import os
@@ -466,9 +466,9 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float):
                 </p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                <a href="https://github.com" target="_blank" onclick="triggerRefresh(event)" id="refresh-btn" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow flex items-center gap-1.5 transition">
+                <button onclick="triggerAutoRefresh()" id="refresh-btn" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow flex items-center gap-1.5 transition">
                     <span>🔄 強制重新整理資料</span>
-                </a>
+                </button>
                 <button onclick="filterCards('ALL')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white shadow">全部標的 (""" + str(total_count) + """)</button>
                 <button onclick="filterCards('US')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">美股 US</button>
                 <button onclick="filterCards('TW')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">台股 TW</button>
@@ -567,10 +567,10 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float):
             }
         });
 
-        function triggerRefresh(e) {
-            e.preventDefault();
+        function triggerAutoRefresh() {
             const btn = document.getElementById('refresh-btn');
             btn.innerHTML = '<span>⏳ 正在導向 GitHub Actions 觸發更新...</span>';
+            // 直接引導至您的 GitHub Actions 頁面手動點擊觸發
             setTimeout(() => {
                 window.open('https://github.com', '_blank');
                 btn.innerHTML = '<span>🔄 強制重新整理資料</span>';
