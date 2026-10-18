@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-19 04:39:06",
+  "updated_at": "2026-10-19 04:46:23",
   "macro_gold": {
     "bubble_level": "資金安穩：市場多頭運行",
     "color": "#10B981",
@@ -16,135 +16,135 @@
   "stocks": {
     "FUND_ALLIANZ": {
       "risk_level": "定期定額累積",
-      "current_price": 95.12,
-      "peak_price": 96.8,
-      "updated_at": "2026-10-19 04:38:57"
+      "current_price": 141.45,
+      "peak_price": 143.5,
+      "updated_at": "2026-10-19 04:46:14"
     },
     "0050.TW": {
       "risk_level": "定期定額累積",
       "current_price": 109.0,
       "peak_price": 116.6,
-      "updated_at": "2026-10-19 04:38:58"
+      "updated_at": "2026-10-19 04:46:15"
     },
     "009816.TW": {
       "risk_level": "定期定額累積",
       "current_price": 16.2,
       "peak_price": 17.09,
-      "updated_at": "2026-10-19 04:38:58"
+      "updated_at": "2026-10-19 04:46:15"
     },
     "2330.TW": {
       "risk_level": "低風險 (買進區)",
       "current_price": 2420.0,
       "peak_price": 2590.0,
-      "updated_at": "2026-10-19 04:38:59"
+      "updated_at": "2026-10-19 04:46:16"
     },
     "NVDA": {
       "risk_level": "低風險 (買進區)",
       "current_price": 214.13,
       "peak_price": 243.37,
-      "updated_at": "2026-10-19 04:38:59"
+      "updated_at": "2026-10-19 04:46:16"
     },
     "AMAT": {
       "risk_level": "移動停利警戒",
       "current_price": 409.29,
       "peak_price": 563.16,
-      "updated_at": "2026-10-19 04:39:00"
+      "updated_at": "2026-10-19 04:46:17"
     },
     "BRK-B": {
       "risk_level": "合理估值區",
       "current_price": 532.02,
       "peak_price": 537.74,
-      "updated_at": "2026-10-19 04:39:01"
+      "updated_at": "2026-10-19 04:46:18"
     },
     "COST": {
       "risk_level": "合理估值區",
       "current_price": 989.11,
       "peak_price": 1008.37,
-      "updated_at": "2026-10-19 04:39:01"
+      "updated_at": "2026-10-19 04:46:18"
     },
     "LLY": {
       "risk_level": "低風險 (買進區)",
       "current_price": 1257.03,
       "peak_price": 1292.65,
-      "updated_at": "2026-10-19 04:39:02"
+      "updated_at": "2026-10-19 04:46:19"
     },
     "GLD": {
       "risk_level": "合理估值區",
       "current_price": 382.01,
       "peak_price": 429.42,
-      "updated_at": "2026-10-19 04:39:03"
+      "updated_at": "2026-10-19 04:46:20"
     },
     "2337.TW": {
       "risk_level": "停損警戒",
       "current_price": 107.0,
       "peak_price": 144.5,
-      "updated_at": "2026-10-19 04:39:03"
+      "updated_at": "2026-10-19 04:46:20"
     },
     "2002.TW": {
       "risk_level": "停損警戒",
       "current_price": 19.55,
       "peak_price": 19.9,
-      "updated_at": "2026-10-19 04:39:04"
+      "updated_at": "2026-10-19 04:46:21"
     },
     "1232.TW": {
       "risk_level": "合理估值區",
       "current_price": 157.0,
       "peak_price": 160.0,
-      "updated_at": "2026-10-19 04:39:04"
+      "updated_at": "2026-10-19 04:46:21"
     },
     "1904.TW": {
       "risk_level": "高風險 (嚴重昂貴)",
       "current_price": 25.35,
       "peak_price": 26.45,
-      "updated_at": "2026-10-19 04:39:05"
+      "updated_at": "2026-10-19 04:46:22"
     },
     "2616.TW": {
       "risk_level": "停損警戒",
       "current_price": 13.15,
       "peak_price": 13.98,
-      "updated_at": "2026-10-19 04:39:05"
+      "updated_at": "2026-10-19 04:46:22"
     },
     "6182.TWO": {
       "risk_level": "高風險 (嚴重昂貴)",
       "current_price": 110.5,
       "peak_price": 143.0,
-      "updated_at": "2026-10-19 04:39:06"
+      "updated_at": "2026-10-19 04:46:23"
     }
   },
   "results": [
     {
       "symbol": "FUND_ALLIANZ",
-      "name": "安聯收益成長基金(美元)",
+      "name": "安聯收益成長基金(含單筆+定額)",
       "market": "FUND",
       "currency": "$",
-      "current_price": 95.12,
-      "day_change_pct": 0.07,
-      "fair_value": 95.12,
-      "cost": 96.6,
-      "shares": 33.3,
-      "market_value_twd": 152328.0,
-      "invested_cost_twd": 102000.0,
+      "current_price": 141.45,
+      "day_change_pct": 0.18,
+      "fair_value": 141.45,
+      "cost": 95.12,
+      "shares": 34.73,
+      "market_value_twd": 158869.0,
+      "invested_cost_twd": 104815.0,
       "dividend_yield_pct": 8.0,
-      "annual_dividend_twd": 12186.0,
+      "annual_dividend_twd": 12710.0,
       "dca_monthly_twd": 3000,
       "dca_day": null,
       "dca_days_left": null,
-      "earnings_date_str": "每月扣款 3,000",
+      "earnings_date_str": "月扣3千+單筆",
       "earnings_days_left": null,
       "safety_margin": 0.0,
       "premium_rate": 0.0,
-      "pnl_rate": 49.34,
-      "ma200": 92.4,
-      "ma20": 94.6,
-      "rsi14": 54.5,
-      "peak_price": 96.8,
-      "drawdown_from_peak": -1.74,
+      "pnl_rate": 51.57,
+      "ma200": 132.8,
+      "ma20": 140.1,
+      "rsi14": 56.0,
+      "peak_price": 143.5,
+      "drawdown_from_peak": -1.43,
       "stop_buffer_pct": 99.9,
       "risk_level": "定期定額累積",
       "color": "#10B981",
-      "action": "基富通每月扣款 NT$3,000",
-      "desc": "安聯收益成長基金正常扣款中，累積報酬率達 +49.34%。",
-      "sizing_note": "👉 試算：月扣 NT$3,000 持續複利中 (預估年配息約 NT$12,186)",
+      "action": "基富通月扣 NT$3,000 + 單筆續抱",
+      "desc": "定額(+49.34%)與單筆(+132.36%)合計總損益 +NT$54,054 (+51.57%)。",
+      "sizing_note": "👉 試算：總市值 NT$158,869 (總本金 NT$104,815) ｜ 預估年配息約 NT$12,710",
       "nlp_score": 0.0,
       "backtest": {
         "return_pct": 0.0,
@@ -184,36 +184,36 @@
         "10/19"
       ],
       "history_prices": [
-        95.12,
-        95.2,
-        95.27,
-        95.35,
-        95.42,
-        95.5,
-        95.58,
-        95.65,
-        95.73,
-        95.8,
-        95.88,
-        95.96,
-        96.03,
-        96.11,
-        96.19,
-        96.26,
-        96.34,
-        96.41,
-        96.49,
-        96.57,
-        96.64,
-        96.72,
-        96.79,
-        96.87,
-        96.95,
-        97.02,
-        97.1,
-        97.17,
-        97.25,
-        95.12
+        139.33,
+        139.4,
+        139.47,
+        139.54,
+        139.61,
+        139.68,
+        139.75,
+        139.82,
+        139.89,
+        139.96,
+        140.04,
+        140.11,
+        140.18,
+        140.25,
+        140.32,
+        140.39,
+        140.46,
+        140.53,
+        140.6,
+        140.67,
+        140.74,
+        140.81,
+        140.88,
+        140.95,
+        141.03,
+        141.1,
+        141.17,
+        141.24,
+        141.31,
+        141.45
       ]
     },
     {
