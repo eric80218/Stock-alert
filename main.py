@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (Ultimate Autonomous Low-Frequency Edition - Fixed Indent)
-- 已徹底修復 HTML 模板的縮排錯誤 (IndentationError)
+Quantitative Risk & Valuation Engine (Ultimate Autonomous Low-Frequency Edition - Syntax Fixed)
+- 已完全修復 Python 多行字串與 JavaScript 語法衝突造成的 SyntaxError
 - 具備 DCA 定期定額自動記帳、48hr 增減對比、一鍵智慧排序、21號扣款與週五週報
 """
 
@@ -805,267 +805,235 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
     pie_json = json.dumps({"labels": pie_labels, "values": pie_values}, ensure_ascii=False)
     equity_json = json.dumps({"dates": equity_data["dates"], "values": equity_data["values"], "bench": equity_data["bench_values"]}, ensure_ascii=False)
 
-    html = """<!DOCTYPE html>
-<html lang="zh-TW" class="dark">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hedge Fund Alpha Quant Terminal</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans p-3 sm:p-5 selection:bg-blue-500 selection:text-white">
-<div class="w-full px-2 sm:px-4 space-y-5">
-<header class="flex flex-col xl:flex-row justify-between items-center pb-5 border-b border-slate-800 gap-4">
-<div>
-<div class="flex items-center gap-2.5">
-<span class="h-3 w-3 rounded-full bg-emerald-500 animate-pulse"></span>
-<h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">對沖基金級動態 EPS 與 Alpha 操盤室</h1>
-</div>
-<p class="text-xs sm:text-sm text-slate-400 mt-1">
-即時匯率 USD/TWD: <span class="text-amber-400 font-mono">""" + f"{usd_twd:.2f}" + """</span> ｜ 定期定額: <span class="text-emerald-400 font-bold">NT$""" + f"{total_monthly_dca_twd:,}" + """/月</span> (0050/009816 22號扣5千 + 基富通3千) ｜ 更新時間: <span id="sync-time" class="text-slate-200 font-mono">""" + updated_time + """</span>
-</p>
-</div>
-<div class="flex flex-wrap items-center gap-2">
-<div class="flex items-center bg-emerald-700/80 rounded-lg overflow-hidden shadow">
-<button onclick="triggerSmartRefresh()" id="refresh-btn" class="px-3.5 py-1.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5 transition">
-<span>🔄 強制重新整理資料</span>
-</button>
-<button onclick="configGithubToken()" title="設定 GitHub Token 以啟用雲端背景重算" class="px-2 py-1.5 text-xs bg-emerald-800 hover:bg-emerald-700 text-emerald-100 border-l border-emerald-600">
-⚙️
-</button>
-</div>
-<button onclick="filterCards('ALL')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white shadow">全部 (""" + str(total_count) + """)</button>
-<button onclick="filterCards('US')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">美股</button>
-<button onclick="filterCards('TW')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">台股</button>
-<button onclick="filterCards('FUND')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">基金</button>
-<button onclick="filterCards('ALERT')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-950 text-rose-300 border border-rose-800/80">警戒 (""" + str(high_risk_count) + """)</button>
-<div class="flex items-center bg-slate-900 border border-slate-700 rounded-lg overflow-hidden ml-2 shadow">
-<button onclick="sortCards('risk')" class="px-2.5 py-1.5 text-[11px] font-bold text-amber-300 hover:bg-slate-800 border-r border-slate-700" title="風險優先排序">🔥 風險優先</button>
-<button onclick="sortCards('mval')" class="px-2.5 py-1.5 text-[11px] font-bold text-slate-300 hover:bg-slate-800 border-r border-slate-700" title="依持倉市值排序">💎 市值大小</button>
-<button onclick="sortCards('chg')" class="px-2.5 py-1.5 text-[11px] font-bold text-slate-300 hover:bg-slate-800 border-r border-slate-700" title="依今日漲跌排序">🚀 今日漲跌</button>
-<button onclick="sortCards('margin')" class="px-2.5 py-1.5 text-[11px] font-bold text-slate-300 hover:bg-slate-800" title="依安全邊際排序">⭐ 安全邊際</button>
-</div>
-</div>
-</header>
-
-<section class="grid grid-cols-2 lg:grid-cols-5 gap-4">
-<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg">
-<span class="text-xs text-slate-400 block mb-1">總市值 (NT$) / 較前次增減</span>
-<div class="text-xl font-black text-white">NT$""" + f"{total_market_val:,.0f}" + """</div>
-<span class="text-xs font-bold """ + diff_cls + '">48hr 增減: ' + diff_str + '</span>'
-</div>
-<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg">
-<span class="text-xs text-slate-400 block mb-1">總未實現損益 (含基金)</span>
-<div class="text-xl font-black """ + total_pnl_color + '">NT$' + f"{total_pnl_amount:+,.0f} ({total_pnl_pct:+.2f}%)" + """</div>
-<span class="text-xs text-slate-400">近30日 """ + alpha_str + """</span>
-</div>
-<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg">
-<span class="text-xs text-slate-400 block mb-1">💰 預估年領股息 / 定期定額</span>
-<div class="text-xl font-black text-cyan-400">NT$""" + f"{total_annual_div_twd:,.0f}" + """<span class="text-xs font-normal text-slate-400">/年息</span></div>
-<span class="text-xs text-slate-400">月被動息 NT$""" + f"{monthly_div_twd:,.0f}" + """ ｜ 月扣 NT$""" + f"{total_monthly_dca_twd:,}" + """</span>
-</div>
-<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg">
-<span class="text-xs text-slate-400 block mb-1">95% 單日風險價值 (VaR)</span>
-<div class="text-xl font-black text-rose-400">-NT$""" + f"{equity_data['var_95_twd']:,.0f}" + """</div>
-<span class="text-xs text-slate-400">半導體曝險濃度: <strong class="text-amber-400">""" + str(tech_exposure_pct) + """%</strong></span>
-</div>
-<div class="col-span-2 lg:col-span-1 bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg">
-<span class="text-xs text-slate-400 block mb-1">市場總體避險狀態</span>
-<div class="text-base sm:text-lg font-black truncate" style="color: """ + macro['color'] + """;">""" + macro['bubble_level'] + """</div>
-<span class="text-xs text-slate-400">VIX: """ + str(macro['vix']) + """ | 費半: $""" + str(macro['sox_price']) + """</span>
-</div>
-</section>
-
-<div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-<section class="lg:col-span-4 rounded-2xl border p-5 shadow-2xl flex flex-col justify-between" style="background: linear-gradient(135deg, """ + m_color + """22 0%, #0F172A 75%); border-color: """ + m_color + """60;">
-<div>
-<div class="flex justify-between items-center mb-3">
-<div class="flex items-center gap-2">
-<span class="text-xl">🛡️</span>
-<h2 class="text-base font-black text-white">華爾街總經與大戶避險雷達</h2>
-</div>
-<span class="px-3 py-1 rounded-full text-xs font-extrabold text-white shadow-md" style="background-color: """ + m_color + """;">""" + macro['bubble_level'] + """</span>
-</div>
-<p class="text-xs text-slate-200 leading-relaxed mb-4">""" + macro['action'] + """ — """ + macro['desc'] + """</p>
-</div>
-<div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs bg-slate-950/80 p-3.5 rounded-xl border border-slate-800/80">
-<div><span class="text-slate-400 block">VIX 恐慌</span><div class="text-sm font-bold text-amber-400">""" + str(macro['vix']) + """</div></div>
-<div><span class="text-slate-400 block">費半 (^SOX)</span><div class="text-sm font-bold """ + sox_cls + """">$""" + str(macro['sox_price']) + """</div></div>
-<div><span class="text-slate-400 block">SPXU 量比</span><div class="text-sm font-bold """ + spxu_cls + """">""" + str(macro['spxu_vol_ratio']) + """x</div></div>
-<div><span class="text-slate-400 block">美元 (DXY)</span><div class="text-sm font-bold text-blue-400">""" + str(macro['dxy_price']) + """</div></div>
-</div>
-</section>
-
-<section class="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-xl">
-<div class="flex justify-between items-center mb-2">
-<span class="text-xs font-bold text-slate-300">📈 近 30 日組合淨值 (綠線) vs. S&P500 基準 (灰虛線)</span>
-<span class="text-[10px] font-bold px-2 py-0.5 rounded border """ + alpha_cls + """">""" + alpha_str + """</span>
-</div>
-<div class="h-44 w-full"><canvas id="equity-curve"></canvas></div>
-</section>
-
-<section class="lg:col-span-3 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col items-center justify-center shadow-xl">
-<span class="text-xs font-bold text-slate-300 mb-2">持倉市值配置 (Weight)</span>
-<div class="h-44 w-full"><canvas id="portfolio-pie"></canvas></div>
-</section>
-</div>
-
-<main id="cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
-""" + cards_html + """
-</main>
-</div>
-
-<script>
-const chartConfigs = """ + charts_json + """;
-const pieData = """ + pie_json + """;
-const equityData = """ + equity_json + """;
-const githubRepo = '""" + GITHUB_REPO + """';
-
-window.addEventListener('DOMContentLoaded', () => {
-    chartConfigs.forEach(cfg => {
-        const ctx = document.getElementById(cfg.id);
-        if (!ctx) return;
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: cfg.dates,
-                datasets: [
-                    { data: cfg.prices, borderColor: cfg.color, borderWidth: 2, pointRadius: 0, fill: true, backgroundColor: cfg.color + '20', tension: 0.3 },
-                    { data: Array(cfg.dates.length).fill(cfg.fair), borderColor: '#94A3B8', borderDash: [4, 4], borderWidth: 1, pointRadius: 0, fill: false }
-                ]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { x: { display: false }, y: { ticks: { color: '#64748B', font: { size: 9 } }, grid: { color: '#1E293B' } } }
-            }
-        });
-    });
-
-    const eqCtx = document.getElementById('equity-curve');
-    if (eqCtx && equityData.values.length > 0) {
-        new Chart(eqCtx, {
-            type: 'line',
-            data: {
-                labels: equityData.dates,
-                datasets: [
-                    {
-                        label: '投資組合淨值 (NT$)',
-                        data: equityData.values,
-                        borderColor: '#10B981', borderWidth: 2.2, pointRadius: 0,
-                        fill: true, backgroundColor: '#10B98118', tension: 0.3
+    html_parts = [
+        '<!DOCTYPE html>',
+        '<html lang="zh-TW" class="dark">',
+        '<head>',
+        '<meta charset="UTF-8">',
+        '<meta name="viewport" content="width=device-width, initial-scale=1.0">',
+        '<title>Hedge Fund Alpha Quant Terminal</title>',
+        '<script src="https://cdn.tailwindcss.com"></script>',
+        '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>',
+        '</head>',
+        '<body class="bg-slate-950 text-slate-100 min-h-screen font-sans p-3 sm:p-5 selection:bg-blue-500 selection:text-white">',
+        '<div class="w-full px-2 sm:px-4 space-y-5">',
+        '<header class="flex flex-col xl:flex-row justify-between items-center pb-5 border-b border-slate-800 gap-4">',
+        '<div>',
+        '<div class="flex items-center gap-2.5">',
+        '<span class="h-3 w-3 rounded-full bg-emerald-500 animate-pulse"></span>',
+        '<h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">對沖基金級動態 EPS 與 Alpha 操盤室</h1>',
+        '</div>',
+        f'<p class="text-xs sm:text-sm text-slate-400 mt-1">即時匯率 USD/TWD: <span class="text-amber-400 font-mono">{usd_twd:.2f}</span> ｜ 定期定額: <span class="text-emerald-400 font-bold">NT${total_monthly_dca_twd:,}/月</span> (0050/009816 22號扣5千 + 基富通3千) ｜ 更新時間: <span id="sync-time" class="text-slate-200 font-mono">{updated_time}</span></p>',
+        '</div>',
+        '<div class="flex flex-wrap items-center gap-2">',
+        '<div class="flex items-center bg-emerald-700/80 rounded-lg overflow-hidden shadow">',
+        '<button onclick="triggerSmartRefresh()" id="refresh-btn" class="px-3.5 py-1.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5 transition"><span>🔄 強制重新整理資料</span></button>',
+        '<button onclick="configGithubToken()" title="設定 GitHub Token 以啟用雲端背景重算" class="px-2 py-1.5 text-xs bg-emerald-800 hover:bg-emerald-700 text-emerald-100 border-l border-emerald-600">⚙️</button>',
+        '</div>',
+        f'<button onclick="filterCards(\'ALL\')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white shadow">全部 ({total_count})</button>',
+        '<button onclick="filterCards(\'US\')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">美股</button>',
+        '<button onclick="filterCards(\'TW\')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">台股</button>',
+        '<button onclick="filterCards(\'FUND\')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">基金</button>',
+        f'<button onclick="filterCards(\'ALERT\')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-950 text-rose-300 border border-rose-800/80">警戒 ({high_risk_count})</button>',
+        '<div class="flex items-center bg-slate-900 border border-slate-700 rounded-lg overflow-hidden ml-2 shadow">',
+        '<button onclick="sortCards(\'risk\')" class="px-2.5 py-1.5 text-[11px] font-bold text-amber-300 hover:bg-slate-800 border-r border-slate-700" title="風險優先排序">🔥 風險優先</button>',
+        '<button onclick="sortCards(\'mval\')" class="px-2.5 py-1.5 text-[11px] font-bold text-slate-300 hover:bg-slate-800 border-r border-slate-700" title="依持倉市值排序">💎 市值大小</button>',
+        '<button onclick="sortCards(\'chg\')" class="px-2.5 py-1.5 text-[11px] font-bold text-slate-300 hover:bg-slate-800 border-r border-slate-700" title="依今日漲跌排序">🚀 今日漲跌</button>',
+        '<button onclick="sortCards(\'margin\')" class="px-2.5 py-1.5 text-[11px] font-bold text-slate-300 hover:bg-slate-800" title="依安全邊際排序">⭐ 安全邊際</button>',
+        '</div>',
+        '</div>',
+        '</header>',
+        '<section class="grid grid-cols-2 lg:grid-cols-5 gap-4">',
+        f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">總市值 (NT$) / 較前次增減</span><div class="text-xl font-black text-white">NT${total_market_val:,.0f}</div><span class="text-xs font-bold {diff_cls}">48hr 增減: {diff_str}</span></div>',
+        f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">總未實現損益 (含基金)</span><div class="text-xl font-black {total_pnl_color}">NT${total_pnl_amount:+,.0f} ({total_pnl_pct:+.2f}%)</div><span class="text-xs text-slate-400">近30日 {alpha_str}</span></div>',
+        f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">💰 預估年領股息 / 定期定額</span><div class="text-xl font-black text-cyan-400">NT${total_annual_div_twd:,.0f}<span class="text-xs font-normal text-slate-400">/年息</span></div><span class="text-xs text-slate-400">月被動息 NT${monthly_div_twd:,.0f} ｜ 月扣 NT${total_monthly_dca_twd:,}</span></div>',
+        f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">95% 單日風險價值 (VaR)</span><div class="text-xl font-black text-rose-400">-NT${equity_data["var_95_twd"]:,.0f}</div><span class="text-xs text-slate-400">半導體曝險濃度: <strong class="text-amber-400">{tech_exposure_pct}%</strong></span></div>',
+        f'<div class="col-span-2 lg:col-span-1 bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">市場總體避險狀態</span><div class="text-base sm:text-lg font-black truncate" style="color: {macro["color"]};">{macro["bubble_level"]}</div><span class="text-xs text-slate-400">VIX: {macro["vix"]} | 費半: ${macro["sox_price"]}</span></div>',
+        '</section>',
+        '<div class="grid grid-cols-1 lg:grid-cols-12 gap-5">',
+        f'<section class="lg:col-span-4 rounded-2xl border p-5 shadow-2xl flex flex-col justify-between" style="background: linear-gradient(135deg, {macro["color"]}22 0%, #0F172A 75%); border-color: {macro["color"]}60;">',
+        '<div>',
+        '<div class="flex justify-between items-center mb-3">',
+        '<div class="flex items-center gap-2"><span class="text-xl">🛡️</span><h2 class="text-base font-black text-white">華爾街總經與大戶避險雷達</h2></div>',
+        f'<span class="px-3 py-1 rounded-full text-xs font-extrabold text-white shadow-md" style="background-color: {macro["color"]};">{macro["bubble_level"]}</span>',
+        '</div>',
+        f'<p class="text-xs text-slate-200 leading-relaxed mb-4">{macro["action"]} — {macro["desc"]}</p>',
+        '</div>',
+        '<div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs bg-slate-950/80 p-3.5 rounded-xl border border-slate-800/80">',
+        f'<div><span class="text-slate-400 block">VIX 恐慌</span><div class="text-sm font-bold text-amber-400">{macro["vix"]}</div></div>',
+        f'<div><span class="text-slate-400 block">費半 (^SOX)</span><div class="text-sm font-bold {sox_cls}">${macro["sox_price"]}</div></div>',
+        f'<div><span class="text-slate-400 block">SPXU 量比</span><div class="text-sm font-bold {spxu_cls}">{macro["spxu_vol_ratio"]}x</div></div>',
+        f'<div><span class="text-slate-400 block">美元 (DXY)</span><div class="text-sm font-bold text-blue-400">{macro["dxy_price"]}</div></div>',
+        '</div>',
+        '</section>',
+        '<section class="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-xl">',
+        '<div class="flex justify-between items-center mb-2">',
+        '<span class="text-xs font-bold text-slate-300">📈 近 30 日組合淨值 (綠線) vs. S&P500 基準 (灰虛線)</span>',
+        f'<span class="text-[10px] font-bold px-2 py-0.5 rounded border {alpha_cls}">{alpha_str}</span>',
+        '</div>',
+        '<div class="h-44 w-full"><canvas id="equity-curve"></canvas></div>',
+        '</section>',
+        '<section class="lg:col-span-3 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col items-center justify-center shadow-xl">',
+        '<span class="text-xs font-bold text-slate-300 mb-2">持倉市值配置 (Weight)</span>',
+        '<div class="h-44 w-full"><canvas id="portfolio-pie"></canvas></div>',
+        '</section>',
+        '</div>',
+        f'<main id="cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">{cards_html}</main>',
+        '</div>',
+        '<script>',
+        f'const chartConfigs = {charts_json};',
+        f'const pieData = {pie_json};',
+        f'const equityData = {equity_json};',
+        f'const githubRepo = "{GITHUB_REPO}";',
+        """
+        window.addEventListener('DOMContentLoaded', () => {
+            chartConfigs.forEach(cfg => {
+                const ctx = document.getElementById(cfg.id);
+                if (!ctx) return;
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: cfg.dates,
+                        datasets: [
+                            { data: cfg.prices, borderColor: cfg.color, borderWidth: 2, pointRadius: 0, fill: true, backgroundColor: cfg.color + '20', tension: 0.3 },
+                            { data: Array(cfg.dates.length).fill(cfg.fair), borderColor: '#94A3B8', borderDash: [4, 4], borderWidth: 1, pointRadius: 0, fill: false }
+                        ]
                     },
-                    {
-                        label: 'S&P 500 同起點基準',
-                        data: equityData.bench,
-                        borderColor: '#94A3B8', borderDash: [4, 4], borderWidth: 1.5,
-                        pointRadius: 0, fill: false, tension: 0.3
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { x: { display: false }, y: { ticks: { color: '#64748B', font: { size: 9 } }, grid: { color: '#1E293B' } } }
                     }
-                ]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    x: { ticks: { color: '#64748B', font: { size: 9 }, maxTicksLimit: 6 }, grid: { display: false } },
-                    y: { ticks: { color: '#64748B', font: { size: 9 } }, grid: { color: '#1E293B' } }
-                }
-            }
-        });
-    }
-
-    const pieCtx = document.getElementById('portfolio-pie');
-    if (pieCtx && pieData.labels.length > 0) {
-        new Chart(pieCtx, {
-            type: 'doughnut',
-            data: {
-                labels: pieData.labels,
-                datasets: [{ data: pieData.values, backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1', '#14B8A6', '#F97316', '#A855F7'], borderWidth: 0 }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#94A3B8', boxWidth: 8, font: { size: 9 } } } } }
-        });
-    }
-
-    sortCards('risk');
-});
-
-function sortCards(type) {
-    const container = document.getElementById('cards-container');
-    const cards = Array.from(container.querySelectorAll('.stock-card'));
-
-    cards.sort((a, b) => {
-        if (type === 'risk') {
-            return parseFloat(b.dataset.rscore) - parseFloat(a.dataset.rscore);
-        } else if (type === 'mval') {
-            return parseFloat(b.dataset.mval) - parseFloat(a.dataset.mval);
-        } else if (type === 'chg') {
-            return parseFloat(b.dataset.daychg) - parseFloat(a.dataset.daychg);
-        } else if (type === 'margin') {
-            return parseFloat(b.dataset.margin) - parseFloat(a.dataset.margin);
-        }
-        return 0;
-    });
-
-    cards.forEach(card => container.appendChild(card));
-}
-
-function configGithubToken() {
-    const current = localStorage.getItem('gh_pat_token') || '';
-    const input = prompt('【選填】請輸入您的 GitHub Personal Access Token (勾選 repo 與 workflow 權限)。\\nToken 僅安全儲存在您當前瀏覽器的 localStorage 中，設定後點擊重新整理即可直接在背景喚醒 GitHub Actions 重算：', current);
-    if (input !== null) {
-        localStorage.setItem('gh_pat_token', input.trim());
-        alert('設定已儲存！');
-    }
-}
-
-async function triggerSmartRefresh() {
-    const btn = document.getElementById('refresh-btn');
-    const pat = localStorage.getItem('gh_pat_token');
-    btn.innerHTML = '<span>⏳ 正在同步最新數據...</span>';
-    btn.disabled = true;
-
-    try {
-        if (pat) {
-            const res = await fetch(`https://api.github.com/repos/${githubRepo}/dispatches`, {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/vnd.github.v3+json',
-                    'Authorization': `token ${pat}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ event_type: 'trigger-quant-refresh' })
+                });
             });
-            if (res.status === 204) {
-                btn.innerHTML = '<span>✅ 已啟動雲端重算 (約35秒後自動刷新)</span>';
-                setTimeout(() => { window.location.href = window.location.pathname + '?t=' + Date.now(); }, 35000);
-                return;
+
+            const eqCtx = document.getElementById('equity-curve');
+            if (eqCtx && equityData.values.length > 0) {
+                new Chart(eqCtx, {
+                    type: 'line',
+                    data: {
+                        labels: equityData.dates,
+                        datasets: [
+                            {
+                                label: '投資組合淨值 (NT$)',
+                                data: equityData.values,
+                                borderColor: '#10B981', borderWidth: 2.2, pointRadius: 0,
+                                fill: true, backgroundColor: '#10B98118', tension: 0.3
+                            },
+                            {
+                                label: 'S&P 500 同起點基準',
+                                data: equityData.bench,
+                                borderColor: '#94A3B8', borderDash: [4, 4], borderWidth: 1.5,
+                                pointRadius: 0, fill: false, tension: 0.3
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { ticks: { color: '#64748B', font: { size: 9 }, maxTicksLimit: 6 }, grid: { display: false } },
+                            y: { ticks: { color: '#64748B', font: { size: 9 } }, grid: { color: '#1E293B' } }
+                        }
+                    }
+                });
+            }
+
+            const pieCtx = document.getElementById('portfolio-pie');
+            if (pieCtx && pieData.labels.length > 0) {
+                new Chart(pieCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: pieData.labels,
+                        datasets: [{ data: pieData.values, backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1', '#14B8A6', '#F97316', '#A855F7'], borderWidth: 0 }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#94A3B8', boxWidth: 8, font: { size: 9 } } } } }
+                });
+            }
+
+            sortCards('risk');
+        });
+
+        function sortCards(type) {
+            const container = document.getElementById('cards-container');
+            const cards = Array.from(container.querySelectorAll('.stock-card'));
+
+            cards.sort((a, b) => {
+                if (type === 'risk') {
+                    return parseFloat(b.dataset.rscore) - parseFloat(a.dataset.rscore);
+                } else if (type === 'mval') {
+                    return parseFloat(b.dataset.mval) - parseFloat(a.dataset.mval);
+                } else if (type === 'chg') {
+                    return parseFloat(b.dataset.daychg) - parseFloat(a.dataset.daychg);
+                } else if (type === 'margin') {
+                    return parseFloat(b.dataset.margin) - parseFloat(a.dataset.margin);
+                }
+                return 0;
+            });
+
+            cards.forEach(card => container.appendChild(card));
+        }
+
+        function configGithubToken() {
+            const current = localStorage.getItem('gh_pat_token') || '';
+            const input = prompt('【選填】請輸入您的 GitHub Personal Access Token (勾選 repo 與 workflow 權限)。\\nToken 僅安全儲存在您當前瀏覽器的 localStorage 中，設定後點擊重新整理即可直接在背景喚醒 GitHub Actions 重算：', current);
+            if (input !== null) {
+                localStorage.setItem('gh_pat_token', input.trim());
+                alert('設定已儲存！');
             }
         }
-        const stateRes = await fetch('state.json?t=' + Date.now(), { cache: 'no-store' });
-        if (stateRes.ok) {
-            const data = await stateRes.json();
-            document.getElementById('sync-time').innerText = data.updated_at;
-        }
-        window.location.href = window.location.pathname + '?t=' + Date.now();
-    } catch (e) {
-        window.location.reload();
-    }
-}
 
-function filterCards(mode) {
-    const alertSet = ['停損警戒', '移動停利警戒', '單日閃崩警戒', '高風險 (嚴重昂貴)'];
-    document.querySelectorAll('.stock-card').forEach(card => {
-        const market = card.getAttribute('data-market');
-        const risk = card.getAttribute('data-risk');
-        if (mode === 'ALL') card.style.display = 'flex';
-        else if (mode === 'US' || mode === 'TW' || mode === 'FUND') card.style.display = (market === mode) ? 'flex' : 'none';
-        else if (mode === 'ALERT') card.style.display = alertSet.includes(risk) ? 'flex' : 'none';
-    });
-}
-</script>
-</body>
-</html>"""
+        async function triggerSmartRefresh() {
+            const btn = document.getElementById('refresh-btn');
+            const pat = localStorage.getItem('gh_pat_token');
+            btn.innerHTML = '<span>⏳ 正在同步最新數據...</span>';
+            btn.disabled = true;
+
+            try {
+                if (pat) {
+                    const res = await fetch(`https://api.github.com/repos/${githubRepo}/dispatches`, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/vnd.github.v3+json',
+                            'Authorization': `token ${pat}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ event_type: 'trigger-quant-refresh' })
+                    });
+                    if (res.status === 204) {
+                        btn.innerHTML = '<span>✅ 已啟動雲端重算 (約35秒後自動刷新)</span>';
+                        setTimeout(() => { window.location.href = window.location.pathname + '?t=' + Date.now(); }, 35000);
+                        return;
+                    }
+                }
+                const stateRes = await fetch('state.json?t=' + Date.now(), { cache: 'no-store' });
+                if (stateRes.ok) {
+                    const data = await stateRes.json();
+                    document.getElementById('sync-time').innerText = data.updated_at;
+                }
+                window.location.href = window.location.pathname + '?t=' + Date.now();
+            } catch (e) {
+                window.location.reload();
+            }
+        }
+
+        function filterCards(mode) {
+            const alertSet = ['停損警戒', '移動停利警戒', '單日閃崩警戒', '高風險 (嚴重昂貴)'];
+            document.querySelectorAll('.stock-card').forEach(card => {
+                const market = card.getAttribute('data-market');
+                const risk = card.getAttribute('data-risk');
+                if (mode === 'ALL') card.style.display = 'flex';
+                else if (mode === 'US' || mode === 'TW' || mode === 'FUND') card.style.display = (market === mode) ? 'flex' : 'none';
+                else if (mode === 'ALERT') card.style.display = alertSet.includes(risk) ? 'flex' : 'none';
+            });
+        }
+        """,
+        '</script>',
+        '</body>',
+        '</html>'
+    ]
+
+    html = "".join(html_parts)
     with open(DASHBOARD_FILE, "w", encoding="utf-8") as f:
         f.write(html)
     print(f"[完成] 寬螢幕流暢版（含完整安聯基金與排程）操盤室儀表板已輸出至 {DASHBOARD_FILE}")
