@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (Hedge Fund Alpha Full-Width Edition - Complete Allianz Fund)
-- 已將基富通「安聯收益成長基金」完整合併（定期定額 + 單筆申購）：
-  * 總庫存成本：NT$104,815 ｜ 總參考市值：NT$158,869 ｜ 總損益：+NT$54,054 (+51.57%) ｜ 平均成本淨值：$95.12
-- 完美修復「近 30 日投資組合淨值曲線 (Equity Curve)」跨時區對齊顯示
-- 內建定期定額 (DCA) 追蹤：0050.TW (22號扣5000)、009816.TW (22號扣5000)、FUND_ALLIANZ (月扣3000)
+Quantitative Risk & Valuation Engine (Ultimate Autonomous Low-Frequency Edition)
+- 針對 1～2 天看一次盤的習慣量身打造：
+  1. DCA 定期定額自動記帳引擎 (每22號自動將0050/009816/基富通扣款轉為股數與成本累加)
+  2. 近 48 小時資產增減對比 + 頭號功臣與最大拖累自動挑選
+  3. 卡片一鍵智慧排序 (風險優先、市值大小、今日漲跌、安全邊際)
+  4. 智慧 LINE 推播：每21號交割款預警 + 每週五收盤 Alpha 投資週報
+  5. 寬螢幕流暢排版 (Fluid Layout) + 無跳轉背景 API 雲端重算
 """
 
 import os
@@ -28,7 +30,7 @@ WATCHLIST = {
         "name": "安聯收益成長基金(含單筆+定額)", "market": "FUND", "currency": "$", "is_etf": True,
         "shares": 34.73, "target_pe": 20.0, "fallback_fair_value": 141.45,
         "cost": 95.12, "cost_fx": 31.75, "est_yield": 8.0, "stop_loss_pct": None, "trailing_stop_pct": -20.0, "flash_pct": 3.0,
-        "dca_monthly_twd": 3000, "dca_day": None,  # 基富通每月扣繳 3,000 (含單筆總市值 158,869 / 總成本 104,815)
+        "dca_monthly_twd": 3000, "dca_day": 28,  # 基富通每月扣繳 3,000
     },
     "0050.TW": {
         "name": "元大台灣50", "market": "TW", "currency": "NT$", "is_etf": True,
@@ -46,66 +48,79 @@ WATCHLIST = {
         "name": "台積電 (僅監控)", "market": "TW", "currency": "NT$", "is_etf": False,
         "shares": 0, "target_pe": 20.0, "fallback_fair_value": 1350.0,
         "cost": 0.0, "est_yield": 1.5, "stop_loss_pct": None, "trailing_stop_pct": -15.0, "flash_pct": 3.5,
+        "dca_monthly_twd": 0, "dca_day": None,
     },
     "NVDA": {
         "name": "輝達", "market": "US", "currency": "$", "is_etf": False,
         "shares": 16.0, "target_pe": 35.0, "fallback_fair_value": 220.0,
         "cost": 221.22, "cost_fx": 31.8, "est_yield": 0.03, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 4.0,
+        "dca_monthly_twd": 0, "dca_day": None,
     },
     "AMAT": {
         "name": "應用材料", "market": "US", "currency": "$", "is_etf": False,
         "shares": 19.0, "target_pe": 22.0, "fallback_fair_value": 420.0,
         "cost": 316.35, "cost_fx": 31.8, "est_yield": 0.8, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 4.0,
+        "dca_monthly_twd": 0, "dca_day": None,
     },
     "BRK-B": {
         "name": "波克夏 B", "market": "US", "currency": "$", "is_etf": False,
         "shares": 5.0, "target_pe": 20.0, "fallback_fair_value": 510.0,
         "cost": 492.03, "cost_fx": 31.8, "est_yield": 0.0, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 3.0,
+        "dca_monthly_twd": 0, "dca_day": None,
     },
     "COST": {
         "name": "好市多", "market": "US", "currency": "$", "is_etf": False,
         "shares": 8.0, "target_pe": 35.0, "fallback_fair_value": 920.0,
         "cost": 1044.55, "cost_fx": 31.8, "est_yield": 0.5, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 3.0,
+        "dca_monthly_twd": 0, "dca_day": None,
     },
     "LLY": {
         "name": "禮來製藥", "market": "US", "currency": "$", "is_etf": False,
         "shares": 2.0, "target_pe": 40.0, "fallback_fair_value": 1150.0,
         "cost": 1159.82, "cost_fx": 31.8, "est_yield": 0.6, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 4.0,
+        "dca_monthly_twd": 0, "dca_day": None,
     },
     "GLD": {
         "name": "SPDR黃金ETF (僅監控)", "market": "US", "currency": "$", "is_etf": True,
         "shares": 0, "target_pe": 20.0, "fallback_fair_value": 240.0,
         "cost": 0.0, "est_yield": 0.0, "stop_loss_pct": None, "trailing_stop_pct": -20.0, "flash_pct": 2.5,
+        "dca_monthly_twd": 0, "dca_day": None,
     },
     "2337.TW": {
         "name": "旺宏", "market": "TW", "currency": "NT$", "is_etf": False,
         "shares": 50, "target_pe": 20.0, "fallback_fair_value": 183.0,
         "cost": 145.0, "est_yield": 2.5, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 3.5,
+        "dca_monthly_twd": 0, "dca_day": None,
     },
     "2002.TW": {
         "name": "中鋼", "market": "TW", "currency": "NT$", "is_etf": False,
         "shares": 1000, "target_pe": 15.0, "fallback_fair_value": 23.5,
         "cost": 25.0, "est_yield": 3.5, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 2.5,
+        "dca_monthly_twd": 0, "dca_day": None,
     },
     "1232.TW": {
         "name": "大統益", "market": "TW", "currency": "NT$", "is_etf": False,
         "shares": 50, "target_pe": 18.0, "fallback_fair_value": 155.0,
         "cost": 144.0, "est_yield": 4.5, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 2.5,
+        "dca_monthly_twd": 0, "dca_day": None,
     },
     "1904.TW": {
         "name": "正隆", "market": "TW", "currency": "NT$", "is_etf": False,
         "shares": 1, "target_pe": 15.0, "fallback_fair_value": 29.0,
         "cost": 25.75, "est_yield": 3.8, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 2.5,
+        "dca_monthly_twd": 0, "dca_day": None,
     },
     "2616.TW": {
         "name": "山隆", "market": "TW", "currency": "NT$", "is_etf": False,
         "shares": 1, "target_pe": 15.0, "fallback_fair_value": 31.0,
         "cost": 22.1, "est_yield": 4.0, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 2.5,
+        "dca_monthly_twd": 0, "dca_day": None,
     },
     "6182.TWO": {
         "name": "合晶", "market": "TW", "currency": "NT$", "is_etf": False,
         "shares": 120, "target_pe": 20.0, "fallback_fair_value": 130.0,
         "cost": 120.5, "est_yield": 2.8, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 3.5,
+        "dca_monthly_twd": 0, "dca_day": None,
     },
 }
 
@@ -119,7 +134,6 @@ def now_tw_str() -> str:
 
 
 def calc_dca_days_left(dca_day: int) -> int:
-    """計算距離下次每月固定扣款日還有幾天"""
     if not dca_day:
         return 99
     today = datetime.datetime.now(TW_TZ).date()
@@ -135,8 +149,40 @@ def calc_dca_days_left(dca_day: int) -> int:
     return (target - today).days
 
 
+def check_and_execute_dca(watchlist: dict, current_prices: dict, usd_twd: float):
+    """自動定期定額（DCA）記帳引擎：每月扣款日自動累加股數與調整平均成本"""
+    today = datetime.datetime.now(TW_TZ)
+    state = load_state()
+    dca_log = state.get("dca_execution_log", {})
+    current_month_key = today.strftime("%Y-%m")
+
+    updated = False
+    for symbol, meta in watchlist.items():
+        dca_amt = meta.get("dca_monthly_twd", 0)
+        dca_day = meta.get("dca_day")
+        if dca_amt > 0 and dca_day and today.day >= dca_day:
+            log_key = f"{symbol}_{current_month_key}"
+            if log_key not in dca_log and symbol in current_prices:
+                price_ntd = current_prices[symbol] * (usd_twd if meta["market"] == "US" else 1.0)
+                if price_ntd > 0:
+                    bought_shares = round(dca_amt / price_ntd, 2) if meta["market"] == "US" else int(round(dca_amt / price_ntd))
+                    old_shares = float(meta["shares"])
+                    old_cost = float(meta["cost"])
+                    new_shares = old_shares + bought_shares
+                    if new_shares > 0:
+                        new_cost = round(((old_shares * old_cost) + dca_amt) / new_shares, 2)
+                        meta["shares"] = new_shares
+                        meta["cost"] = new_cost
+                        dca_log[log_key] = {"date": now_tw_str(), "amount": dca_amt, "shares_added": bought_shares}
+                        updated = True
+    if updated:
+        state["dca_execution_log"] = dca_log
+        # 同步儲存更新後的狀態
+        with open(STATE_FILE, "w", encoding="utf-8") as f:
+            json.dump(state, f, ensure_ascii=False, indent=2)
+
+
 def strip_tz_series(s: pd.Series) -> pd.Series:
-    """安全移除時區並統一轉為 YYYY-MM-DD 日期索引，解決跨市場 concat 失敗問題"""
     if s is None or s.empty:
         return pd.Series(dtype=float)
     s_copy = s.copy()
@@ -160,15 +206,22 @@ def load_state() -> dict:
                 return json.load(f)
         except Exception:
             pass
-    return {"updated_at": "", "macro_gold": {}, "stocks": {}, "results": []}
+    return {"updated_at": "", "macro_gold": {}, "stocks": {}, "results": [], "dca_execution_log": {}}
 
 
-def save_state(macro_gold: dict, stocks_dict: dict, eval_results: list):
+def save_state(macro_gold: dict, stocks_dict: dict, eval_results: list, prev_total_val: float):
     clean_results = []
     for r in eval_results:
         r_copy = {k: v for k, v in r.items() if k != "raw_series_30d"}
         clean_results.append(r_copy)
-    payload = {"updated_at": now_tw_str(), "macro_gold": macro_gold, "stocks": stocks_dict, "results": clean_results}
+    payload = {
+        "updated_at": now_tw_str(),
+        "macro_gold": macro_gold,
+        "stocks": stocks_dict,
+        "results": clean_results,
+        "prev_total_market_val": prev_total_val,
+        "dca_execution_log": load_state().get("dca_execution_log", {})
+    }
     with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=2)
 
@@ -189,7 +242,6 @@ def get_USD_TWD_rate() -> float:
 # ==========================================
 def fetch_stock_data_with_redundancy(symbol: str, market: str):
     if symbol == "FUND_ALLIANZ":
-        # 建立過去 30 個工作日的標準日期索引，對應基富通最新參考淨值約 $141.45 (平均申購淨值 $95.12, 報酬率 +51.57%)
         b_dates = pd.bdate_range(end=datetime.datetime.now(TW_TZ).date(), periods=30)
         latest_nav = 141.45
         nav_list = [round(latest_nav * (0.985 + 0.0005 * i), 2) for i in range(30)]
@@ -449,7 +501,7 @@ def fetch_macro_gold_radar(prev_macro_state: dict) -> dict:
 
 
 # ==========================================
-# 4. 量化風控矩陣 (整合安聯基金庫存彙整與 DCA 排程)
+# 4. 量化風控矩陣
 # ==========================================
 def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state: dict, macro: dict, fund_data: dict, nlp_score: float, usd_twd: float) -> dict:
     price = market_data["current_price"]
@@ -478,7 +530,6 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
     safety_margin = round(((dynamic_fair - price) / dynamic_fair) * 100, 2)
     premium_rate = round(((price - dynamic_fair) / dynamic_fair) * 100, 2)
     
-    # 安聯收益成長基金直接精確對齊基富通「庫存彙整 TWD」總表 (定期定額 152,328 + 單筆 6,541 = 158,869)
     if symbol == "FUND_ALLIANZ":
         market_value_twd = 158869.0
         invested_cost_twd = 104815.0
@@ -611,7 +662,7 @@ def compute_portfolio_equity_and_benchmark(eval_results: list, sp500_series: pd.
 
 
 # ==========================================
-# 6. 產生寬螢幕滿版操盤室網頁儀表板
+# 6. 產生寬螢幕滿版操盤室網頁儀表板 (含 4 大智慧排序按鈕與 48hr 增減對比)
 # ==========================================
 def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equity_data: dict):
     updated_time = now_tw_str()
@@ -624,6 +675,14 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
     total_pnl_amount = total_market_val - total_invested_cost
     total_pnl_pct = round((total_pnl_amount / total_invested_cost * 100), 2) if total_invested_cost > 0 else 0.0
     total_pnl_color = "text-emerald-400" if total_pnl_amount >= 0 else "text-rose-400"
+
+    # 計算較前次快照之增減金額
+    prev_state = load_state()
+    prev_total_val = float(prev_state.get("prev_total_market_val", total_market_val))
+    diff_val = total_market_val - prev_total_val
+    diff_pct = round((diff_val / prev_total_val * 100.0), 2) if prev_total_val > 0 else 0.0
+    diff_cls = "text-emerald-400" if diff_val >= 0 else "text-rose-400"
+    diff_str = f"{diff_val:+,.0f} ({diff_pct:+.2f}%)" if diff_val != 0 else "與前次持平"
 
     total_annual_div_twd = sum(r["annual_dividend_twd"] for r in eval_results if r["shares"] > 0)
     monthly_div_twd = round(total_annual_div_twd / 12.0, 0)
@@ -681,8 +740,13 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
 
         earnings_grid_text = f"{r['earnings_date_str']} ({edays}天)" if (edays is not None and edays >= 0) else r["earnings_date_str"]
 
+        # 設定排序專用的權重分數 (風險、市值、漲跌幅、安全邊際)
+        risk_score_map = {"停損警戒": 5, "移動停利警戒": 4, "單日閃崩警戒": 3, "高風險 (嚴重昂貴)": 2, "低風險 (買進區)": 1, "合理估值區": 0, "定期定額累積": 0}
+        r_score = risk_score_map.get(r["risk_level"], 0)
+
         cards_html += (
-            '<div class="stock-card bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between backdrop-blur-md transition hover:border-slate-700" data-market="' + r['market'] + '" data-risk="' + r['risk_level'] + '">'
+            f'<div class="stock-card bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between backdrop-blur-md transition hover:border-slate-700" '
+            f'data-market="{r["market"]}" data-risk="{r["risk_level"]}" data-rscore="{r_score}" data-mval="{r["market_value_twd"]}" data-daychg="{r["day_change_pct"]}" data-margin="{r["safety_margin"]}">'
             '<div>'
             '<div class="px-4 py-3 flex justify-between items-center border-b border-slate-800/80" style="background: linear-gradient(90deg, ' + r['color'] + '25 0%, transparent 100%); border-left: 4px solid ' + r['color'] + ';">'
             '<div>'
@@ -768,7 +832,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
                     <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">對沖基金級動態 EPS 與 Alpha 操盤室</h1>
                 </div>
                 <p class="text-xs sm:text-sm text-slate-400 mt-1">
-                    即時匯率 USD/TWD: <span class="text-amber-400 font-mono">""" + f"{usd_twd:.2f}" + """</span> ｜ 每月定期定額: <span class="text-emerald-400 font-bold">NT$""" + f"{total_monthly_dca_twd:,}" + """/月</span> (22號 0050/009816 各5千 + 基富通3千) ｜ 更新時間: <span id="sync-time" class="text-slate-200 font-mono">""" + updated_time + """</span>
+                    即時匯率 USD/TWD: <span class="text-amber-400 font-mono">""" + f"{usd_twd:.2f}" + """</span> ｜ 定期定額: <span class="text-emerald-400 font-bold">NT$""" + f"{total_monthly_dca_twd:,}" + """/月</span> (0050/009816 22號扣5千 + 基富通3千) ｜ 更新時間: <span id="sync-time" class="text-slate-200 font-mono">""" + updated_time + """</span>
                 </p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
@@ -780,23 +844,30 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
                         ⚙️
                     </button>
                 </div>
-                <button onclick="filterCards('ALL')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white shadow">全部標的 (""" + str(total_count) + """)</button>
-                <button onclick="filterCards('US')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">美股 US</button>
-                <button onclick="filterCards('TW')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">台股 TW</button>
-                <button onclick="filterCards('FUND')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">基金 Fund</button>
-                <button onclick="filterCards('ALERT')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-rose-950 text-rose-300 border border-rose-800/80">警戒 (""" + str(high_risk_count) + """)</button>
+                <button onclick="filterCards('ALL')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white shadow">全部 (""" + str(total_count) + """)</button>
+                <button onclick="filterCards('US')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">美股</button>
+                <button onclick="filterCards('TW')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">台股</button>
+                <button onclick="filterCards('FUND')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">基金</button>
+                <button onclick="filterCards('ALERT')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-950 text-rose-300 border border-rose-800/80">警戒 (""" + str(high_risk_count) + """)</button>
+                <!-- 智慧排序按鈕群 -->
+                <div class="flex items-center bg-slate-900 border border-slate-700 rounded-lg overflow-hidden ml-2 shadow">
+                    <button onclick="sortCards('risk')" class="px-2.5 py-1.5 text-[11px] font-bold text-amber-300 hover:bg-slate-800 border-r border-slate-700" title="風險優先排序">🔥 風險優先</button>
+                    <button onclick="sortCards('mval')" class="px-2.5 py-1.5 text-[11px] font-bold text-slate-300 hover:bg-slate-800 border-r border-slate-700" title="依持倉市值排序">💎 市值大小</button>
+                    <button onclick="sortCards('chg')" class="px-2.5 py-1.5 text-[11px] font-bold text-slate-300 hover:bg-slate-800 border-r border-slate-700" title="依今日漲跌排序">🚀 今日漲跌</button>
+                    <button onclick="sortCards('margin')" class="px-2.5 py-1.5 text-[11px] font-bold text-slate-300 hover:bg-slate-800" title="依安全邊際排序">⭐ 安全邊際</button>
+                </div>
             </div>
         </header>
 
-        <!-- 頂部 5 大對沖基金級 KPI -->
+        <!-- 頂部 5 大對沖基金級 KPI (含 48小時增減對比) -->
         <section class="grid grid-cols-2 lg:grid-cols-5 gap-4">
             <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg">
-                <span class="text-xs text-slate-400 block mb-1">總市值 (NT$) / 含基金與匯差成本</span>
+                <span class="text-xs text-slate-400 block mb-1">總市值 (NT$) / 較前次增減</span>
                 <div class="text-xl font-black text-white">NT$""" + f"{total_market_val:,.0f}" + """</div>
-                <span class="text-xs text-slate-400">總投入: NT$""" + f"{total_invested_cost:,.0f}" + """</span>
+                <span class="text-xs font-bold """ + diff_cls + '">48hr 增減: ' + diff_str + '</span>'
             </div>
             <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg">
-                <span class="text-xs text-slate-400 block mb-1">總未實現損益 (含基金彙整)</span>
+                <span class="text-xs text-slate-400 block mb-1">總未實現損益 (含基金)</span>
                 <div class="text-xl font-black """ + total_pnl_color + '">NT$' + f"{total_pnl_amount:+,.0f} ({total_pnl_pct:+.2f}%)" + """</div>
                 <span class="text-xs text-slate-400">近30日 """ + alpha_str + """</span>
             </div>
@@ -852,7 +923,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
             </section>
         </div>
 
-        <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
+        <main id="cards-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
             """ + cards_html + """
         </main>
     </div>
@@ -927,10 +998,33 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
                     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#94A3B8', boxWidth: 8, font: { size: 9 } } } } }
                 });
             }
+
+            // 預設自動以風險優先排序卡片
+            sortCards('risk');
         });
 
+        function sortCards(type) {
+            const container = document.getElementById('cards-container');
+            const cards = Array.from(container.querySelectorAll('.stock-card'));
+
+            cards.sort((a, b) => {
+                if (type === 'risk') {
+                    return parseFloat(b.dataset.rscore) - parseFloat(a.dataset.rscore);
+                } else if (type === 'mval') {
+                    return parseFloat(b.dataset.mval) - parseFloat(a.dataset.mval);
+                } else if (type === 'chg') {
+                    return parseFloat(b.dataset.daychg) - parseFloat(a.dataset.daychg);
+                } else if (type === 'margin') {
+                    return parseFloat(b.dataset.margin) - parseFloat(a.dataset.margin);
+                }
+                return 0;
+            });
+
+            cards.forEach(card => container.appendChild(card));
+        }
+
         function configGithubToken() {
-            const current = localStorage.getItem('gh_pat_token') || '';
+            const current = localStorage.getItem('gh_pat_token'] || '';
             const input = prompt('【選填】請輸入您的 GitHub Personal Access Token (勾選 repo 與 workflow 權限)。\\nToken 僅安全儲存在您當前瀏覽器的 localStorage 中，設定後點擊重新整理即可直接在背景喚醒 GitHub Actions 重算：', current);
             if (input !== null) {
                 localStorage.setItem('gh_pat_token', input.trim());
@@ -987,11 +1081,11 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
 </html>"""
     with open(DASHBOARD_FILE, "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"[完成] 寬螢幕流暢版（含安聯收益成長基金完整庫存彙整）已輸出至 {DASHBOARD_FILE}")
+    print(f"[完成] 全自動低頻檢視版操盤室儀表板已輸出至 {DASHBOARD_FILE}")
 
 
 # ==========================================
-# 7. 主執行入口
+# 7. 主執行入口 (含 DCA 自動記帳與 21號/每週五 LINE 推播)
 # ==========================================
 def main():
     user_id = os.environ.get("LINE_USER_ID")
@@ -999,8 +1093,17 @@ def main():
 
     prev_state = load_state()
     prev_stocks = prev_state.get("stocks", {})
+    prev_total_val = float(prev_state.get("prev_total_market_val", 0.0))
     macro = fetch_macro_gold_radar(prev_state.get("macro_gold", {}))
     usd_twd = get_USD_TWD_rate()
+
+    # 執行 DCA 定期定額自動記帳與累加檢查
+    current_prices_cache = {}
+    for s_sym, s_meta in WATCHLIST.items():
+        s_data = fetch_stock_data_with_redundancy(s_sym, s_meta["market"])
+        if s_data:
+            current_prices_cache[s_sym] = s_data["current_price"]
+    check_and_execute_dca(WATCHLIST, current_prices_cache, usd_twd)
 
     eval_results = []
     new_stocks_dict = {}
@@ -1050,10 +1153,35 @@ def main():
                                       {"type": "text", "text": eval_data["desc"], "size": "xs", "color": "#4B5563", "wrap": True}]}
             })
 
+    # 定期排程 LINE 推播（每月 21 號交割款提醒、每週五收盤 Alpha 週報）
+    today_now = datetime.datetime.now(TW_TZ)
+    if user_id and token:
+        # 每月 21 號提醒
+        if today_now.day == 21:
+            bubbles_to_push.append({
+                "type": "bubble", "size": "mega",
+                "header": {"type": "box", "layout": "vertical", "backgroundColor": "#0D9488", "paddingAll": "15px",
+                           "contents": [{"type": "text", "text": "🗓️ 定期定額扣款前一日提醒", "weight": "bold", "color": "#FFFFFF", "size": "sm"}]},
+                "body": {"type": "box", "layout": "vertical", "spacing": "sm",
+                         "contents": [{"type": "text", "text": "明天 (22號) 將執行 0050、009816 定期定額扣款共 NT$10,000（另有基富通月扣 NT$3,000），請確認交割帳戶餘額充足！", "size": "xs", "wrap": True, "color": "#334155"}]}
+            })
+        # 每週五收盤週報 (週六早上執行)
+        elif today_now.weekday() == 5 and today_now.hour < 10:
+            current_total_val = sum(r["market_value_twd"] for r in eval_results if r["shares"] > 0)
+            bubbles_to_push.append({
+                "type": "bubble", "size": "mega",
+                "header": {"type": "box", "layout": "vertical", "backgroundColor": "#3B82F6", "paddingAll": "15px",
+                           "contents": [{"type": "text", "text": "📊 本週操盤室與 Alpha 週報", "weight": "bold", "color": "#FFFFFF", "size": "sm"}]},
+                "body": {"type": "box", "layout": "vertical", "spacing": "sm",
+                         "contents": [{"type": "text", "text": f"本週總市值: NT${current_total_val:,.0f} ｜ 定期定額持續累積中。祝您週末愉快！", "size": "xs", "wrap": True, "color": "#334155"}]}
+            })
+
     if eval_results:
         sp500_30d = macro.pop("sp500_30d", pd.Series(dtype=float))
         equity_data = compute_portfolio_equity_and_benchmark(eval_results, sp500_30d)
-        save_state(macro, new_stocks_dict, eval_results)
+        
+        current_total_val = sum(r["market_value_twd"] for r in eval_results if r["shares"] > 0)
+        save_state(macro, new_stocks_dict, eval_results, current_total_val)
         generate_pro_dashboard(macro, eval_results, usd_twd, equity_data)
 
         if bubbles_to_push and user_id and token:
@@ -1061,7 +1189,7 @@ def main():
                 "to": user_id,
                 "messages": [{
                     "type": "flex",
-                    "altText": "🛡️【對沖基金操盤室狀態質變通知】",
+                    "altText": "🛡️【對沖基金操盤室定期通知】",
                     "contents": {"type": "carousel", "contents": bubbles_to_push[:10]}
                 }]
             }
@@ -1070,7 +1198,7 @@ def main():
             except Exception:
                 pass
 
-        print("[完成] 寬螢幕流暢版（含安聯收益成長基金完整庫存彙整）操盤平台執行完畢。")
+        print("[完成] 全自動低頻檢視版操盤平台執行完畢。")
 
 
 if __name__ == "__main__":
