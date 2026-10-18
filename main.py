@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (Hedge Fund Alpha Edition)
-- 完整整合 4 大對沖基金級實戰功能：
-  1. 財報開獎倒數雷達 (Earnings Countdown & Gap Risk Alert)
-  2. 預估年化股息與月被動現金流追蹤 (Annual/Monthly Dividend Cashflow KPI)
-  3. 動態加減碼股數試算與部位集中度再平衡 (Position Sizing & >25% Rebalance Calculator)
-  4. 近 30 日組合淨值 vs. S&P 500 大盤基準對比線與 Alpha 超額報酬 (Benchmark & Alpha)
-- 保留全數無瑕防護：雙備援 API (TWSE/Finnhub)、USD/TWD 換匯成本分離、移動停利與閃崩、無跳轉背景刷新
+Quantitative Risk & Valuation Engine (Hedge Fund Alpha Full-Width Edition)
+- 網版全面改為寬螢幕流暢自適應佈局 (Fluid Layout)，消除兩側空白，大螢幕一目了然
+- 保留全數旗艦功能：雙備援 API、財報雷達、股息現金流、S&P500 Alpha 對比與無跳轉重算
 """
 
 import os
@@ -242,7 +238,6 @@ def fetch_from_finnhub(symbol: str):
 
 
 def fetch_fundamentals_and_earnings(symbol: str, meta: dict) -> dict:
-    """一次抓取動態合理價、殖利率與下一季財報倒數日"""
     target_pe = meta.get("target_pe", 20.0)
     fair_val = meta.get("fallback_fair_value", 100.0)
     div_yield_pct = float(meta.get("est_yield", 0.0))
@@ -253,21 +248,17 @@ def fetch_fundamentals_and_earnings(symbol: str, meta: dict) -> dict:
         ticker = yf.Ticker(symbol)
         info = ticker.info or {}
 
-        # 1. 動態 EPS 估值
         if not meta.get("is_etf", False):
             eps = info.get("forwardEps") or info.get("trailingEps")
             if eps and eps > 0:
                 fair_val = round(eps * target_pe, 2)
 
-        # 2. 股息殖利率 (%)
         raw_yield = info.get("dividendYield") or info.get("trailingAnnualDividendYield")
         if raw_yield and raw_yield > 0:
-            # yfinance 有時回傳 0.032 (代表3.2%) 或 3.2
             parsed_y = float(raw_yield) * 100.0 if float(raw_yield) < 0.5 else float(raw_yield)
             if 0 < parsed_y < 25.0:
                 div_yield_pct = round(parsed_y, 2)
 
-        # 3. 財報發布日倒數 (Earnings Date)
         if not meta.get("is_etf", False):
             today_d = datetime.datetime.now(TW_TZ).date()
             ts = info.get("earningsTimestamp") or info.get("earningsTimestampStart")
@@ -280,7 +271,6 @@ def fetch_fundamentals_and_earnings(symbol: str, meta: dict) -> dict:
     except Exception:
         pass
 
-    # 若為美股且無財報日，嘗試用 Finnhub 財報日曆補充
     if earnings_days_left is None and meta["market"] == "US" and not meta.get("is_etf", False):
         finnhub_key = os.environ.get("FINNHUB_API_KEY")
         if finnhub_key:
@@ -365,7 +355,7 @@ def run_vectorized_backtest(close_series: pd.Series) -> dict:
 
 
 # ==========================================
-# 3. 總經與大戶避險雷達 (含 S&P 500 基準序列)
+# 3. 總經與大戶避險雷達
 # ==========================================
 def fetch_macro_gold_radar(prev_macro_state: dict) -> dict:
     try:
@@ -402,7 +392,7 @@ def fetch_macro_gold_radar(prev_macro_state: dict) -> dict:
 
 
 # ==========================================
-# 4. 量化風控矩陣 (含股數試算器、股息與財報預警)
+# 4. 量化風控矩陣
 # ==========================================
 def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state: dict, macro: dict, fund_data: dict, nlp_score: float, usd_twd: float) -> dict:
     price = market_data["current_price"]
@@ -439,7 +429,6 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
     nlp_adjustment = -2.0 if nlp_score < -2 else (2.0 if nlp_score > 2 else 0.0)
     high_risk_threshold = 25.0 + macro.get("premium_shift", 0.0) + nlp_adjustment
 
-    # 計算具體加減碼股數與金額 (Position Sizing Calculator)
     sizing_note = ""
     if not is_etf and stop_loss is not None and cost > 0 and pnl_rate <= stop_loss:
         risk_level, color, action = "停損警戒", "#EF4444", "市價全數平倉 / 嚴格停損"
@@ -496,7 +485,7 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
 
 
 # ==========================================
-# 5. 合成 30日淨值曲線、S&P 500 大盤基準對比與 Alpha
+# 5. 合成淨值曲線與 VaR
 # ==========================================
 def compute_portfolio_equity_and_benchmark(eval_results: list, sp500_series: pd.Series) -> dict:
     active_series = [r["raw_series_30d"] for r in eval_results if r["shares"] > 0 and "raw_series_30d" in r]
@@ -511,7 +500,6 @@ def compute_portfolio_equity_and_benchmark(eval_results: list, sp500_series: pd.
         dates = [d.strftime("%m/%d") for d in portfolio_curve.index]
         values = [round(float(v), 0) for v in portfolio_curve.tolist()]
 
-        # 對齊 S&P 500 並標準化至與投資組合相同的起始金額
         bench_values = list(values)
         alpha_pct = 0.0
         if sp500_series is not None and not sp500_series.empty and len(values) > 1 and values[0] > 0:
@@ -540,7 +528,7 @@ def compute_portfolio_equity_and_benchmark(eval_results: list, sp500_series: pd.
 
 
 # ==========================================
-# 6. 產生對沖基金旗艦版網頁儀表板
+# 6. 產生寬螢幕滿版操盤室網頁儀表板
 # ==========================================
 def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equity_data: dict):
     updated_time = now_tw_str()
@@ -554,7 +542,6 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
     total_pnl_pct = round((total_pnl_amount / total_invested_cost * 100), 2) if total_invested_cost > 0 else 0.0
     total_pnl_color = "text-emerald-400" if total_pnl_amount >= 0 else "text-rose-400"
 
-    # 股息現金流統計
     total_annual_div_twd = sum(r["annual_dividend_twd"] for r in eval_results if r["shares"] > 0)
     monthly_div_twd = round(total_annual_div_twd / 12.0, 0)
     portfolio_yield_pct = round((total_annual_div_twd / total_market_val * 100.0), 2) if total_market_val > 0 else 0.0
@@ -582,7 +569,6 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
         stop_buffer_str = f"{r['stop_buffer_pct']:+.1f}%" if r['stop_buffer_pct'] != 99.9 else "無硬停損"
         unit_label = "股" if r["market"] == "TW" else "股(US)"
 
-        # 計算單一部位佔組合總市值權重與再平衡建議 (>25% 過重預警)
         weight_pct = round((r["market_value_twd"] / total_market_val * 100.0), 1) if (total_market_val > 0 and r["shares"] > 0) else 0.0
         rebalance_html = ""
         if weight_pct > 25.0:
@@ -591,11 +577,10 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
             trim_sh = round(excess_twd / (r["current_price"] * curr_fx), 1) if r["market"] == "US" else max(1, int(round(excess_twd / r["current_price"])))
             rebalance_html = (
                 '<div class="mt-1.5 pt-1.5 border-t border-slate-700/60 text-[11px] text-amber-300 font-semibold">'
-                f'⚖️ 部位佔比達 {weight_pct}% (&gt;25% 集中線)：若再平衡至 20% 建議調節 {trim_sh:g} 股'
+                f'⚖️ 佔比 {weight_pct}% (&gt;25%)：建議調節 {trim_sh:g} 股'
                 '</div>'
             )
 
-        # 財報倒數徽章 (<= 14 天亮起警示)
         earnings_badge_html = ""
         edays = r["earnings_days_left"]
         if edays is not None and 0 <= edays <= 14:
@@ -607,62 +592,62 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
         cards_html += (
             '<div class="stock-card bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between backdrop-blur-md transition hover:border-slate-700" data-market="' + r['market'] + '" data-risk="' + r['risk_level'] + '">'
             '<div>'
-            '<div class="px-5 py-3.5 flex justify-between items-center border-b border-slate-800/80" style="background: linear-gradient(90deg, ' + r['color'] + '25 0%, transparent 100%); border-left: 4px solid ' + r['color'] + ';">'
+            '<div class="px-4 py-3 flex justify-between items-center border-b border-slate-800/80" style="background: linear-gradient(90deg, ' + r['color'] + '25 0%, transparent 100%); border-left: 4px solid ' + r['color'] + ';">'
             '<div>'
             '<div class="flex flex-wrap items-center gap-1.5">'
-            '<span class="text-lg font-black text-white">' + r['symbol'] + '</span>'
-            '<span class="text-xs px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">' + r['market'] + '</span>'
+            '<span class="text-base font-black text-white">' + r['symbol'] + '</span>'
+            '<span class="text-[11px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 font-medium">' + r['market'] + '</span>'
             '<span class="text-xs font-bold ' + day_cls + '">' + f"{r['day_change_pct']:+.2f}%" + '</span>'
             + earnings_badge_html +
             '</div>'
-            '<p class="text-xs text-slate-400 mt-0.5">' + r['name'] + ' (持有: ' + str(r['shares']) + ' ' + unit_label + ' ｜ 權重 ' + str(weight_pct) + '%)</p>'
+            '<p class="text-[11px] text-slate-400 mt-0.5">' + r['name'] + ' (持: ' + str(r['shares']) + ' ' + unit_label + ' ｜ ' + str(weight_pct) + '%)</p>'
             '</div>'
-            '<span class="px-3 py-1 rounded-full text-xs font-extrabold text-white shadow shrink-0" style="background-color: ' + r['color'] + ';">' + r['risk_level'] + '</span>'
+            '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold text-white shadow shrink-0" style="background-color: ' + r['color'] + ';">' + r['risk_level'] + '</span>'
             '</div>'
-            '<div class="p-5 space-y-4">'
+            '<div class="p-4 space-y-3">'
             '<div class="flex justify-between items-end">'
             '<div>'
-            '<span class="text-xs text-slate-400 block mb-1">現價 (動態合理價: <strong class="text-slate-200">' + cur + str(r['fair_value']) + '</strong>)</span>'
-            '<span class="text-3xl font-black text-white">' + cur + str(r['current_price']) + '</span>'
+            '<span class="text-[11px] text-slate-400 block mb-0.5">現價 (合理價: <strong class="text-slate-200">' + cur + str(r['fair_value']) + '</strong>)</span>'
+            '<span class="text-2xl font-black text-white">' + cur + str(r['current_price']) + '</span>'
             '</div>'
             '<div class="text-right">'
-            '<span class="text-xs text-slate-400 block mb-1">原幣損益 / 折合台幣市值</span>'
-            '<span class="text-xl font-black ' + pnl_cls + '">' + f"{r['pnl_rate']:+.1f}%" + '</span>'
+            '<span class="text-[11px] text-slate-400 block mb-0.5">損益 / 市值(NT$)</span>'
+            '<span class="text-lg font-black ' + pnl_cls + '">' + f"{r['pnl_rate']:+.1f}%" + '</span>'
             '<span class="text-xs text-slate-400 block font-mono">NT$' + f"{r['market_value_twd']:,.0f}" + '</span>'
             '</div>'
             '</div>'
-            '<div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">'
-            '<div class="flex justify-between text-xs mb-1.5">'
+            '<div class="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800/80">'
+            '<div class="flex justify-between text-[11px] mb-1">'
             '<span class="text-slate-400">安全邊際量尺</span>'
             '<span class="font-bold" style="color: ' + r['color'] + '">邊際 ' + str(r['safety_margin']) + '% / 溢價 ' + str(r['premium_rate']) + '%</span>'
             '</div>'
-            '<div class="w-full h-2 bg-slate-800 rounded-full relative overflow-hidden">'
+            '<div class="w-full h-1.5 bg-slate-800 rounded-full relative overflow-hidden">'
             '<div class="h-full rounded-full transition-all duration-500" style="width: ' + str(gauge_pct) + '%; background-color: ' + r['color'] + ';"></div>'
             '</div>'
             '</div>'
-            '<div class="h-28 w-full bg-slate-950/50 rounded-xl p-2 border border-slate-800/60">'
+            '<div class="h-24 w-full bg-slate-950/50 rounded-xl p-1.5 border border-slate-800/60">'
             '<canvas id="chart-' + str(idx) + '"></canvas>'
             '</div>'
-            '<div class="grid grid-cols-3 gap-2 text-xs bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">'
-            '<div><span class="text-slate-500">持有成本</span><div class="font-bold text-slate-200">' + cur + str(r['cost']) + '</div></div>'
-            '<div><span class="text-slate-500">200MA 均線</span><div class="font-bold text-slate-200">' + cur + str(r['ma200']) + '</div></div>'
-            '<div><span class="text-slate-500">RSI (14)</span><div class="font-bold text-amber-400">' + str(r['rsi14']) + '</div></div>'
-            '<div><span class="text-slate-500">60D 波段高</span><div class="font-bold text-slate-200">' + cur + str(r['peak_price']) + '</div></div>'
-            '<div><span class="text-slate-500">高點回撤</span><div class="font-bold text-rose-400">' + str(r['drawdown_from_peak']) + '%</div></div>'
+            '<div class="grid grid-cols-3 gap-1.5 text-[11px] bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/60">'
+            '<div><span class="text-slate-500">成本</span><div class="font-bold text-slate-200">' + cur + str(r['cost']) + '</div></div>'
+            '<div><span class="text-slate-500">200MA</span><div class="font-bold text-slate-200">' + cur + str(r['ma200']) + '</div></div>'
+            '<div><span class="text-slate-500">RSI</span><div class="font-bold text-amber-400">' + str(r['rsi14']) + '</div></div>'
+            '<div><span class="text-slate-500">60D高</span><div class="font-bold text-slate-200">' + cur + str(r['peak_price']) + '</div></div>'
+            '<div><span class="text-slate-500">回撤</span><div class="font-bold text-rose-400">' + str(r['drawdown_from_peak']) + '%</div></div>'
             '<div><span class="text-slate-500">停損緩衝</span><div class="font-bold text-purple-400">' + stop_buffer_str + '</div></div>'
-            '<div><span class="text-slate-500">預估殖利率</span><div class="font-bold text-cyan-400">' + str(r['dividend_yield_pct']) + '% (NT$' + f"{r['annual_dividend_twd']:,.0f}" + ')</div></div>'
-            '<div><span class="text-slate-500">下季財報日</span><div class="font-bold text-amber-300">' + earnings_grid_text + '</div></div>'
-            '<div><span class="text-slate-500">回測勝率/情緒</span><div class="font-bold text-emerald-400">' + str(r['backtest']['win_rate']) + '% / ' + str(r['nlp_score']) + '分</div></div>'
+            '<div><span class="text-slate-500">殖利率</span><div class="font-bold text-cyan-400">' + str(r['dividend_yield_pct']) + '%</div></div>'
+            '<div><span class="text-slate-500">財報日</span><div class="font-bold text-amber-300">' + earnings_grid_text + '</div></div>'
+            '<div><span class="text-slate-500">勝率/情緒</span><div class="font-bold text-emerald-400">' + str(r['backtest']['win_rate']) + '%/' + str(r['nlp_score']) + '分</div></div>'
             '</div>'
-            '<div class="p-3.5 rounded-xl border" style="background-color: ' + r['color'] + '15; border-color: ' + r['color'] + '40;">'
+            '<div class="p-3 rounded-xl border" style="background-color: ' + r['color'] + '15; border-color: ' + r['color'] + '40;">'
             '<div class="text-xs font-extrabold" style="color: ' + r['color'] + ';">⚡ 指令：' + r['action'] + '</div>'
-            '<p class="text-xs text-slate-300 mt-1 leading-relaxed">' + r['desc'] + '</p>'
-            '<div class="text-[11px] font-bold text-emerald-300 mt-1.5">' + r['sizing_note'] + '</div>'
+            '<p class="text-[11px] text-slate-300 mt-0.5 leading-relaxed">' + r['desc'] + '</p>'
+            '<div class="text-[11px] font-bold text-emerald-300 mt-1">' + r['sizing_note'] + '</div>'
             + rebalance_html +
             '</div>'
             '</div>'
             '</div>'
-            '<div class="px-5 py-3 bg-slate-950/90 border-t border-slate-800 flex justify-between text-xs">'
+            '<div class="px-4 py-2.5 bg-slate-950/90 border-t border-slate-800 flex justify-between text-xs">'
             '<a href="https://finance.yahoo.com/quote/' + r['symbol'] + '" target="_blank" class="text-blue-400 hover:text-blue-300 font-semibold">Yahoo 報價 ↗</a>'
             '<a href="https://www.tradingview.com/symbols/' + r['symbol'].replace('.TWO', '').replace('.TW', '') + '/" target="_blank" class="text-slate-400 hover:text-slate-200">TradingView 線圖 ↗</a>'
             '</div>'
@@ -682,16 +667,17 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans p-4 sm:p-6 selection:bg-blue-500 selection:text-white">
-    <div class="max-w-7xl mx-auto space-y-6">
-        <header class="flex flex-col md:flex-row justify-between items-center pb-6 border-b border-slate-800 gap-4">
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans p-3 sm:p-5 selection:bg-blue-500 selection:text-white">
+    <!-- 改為全螢幕寬螢幕流暢佈局 (移除 max-w-7xl，改用 w-full 帶適度左右內距) -->
+    <div class="w-full px-2 sm:px-4 space-y-5">
+        <header class="flex flex-col xl:flex-row justify-between items-center pb-5 border-b border-slate-800 gap-4">
             <div>
                 <div class="flex items-center gap-2.5">
                     <span class="h-3 w-3 rounded-full bg-emerald-500 animate-pulse"></span>
                     <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">對沖基金級動態 EPS 與 Alpha 操盤室</h1>
                 </div>
                 <p class="text-xs sm:text-sm text-slate-400 mt-1">
-                    即時匯率 USD/TWD: <span class="text-amber-400 font-mono">""" + f"{usd_twd:.2f}" + """</span> ｜ 財報雷達 + 股息現金流 + S&P500 Alpha 對比 ｜ 更新時間: <span id="sync-time" class="text-slate-200 font-mono">""" + updated_time + """</span>
+                    即時匯率 USD/TWD: <span class="text-amber-400 font-mono">""" + f"{usd_twd:.2f}" + """</span> ｜ 寬螢幕全版流暢佈局 ｜ 更新時間: <span id="sync-time" class="text-slate-200 font-mono">""" + updated_time + """</span>
                 </p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
@@ -710,7 +696,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
             </div>
         </header>
 
-        <!-- 頂部 5 大對沖基金級 KPI (新增股息現金流卡) -->
+        <!-- 頂部 5 大對沖基金級 KPI -->
         <section class="grid grid-cols-2 lg:grid-cols-5 gap-4">
             <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg">
                 <span class="text-xs text-slate-400 block mb-1">總市值 (NT$) / 含匯差成本</span>
@@ -740,8 +726,8 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
         </section>
 
         <!-- 總經雷達 + 30日組合淨值 vs S&P500 基準線 + 持倉圓餅圖 -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <section class="lg:col-span-5 rounded-2xl border p-5 shadow-2xl flex flex-col justify-between" style="background: linear-gradient(135deg, """ + m_color + """22 0%, #0F172A 75%); border-color: """ + m_color + """60;">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            <section class="lg:col-span-4 rounded-2xl border p-5 shadow-2xl flex flex-col justify-between" style="background: linear-gradient(135deg, """ + m_color + """22 0%, #0F172A 75%); border-color: """ + m_color + """60;">
                 <div>
                     <div class="flex justify-between items-center mb-3">
                         <div class="flex items-center gap-2">
@@ -760,21 +746,22 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
                 </div>
             </section>
 
-            <section class="lg:col-span-4 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-xl">
+            <section class="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-xl">
                 <div class="flex justify-between items-center mb-2">
                     <span class="text-xs font-bold text-slate-300">📈 組合淨值 (綠) vs. S&P500 基準 (灰虛線)</span>
                     <span class="text-[10px] font-bold px-2 py-0.5 rounded border """ + alpha_cls + """">""" + alpha_str + """</span>
                 </div>
-                <div class="h-40 w-full"><canvas id="equity-curve"></canvas></div>
+                <div class="h-44 w-full"><canvas id="equity-curve"></canvas></div>
             </section>
             
             <section class="lg:col-span-3 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col items-center justify-center shadow-xl">
                 <span class="text-xs font-bold text-slate-300 mb-2">持倉市值配置 (Weight)</span>
-                <div class="h-40 w-full"><canvas id="portfolio-pie"></canvas></div>
+                <div class="h-44 w-full"><canvas id="portfolio-pie"></canvas></div>
             </section>
         </div>
 
-        <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- 寬螢幕響應式網格：大螢幕一排自動展開 4 到 5 個卡片 -->
+        <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
             """ + cards_html + """
         </main>
     </div>
@@ -909,11 +896,11 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
 </html>"""
     with open(DASHBOARD_FILE, "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"[完成] 對沖基金旗艦版操盤室儀表板已輸出至 {DASHBOARD_FILE}")
+    print(f"[完成] 寬螢幕流暢版操盤室儀表板已輸出至 {DASHBOARD_FILE}")
 
 
 # ==========================================
-# 7. 主執行入口 (含總經與個股質變 LINE 推播)
+# 7. 主執行入口
 # ==========================================
 def main():
     user_id = os.environ.get("LINE_USER_ID")
@@ -992,7 +979,7 @@ def main():
             except Exception:
                 pass
 
-        print("[完成] 對沖基金旗艦版操盤平台執行完畢。")
+        print("[完成] 寬螢幕流暢版操盤平台執行完畢。")
 
 
 if __name__ == "__main__":
