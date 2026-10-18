@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (Ultimate Autonomous Low-Frequency Edition - Added AMZN & Updated NVDA)
-- 新增 AMZN (成本 $250.26, 持有 2 股)
-- 更新 NVDA 成本為 $220.05, 持有股數為 20.01 股
-- 具備 DCA 定期定額自動記帳、48hr 增減對比、一鍵智慧排序、21號扣款與週五週報
+Quantitative Risk & Valuation Engine (Ultimate Autonomous Low-Frequency Edition - Charts Fixed)
+- 已修復中段 30 日組合淨值曲線與右側持倉圓餅圖的 Chart.js 渲染問題
+- 具備 AMZN、更新 NVDA 均價、DCA 定期定額自動記帳、48hr 增減對比與一鍵智慧排序
 """
 
 import os
@@ -27,19 +26,19 @@ WATCHLIST = {
         "name": "安聯收益成長基金(含單筆+定額)", "market": "FUND", "currency": "$", "is_etf": True,
         "shares": 34.73, "target_pe": 20.0, "fallback_fair_value": 141.45,
         "cost": 95.12, "cost_fx": 31.75, "est_yield": 8.0, "stop_loss_pct": None, "trailing_stop_pct": -20.0, "flash_pct": 3.0,
-        "dca_monthly_twd": 3000, "dca_day": 28,  # 基富通每月扣繳 3,000
+        "dca_monthly_twd": 3000, "dca_day": 28,
     },
     "0050.TW": {
         "name": "元大台灣50", "market": "TW", "currency": "NT$", "is_etf": True,
         "shares": 150, "target_pe": 20.0, "fallback_fair_value": 120.0,
         "cost": 84.17, "est_yield": 3.2, "stop_loss_pct": None, "trailing_stop_pct": -20.0, "flash_pct": 2.5,
-        "dca_monthly_twd": 5000, "dca_day": 22,    # 每月 22 號定期定額 5,000
+        "dca_monthly_twd": 5000, "dca_day": 22,
     },
     "009816.TW": {
         "name": "凱基台灣TOP50", "market": "TW", "currency": "NT$", "is_etf": True,
         "shares": 959, "target_pe": 20.0, "fallback_fair_value": 16.0,
         "cost": 15.75, "est_yield": 4.2, "stop_loss_pct": None, "trailing_stop_pct": -20.0, "flash_pct": 2.5,
-        "dca_monthly_twd": 5000, "dca_day": 22,    # 每月 22 號定期定額 5,000
+        "dca_monthly_twd": 5000, "dca_day": 22,
     },
     "AMZN": {
         "name": "亞馬遜", "market": "US", "currency": "$", "is_etf": False,
@@ -839,7 +838,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
         '</div>',
         f'<button onclick="filterCards(\'ALL\')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white shadow">全部 ({total_count})</button>',
         '<button onclick="filterCards(\'US\')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">美股</button>',
-        '<button onclick="filterCards(\'TW\')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">台股</button>',
+        '<button onclick="filterCards(\'TW\')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">台股</button>',
         '<button onclick="filterCards(\'FUND\')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">基金</button>',
         f'<button onclick="filterCards(\'ALERT\')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-950 text-rose-300 border border-rose-800/80">警戒 ({high_risk_count})</button>',
         '<div class="flex items-center bg-slate-900 border border-slate-700 rounded-lg overflow-hidden ml-2 shadow">',
@@ -892,7 +891,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
         f'const pieData = {pie_json};',
         f'const equityData = {equity_json};',
         f'const githubRepo = "{GITHUB_REPO}";',
-        """
+        r"""
         window.addEventListener('DOMContentLoaded', () => {
             chartConfigs.forEach(cfg => {
                 const ctx = document.getElementById(cfg.id);
@@ -1043,7 +1042,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
     html = "".join(html_parts)
     with open(DASHBOARD_FILE, "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"[完成] 寬螢幕流暢版（含 AMZN 與更新 NVDA）操盤室儀表板已輸出至 {DASHBOARD_FILE}")
+    print(f"[完成] 寬螢幕流暢版（含 AMZN 與修復圖表）操盤室儀表板已輸出至 {DASHBOARD_FILE}")
 
 
 # ==========================================
@@ -1156,7 +1155,7 @@ def main():
             except Exception:
                 pass
 
-        print("[完成] 寬螢幕流暢版（含 AMZN 與更新 NVDA）操盤平台執行完畢。")
+        print("[完成] 寬螢幕流暢版（含 AMZN 與修復圖表）操盤平台執行完畢。")
 
 
 if __name__ == "__main__":
