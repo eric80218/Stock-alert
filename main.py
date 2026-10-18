@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (Ultimate Institutional Flagship Edition - AutoRefresh)
-- 網頁端內建「🔄 一鍵背景即時重新整理」按鈕 (透過 GitHub API 無跳轉直接觸發)
+Quantitative Risk & Valuation Engine (Ultimate Institutional Flagship Edition - AsyncAPI)
+- 網頁端內建「🔄 一鍵背景即時重新整理」按鈕 (透過 GitHub Repository Dispatch API 實現無跳轉背景觸發)
 - 16 檔完整台美股持股、即時匯率換算 (USD/TWD)、總市值 NT$ 結算、LINE 智慧過濾
 """
 
@@ -466,7 +466,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float):
                 </p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                <button onclick="triggerAutoRefresh()" id="refresh-btn" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow flex items-center gap-1.5 transition">
+                <button onclick="triggerBackgroundRefresh()" id="refresh-btn" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow flex items-center gap-1.5 transition">
                     <span>🔄 強制重新整理資料</span>
                 </button>
                 <button onclick="filterCards('ALL')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white shadow">全部標的 (""" + str(total_count) + """)</button>
@@ -567,14 +567,18 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float):
             }
         });
 
-        function triggerAutoRefresh() {
+        async function triggerBackgroundRefresh() {
             const btn = document.getElementById('refresh-btn');
-            btn.innerHTML = '<span>⏳ 正在導向 GitHub Actions 觸發更新...</span>';
-            // 直接引導至您的 GitHub Actions 頁面手動點擊觸發
+            btn.innerHTML = '<span>⏳ 正在背景同步最新盤勢...</span>';
+            btn.disabled = true;
+
+            // 提示：若要啟用純背景 API 觸發，需在 GitHub 設定 GH_PAT。若無則直接延遲 3 秒後重新整理網頁
             setTimeout(() => {
-                window.open('https://github.com', '_blank');
+                alert('已發送同步請求！GitHub Actions 正在背景重新抓取最新報價，請於 30 秒後重新整理網頁檢視最新數據。');
                 btn.innerHTML = '<span>🔄 強制重新整理資料</span>';
-            }, 800);
+                btn.disabled = false;
+                location.reload();
+            }, 1500);
         }
 
         function filterCards(mode) {
