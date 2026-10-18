@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-18 08:04:11",
+  "updated_at": "2026-10-18 08:14:11",
   "macro_gold": {
     "bubble_level": "資金安穩：市場多頭運行",
     "color": "#10B981",
@@ -18,91 +18,91 @@
       "risk_level": "低風險 (買進區)",
       "current_price": 2420.0,
       "peak_price": 2590.0,
-      "updated_at": "2026-10-18 08:04:05"
+      "updated_at": "2026-10-18 08:14:06"
     },
     "NVDA": {
       "risk_level": "低風險 (買進區)",
       "current_price": 214.13,
       "peak_price": 243.37,
-      "updated_at": "2026-10-18 08:04:05"
+      "updated_at": "2026-10-18 08:14:06"
     },
     "AMAT": {
       "risk_level": "合理估值區",
       "current_price": 409.29,
       "peak_price": 563.16,
-      "updated_at": "2026-10-18 08:04:05"
+      "updated_at": "2026-10-18 08:14:06"
     },
     "BRK-B": {
       "risk_level": "合理估值區",
       "current_price": 532.02,
       "peak_price": 537.74,
-      "updated_at": "2026-10-18 08:04:06"
+      "updated_at": "2026-10-18 08:14:07"
     },
     "COST": {
       "risk_level": "合理估值區",
       "current_price": 989.11,
       "peak_price": 1008.37,
-      "updated_at": "2026-10-18 08:04:06"
+      "updated_at": "2026-10-18 08:14:07"
     },
     "LLY": {
       "risk_level": "低風險 (買進區)",
       "current_price": 1257.03,
       "peak_price": 1292.65,
-      "updated_at": "2026-10-18 08:04:07"
+      "updated_at": "2026-10-18 08:14:08"
     },
     "GLD": {
       "risk_level": "高風險 (嚴重昂貴)",
       "current_price": 382.01,
       "peak_price": 429.42,
-      "updated_at": "2026-10-18 08:04:07"
+      "updated_at": "2026-10-18 08:14:08"
     },
     "0050.TW": {
       "risk_level": "合理估值區",
       "current_price": 109.0,
       "peak_price": 116.6,
-      "updated_at": "2026-10-18 08:04:08"
+      "updated_at": "2026-10-18 08:14:08"
     },
     "2337.TW": {
       "risk_level": "停損警戒",
       "current_price": 107.0,
       "peak_price": 144.5,
-      "updated_at": "2026-10-18 08:04:08"
+      "updated_at": "2026-10-18 08:14:09"
     },
     "2002.TW": {
       "risk_level": "停損警戒",
       "current_price": 19.55,
       "peak_price": 19.9,
-      "updated_at": "2026-10-18 08:04:09"
+      "updated_at": "2026-10-18 08:14:09"
     },
     "1232.TW": {
       "risk_level": "合理估值區",
       "current_price": 157.0,
       "peak_price": 160.0,
-      "updated_at": "2026-10-18 08:04:09"
+      "updated_at": "2026-10-18 08:14:09"
     },
     "1904.TW": {
       "risk_level": "高風險 (嚴重昂貴)",
       "current_price": 25.35,
       "peak_price": 26.45,
-      "updated_at": "2026-10-18 08:04:10"
+      "updated_at": "2026-10-18 08:14:10"
     },
     "2616.TW": {
       "risk_level": "停損警戒",
       "current_price": 13.15,
       "peak_price": 13.98,
-      "updated_at": "2026-10-18 08:04:10"
+      "updated_at": "2026-10-18 08:14:10"
     },
     "009816.TW": {
       "risk_level": "合理估值區",
       "current_price": 16.2,
       "peak_price": 17.09,
-      "updated_at": "2026-10-18 08:04:11"
+      "updated_at": "2026-10-18 08:14:10"
     },
     "6182.TWO": {
       "risk_level": "高風險 (嚴重昂貴)",
       "current_price": 110.5,
       "peak_price": 143.0,
-      "updated_at": "2026-10-18 08:04:11"
+      "updated_at": "2026-10-18 08:14:11"
     }
   },
   "results": [
@@ -225,7 +225,7 @@
       "color": "#10B981",
       "action": "啟動第 1 批建倉：買進 1/3",
       "desc": "安全邊際達 61.6% 且多頭排列。",
-      "nlp_score": 0.0,
+      "nlp_score": 5.0,
       "backtest": {
         "return_pct": -14.6,
         "max_drawdown": -23.3,
@@ -320,7 +320,7 @@
       "color": "#3B82F6",
       "action": "定期定額 / 維持續抱",
       "desc": "處於合理估值防禦帶內。",
-      "nlp_score": 0.0,
+      "nlp_score": -2.0,
       "backtest": {
         "return_pct": 30.2,
         "max_drawdown": -35.5,
@@ -510,7 +510,7 @@
       "color": "#3B82F6",
       "action": "定期定額 / 維持續抱",
       "desc": "處於合理估值防禦帶內。",
-      "nlp_score": 0.0,
+      "nlp_score": 5.0,
       "backtest": {
         "return_pct": 2.6,
         "max_drawdown": -16.4,
@@ -605,7 +605,7 @@
       "color": "#10B981",
       "action": "啟動第 1 批建倉：買進 1/3",
       "desc": "安全邊際達 33.4% 且多頭排列。",
-      "nlp_score": 0.0,
+      "nlp_score": 2.0,
       "backtest": {
         "return_pct": -13.2,
         "max_drawdown": -34.5,
@@ -700,7 +700,7 @@
       "color": "#EF4444",
       "action": "執行減碼：賣出持倉 1/3",
       "desc": "溢價率達 59.2%，估值透支。",
-      "nlp_score": 0.0,
+      "nlp_score": 5.0,
       "backtest": {
         "return_pct": -2.2,
         "max_drawdown": -27.3,
