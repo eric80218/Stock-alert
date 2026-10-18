@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-18 07:58:17",
+  "updated_at": "2026-10-18 08:04:11",
   "macro_gold": {
     "bubble_level": "資金安穩：市場多頭運行",
     "color": "#10B981",
@@ -18,120 +18,114 @@
       "risk_level": "低風險 (買進區)",
       "current_price": 2420.0,
       "peak_price": 2590.0,
-      "updated_at": "2026-10-18 07:58:09"
+      "updated_at": "2026-10-18 08:04:05"
     },
     "NVDA": {
       "risk_level": "低風險 (買進區)",
       "current_price": 214.13,
       "peak_price": 243.37,
-      "updated_at": "2026-10-18 07:58:09"
+      "updated_at": "2026-10-18 08:04:05"
     },
     "AMAT": {
       "risk_level": "合理估值區",
       "current_price": 409.29,
       "peak_price": 563.16,
-      "updated_at": "2026-10-18 07:58:10"
+      "updated_at": "2026-10-18 08:04:05"
     },
     "BRK-B": {
       "risk_level": "合理估值區",
       "current_price": 532.02,
       "peak_price": 537.74,
-      "updated_at": "2026-10-18 07:58:11"
+      "updated_at": "2026-10-18 08:04:06"
     },
     "COST": {
       "risk_level": "合理估值區",
       "current_price": 989.11,
       "peak_price": 1008.37,
-      "updated_at": "2026-10-18 07:58:11"
+      "updated_at": "2026-10-18 08:04:06"
     },
     "LLY": {
       "risk_level": "低風險 (買進區)",
       "current_price": 1257.03,
       "peak_price": 1292.65,
-      "updated_at": "2026-10-18 07:58:12"
-    },
-    "VRT": {
-      "risk_level": "停損警戒",
-      "current_price": 206.42,
-      "peak_price": 302.42,
-      "updated_at": "2026-10-18 07:58:13"
+      "updated_at": "2026-10-18 08:04:07"
     },
     "GLD": {
       "risk_level": "高風險 (嚴重昂貴)",
       "current_price": 382.01,
       "peak_price": 429.42,
-      "updated_at": "2026-10-18 07:58:13"
+      "updated_at": "2026-10-18 08:04:07"
     },
     "0050.TW": {
       "risk_level": "合理估值區",
       "current_price": 109.0,
       "peak_price": 116.6,
-      "updated_at": "2026-10-18 07:58:13"
+      "updated_at": "2026-10-18 08:04:08"
     },
     "2337.TW": {
       "risk_level": "停損警戒",
       "current_price": 107.0,
       "peak_price": 144.5,
-      "updated_at": "2026-10-18 07:58:14"
+      "updated_at": "2026-10-18 08:04:08"
     },
     "2002.TW": {
       "risk_level": "停損警戒",
       "current_price": 19.55,
       "peak_price": 19.9,
-      "updated_at": "2026-10-18 07:58:14"
+      "updated_at": "2026-10-18 08:04:09"
     },
     "1232.TW": {
       "risk_level": "合理估值區",
       "current_price": 157.0,
       "peak_price": 160.0,
-      "updated_at": "2026-10-18 07:58:15"
+      "updated_at": "2026-10-18 08:04:09"
     },
     "1904.TW": {
       "risk_level": "高風險 (嚴重昂貴)",
       "current_price": 25.35,
       "peak_price": 26.45,
-      "updated_at": "2026-10-18 07:58:15"
+      "updated_at": "2026-10-18 08:04:10"
     },
     "2616.TW": {
       "risk_level": "停損警戒",
       "current_price": 13.15,
       "peak_price": 13.98,
-      "updated_at": "2026-10-18 07:58:16"
+      "updated_at": "2026-10-18 08:04:10"
     },
     "009816.TW": {
       "risk_level": "合理估值區",
       "current_price": 16.2,
       "peak_price": 17.09,
-      "updated_at": "2026-10-18 07:58:16"
+      "updated_at": "2026-10-18 08:04:11"
     },
     "6182.TWO": {
       "risk_level": "高風險 (嚴重昂貴)",
       "current_price": 110.5,
       "peak_price": 143.0,
-      "updated_at": "2026-10-18 07:58:17"
+      "updated_at": "2026-10-18 08:04:11"
     }
   },
   "results": [
     {
       "symbol": "2330.TW",
-      "name": "台積電",
+      "name": "台積電 (僅監控)",
       "market": "TW",
       "currency": "NT$",
       "current_price": 2420.0,
       "fair_value": 2972.23,
-      "cost": 920.0,
-      "shares": 1000.0,
-      "market_value_twd": 2420000.0,
-      "invested_cost_twd": 920000.0,
+      "cost": 0.0,
+      "shares": 0.0,
+      "market_value_twd": 0.0,
+      "invested_cost_twd": 0.0,
       "safety_margin": 18.58,
       "premium_rate": -18.58,
-      "pnl_rate": 163.04,
+      "pnl_rate": 0.0,
       "ma200": 2137.84,
       "ma20": 2491.0,
       "rsi14": 41.7,
       "peak_price": 2590.0,
       "drawdown_from_peak": -6.56,
-      "stop_buffer_pct": 173.0,
+      "stop_buffer_pct": 99.9,
       "risk_level": "低風險 (買進區)",
       "color": "#10B981",
       "action": "啟動第 1 批建倉：買進 1/3",
@@ -680,101 +674,6 @@
         1208.74,
         1251.61,
         1257.03
-      ]
-    },
-    {
-      "symbol": "VRT",
-      "name": "維諦技術",
-      "market": "US",
-      "currency": "$",
-      "current_price": 206.42,
-      "fair_value": 275.79,
-      "cost": 321.39,
-      "shares": 8.0,
-      "market_value_twd": 53550.3,
-      "invested_cost_twd": 83376.28,
-      "safety_margin": 25.15,
-      "premium_rate": -25.15,
-      "pnl_rate": -35.77,
-      "ma200": 268.2,
-      "ma20": 242.2,
-      "rsi14": 27.3,
-      "peak_price": 302.42,
-      "drawdown_from_peak": -31.74,
-      "stop_buffer_pct": -25.8,
-      "risk_level": "停損警戒",
-      "color": "#EF4444",
-      "action": "市價全數平倉 / 嚴格停損",
-      "desc": "成本損益達 -35.8%，跌破防線。",
-      "nlp_score": 0.0,
-      "backtest": {
-        "return_pct": -7.1,
-        "max_drawdown": -37.6,
-        "win_rate": 47.8
-      },
-      "history_dates": [
-        "09/04",
-        "09/08",
-        "09/09",
-        "09/10",
-        "09/11",
-        "09/14",
-        "09/15",
-        "09/16",
-        "09/17",
-        "09/18",
-        "09/21",
-        "09/22",
-        "09/23",
-        "09/24",
-        "09/25",
-        "09/28",
-        "09/29",
-        "09/30",
-        "10/01",
-        "10/02",
-        "10/05",
-        "10/06",
-        "10/07",
-        "10/08",
-        "10/09",
-        "10/12",
-        "10/13",
-        "10/14",
-        "10/15",
-        "10/16"
-      ],
-      "history_prices": [
-        280.46,
-        290.76,
-        262.83,
-        248.07,
-        257.0,
-        237.39,
-        234.61,
-        239.41,
-        241.49,
-        249.39,
-        250.86,
-        253.46,
-        248.78,
-        245.3,
-        253.28,
-        244.04,
-        248.34,
-        241.31,
-        246.12,
-        252.18,
-        253.62,
-        253.14,
-        246.49,
-        243.73,
-        242.78,
-        239.36,
-        237.29,
-        222.83,
-        214.75,
-        206.42
       ]
     },
     {
