@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (Ultimate Autonomous Low-Frequency Edition - Updated Cost Basis)
-- 已更新台股最新帳面成交均價 (0050: 84.17, 009816: 15.75, 2002: 21.05 等)
+Quantitative Risk & Valuation Engine (Ultimate Autonomous Low-Frequency Edition - Added AMZN & Updated NVDA)
+- 新增 AMZN (成本 $250.26, 持有 2 股)
+- 更新 NVDA 成本為 $220.05, 持有股數為 20.01 股
 - 具備 DCA 定期定額自動記帳、48hr 增減對比、一鍵智慧排序、21號扣款與週五週報
 """
 
@@ -17,7 +18,7 @@ import pandas as pd
 import yfinance as yf
 
 # ==========================================
-# 1. 完整持股與定期定額 (DCA) 監控清單設定 (已更新最新台股均價)
+# 1. 完整持股與定期定額 (DCA) 監控清單設定
 # ==========================================
 GITHUB_REPO = os.environ.get("GITHUB_REPOSITORY", "eric80218/Stock-alert")
 
@@ -40,16 +41,16 @@ WATCHLIST = {
         "cost": 15.75, "est_yield": 4.2, "stop_loss_pct": None, "trailing_stop_pct": -20.0, "flash_pct": 2.5,
         "dca_monthly_twd": 5000, "dca_day": 22,    # 每月 22 號定期定額 5,000
     },
-    "2330.TW": {
-        "name": "台積電 (僅監控)", "market": "TW", "currency": "NT$", "is_etf": False,
-        "shares": 0, "target_pe": 20.0, "fallback_fair_value": 1350.0,
-        "cost": 0.0, "est_yield": 1.5, "stop_loss_pct": None, "trailing_stop_pct": -15.0, "flash_pct": 3.5,
+    "AMZN": {
+        "name": "亞馬遜", "market": "US", "currency": "$", "is_etf": False,
+        "shares": 2.0, "target_pe": 35.0, "fallback_fair_value": 240.0,
+        "cost": 250.26, "cost_fx": 31.8, "est_yield": 0.0, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 4.0,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "NVDA": {
         "name": "輝達", "market": "US", "currency": "$", "is_etf": False,
-        "shares": 16.0, "target_pe": 35.0, "fallback_fair_value": 220.0,
-        "cost": 221.22, "cost_fx": 31.8, "est_yield": 0.03, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 4.0,
+        "shares": 20.01, "target_pe": 35.0, "fallback_fair_value": 220.0,
+        "cost": 220.05, "cost_fx": 31.8, "est_yield": 0.03, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 4.0,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "AMAT": {
@@ -80,6 +81,12 @@ WATCHLIST = {
         "name": "SPDR黃金ETF (僅監控)", "market": "US", "currency": "$", "is_etf": True,
         "shares": 0, "target_pe": 20.0, "fallback_fair_value": 240.0,
         "cost": 0.0, "est_yield": 0.0, "stop_loss_pct": None, "trailing_stop_pct": -20.0, "flash_pct": 2.5,
+        "dca_monthly_twd": 0, "dca_day": None,
+    },
+    "2330.TW": {
+        "name": "台積電 (僅監控)", "market": "TW", "currency": "NT$", "is_etf": False,
+        "shares": 0, "target_pe": 20.0, "fallback_fair_value": 1350.0,
+        "cost": 0.0, "est_yield": 1.5, "stop_loss_pct": None, "trailing_stop_pct": -15.0, "flash_pct": 3.5,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "2337.TW": {
@@ -885,7 +892,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
         f'const pieData = {pie_json};',
         f'const equityData = {equity_json};',
         f'const githubRepo = "{GITHUB_REPO}";',
-        r"""
+        """
         window.addEventListener('DOMContentLoaded', () => {
             chartConfigs.forEach(cfg => {
                 const ctx = document.getElementById(cfg.id);
@@ -976,7 +983,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
 
         function configGithubToken() {
             const current = localStorage.getItem('gh_pat_token') || '';
-            const input = prompt('【選填】請輸入您的 GitHub Personal Access Token (勾選 repo 與 workflow 權限)。\nToken 僅安全儲存在您當前瀏覽器的 localStorage 中，設定後點擊重新整理即可直接在背景喚醒 GitHub Actions 重算：', current);
+            const input = prompt('【選填】請輸入您的 GitHub Personal Access Token (勾選 repo 與 workflow 權限).\nToken 僅安全儲存在您當前瀏覽器的 localStorage 中，設定後點擊重新整理即可直接在背景喚醒 GitHub Actions 重算：', current);
             if (input !== null) {
                 localStorage.setItem('gh_pat_token', input.trim());
                 alert('設定已儲存！');
@@ -1036,7 +1043,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
     html = "".join(html_parts)
     with open(DASHBOARD_FILE, "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"[完成] 寬螢幕流暢版（含最新台股均價）操盤室儀表板已輸出至 {DASHBOARD_FILE}")
+    print(f"[完成] 寬螢幕流暢版（含 AMZN 與更新 NVDA）操盤室儀表板已輸出至 {DASHBOARD_FILE}")
 
 
 # ==========================================
@@ -1149,7 +1156,7 @@ def main():
             except Exception:
                 pass
 
-        print("[完成] 寬螢幕流暢版（含最新台股均價）操盤平台執行完畢。")
+        print("[完成] 寬螢幕流暢版（含 AMZN 與更新 NVDA）操盤平台執行完畢。")
 
 
 if __name__ == "__main__":
