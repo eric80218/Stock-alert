@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (Ultimate Institutional Flagship Edition)
-- 網頁端內建「🔄 強制重新整理與同步資料」按鈕
-- 16 檔完整台美股持股監控、即時匯率換算 (USD/TWD)、總市值 NT$ 結算、LINE 智慧過濾
+Quantitative Risk & Valuation Engine (Ultimate Institutional Flagship Edition - Fixed)
+- 已修復 Python f-string 與 JavaScript 大括號衝突的語法錯誤 (SyntaxError)
+- 16 檔完整台美股持股（VRT 已移除，2330.TW 純監控）、即時匯率換算 (USD/TWD)、總市值 NT$ 結算、LINE 智慧過濾
 """
 
 import os
@@ -353,7 +353,8 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
 
 
 def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float):
-    updated_time, total_count = now_tw_str(), len(eval_results)
+    updated_time = now_tw_str()
+    total_count = len(eval_results)
     high_risk_count = sum(1 for r in eval_results if r["risk_level"] in ["停損警戒", "高風險 (嚴重昂貴)"])
     
     total_market_val = sum(r["market_value_twd"] for r in eval_results if r["shares"] > 0)
@@ -379,73 +380,71 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float):
         gauge_pct = round(50.0 + (max(-40.0, min(40.0, r["safety_margin"])) / 40.0) * 45.0, 1)
         stop_buffer_str = f"{r['stop_buffer_pct']:+.1f}%" if r['stop_buffer_pct'] != 99.9 else "無硬停損"
 
-        cards_html += f"""
-        <div class="stock-card bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between backdrop-blur-md transition hover:border-slate-700" data-market="{r['market']}" data-risk="{r['risk_level']}">
-            <div>
-                <div class="px-5 py-3.5 flex justify-between items-center border-b border-slate-800/80" style="background: linear-gradient(90deg, {r['color']}25 0%, transparent 100%); border-left: 4px solid {r['color']};">
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-lg font-black text-white">{r['symbol']}</span>
-                            <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">{r['market']}</span>
-                        </div>
-                        <p class="text-xs text-slate-400">{r['name']} (持股: {r['shares']})</p>
-                    </div>
-                    <span class="px-3 py-1 rounded-full text-xs font-extrabold text-white shadow" style="background-color: {r['color']};">{r['risk_level']}</span>
-                </div>
-                <div class="p-5 space-y-4">
-                    <div class="flex justify-between items-end">
-                        <div>
-                            <span class="text-xs text-slate-400 block mb-1">現價 (動態合理價: <strong class="text-slate-200">{cur}{r['fair_value']}</strong>)</span>
-                            <span class="text-3xl font-black text-white">{cur}{r['current_price']}</span>
-                        </div>
-                        <div class="text-right">
-                            <span class="text-xs text-slate-400 block mb-1">持倉損益 / 市值(NT$)</span>
-                            <span class="text-xl font-black {pnl_cls}">{r['pnl_rate']:+.1f}%</span>
-                            <span class="text-xs text-slate-400 block font-mono">NT${r['market_value_twd']:,.0f}</span>
-                        </div>
-                    </div>
-                    <div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">
-                        <div class="flex justify-between text-xs mb-1.5">
-                            <span class="text-slate-400">安全邊際量尺</span>
-                            <span class="font-bold" style="color: {r['color']}">邊際 {r['safety_margin']}% / 溢價 {r['premium_rate']}%</span>
-                        </div>
-                        <div class="w-full h-2 bg-slate-800 rounded-full relative overflow-hidden">
-                            <div class="h-full rounded-full transition-all duration-500" style="width: {gauge_pct}%; background-color: {r['color']};"></div>
-                        </div>
-                    </div>
-                    <div class="h-28 w-full bg-slate-950/50 rounded-xl p-2 border border-slate-800/60">
-                        <canvas id="chart-{idx}"></canvas>
-                    </div>
-                    <div class="grid grid-cols-3 gap-2 text-xs bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">
-                        <div><span class="text-slate-500">持有成本</span><div class="font-bold text-slate-200">{cur}{r['cost']}</div></div>
-                        <div><span class="text-slate-500">200MA 均線</span><div class="font-bold text-slate-200">{cur}{r['ma200']}</div></div>
-                        <div><span class="text-slate-500">RSI (14)</span><div class="font-bold text-amber-400">{r['rsi14']}</div></div>
-                        <div><span class="text-slate-500">60D 波段高</span><div class="font-bold text-slate-200">{cur}{r['peak_price']}</div></div>
-                        <div><span class="text-slate-500">高點回撤</span><div class="font-bold text-rose-400">{r['drawdown_from_peak']}%</div></div>
-                        <div><span class="text-slate-500">停損緩衝</span><div class="font-bold text-purple-400">{stop_buffer_str}</div></div>
-                        <div><span class="text-slate-500">AI新聞情緒</span><div class="font-bold text-blue-400">{r['nlp_score']} 分</div></div>
-                        <div><span class="text-slate-500">回測勝率</span><div class="font-bold text-emerald-400">{r['backtest']['win_rate']}%</div></div>
-                        <div><span class="text-slate-500">策略回撤</span><div class="font-bold text-rose-400">{r['backtest']['max_drawdown']}%</div></div>
-                    </div>
-                    <div class="p-3.5 rounded-xl border" style="background-color: {r['color']}15; border-color: {r['color']}40;">
-                        <div class="text-xs font-extrabold" style="color: {r['color']};">⚡ 指令：{r['action']}</div>
-                        <p class="text-xs text-slate-300 mt-1 leading-relaxed">{r['desc']}</p>
-                    </div>
-                </div>
-            </div>
-            <div class="px-5 py-3 bg-slate-950/90 border-t border-slate-800 flex justify-between text-xs">
-                <a href="https://finance.yahoo.com/quote/{r['symbol']}" target="_blank" class="text-blue-400 hover:text-blue-300 font-semibold">Yahoo 報價 ↗</a>
-                <a href="https://www.tradingview.com/symbols/{r['symbol'].replace('.TW', '')}/" target="_blank" class="text-slate-400 hover:text-slate-200">TradingView 線圖 ↗</a>
-            </div>
-        </div>
-        """
+        cards_html += (
+            '<div class="stock-card bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between backdrop-blur-md transition hover:border-slate-700" data-market="' + r['market'] + '" data-risk="' + r['risk_level'] + '">'
+            '<div>'
+            '<div class="px-5 py-3.5 flex justify-between items-center border-b border-slate-800/80" style="background: linear-gradient(90deg, ' + r['color'] + '25 0%, transparent 100%); border-left: 4px solid ' + r['color'] + ';">'
+            '<div>'
+            '<div class="flex items-center gap-2">'
+            '<span class="text-lg font-black text-white">' + r['symbol'] + '</span>'
+            '<span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">' + r['market'] + '</span>'
+            '</div>'
+            '<p class="text-xs text-slate-400">' + r['name'] + ' (持股: ' + str(r['shares']) + ')</p>'
+            '</div>'
+            '<span class="px-3 py-1 rounded-full text-xs font-extrabold text-white shadow" style="background-color: ' + r['color'] + ';">' + r['risk_level'] + '</span>'
+            '</div>'
+            '<div class="p-5 space-y-4">'
+            '<div class="flex justify-between items-end">'
+            '<div>'
+            '<span class="text-xs text-slate-400 block mb-1">現價 (動態合理價: <strong class="text-slate-200">' + cur + str(r['fair_value']) + '</strong>)</span>'
+            '<span class="text-3xl font-black text-white">' + cur + str(r['current_price']) + '</span>'
+            '</div>'
+            '<div class="text-right">'
+            '<span class="text-xs text-slate-400 block mb-1">持倉損益 / 市值(NT$)</span>'
+            '<span class="text-xl font-black ' + pnl_cls + '">' + f"{r['pnl_rate']:+.1f}%" + '</span>'
+            '<span class="text-xs text-slate-400 block font-mono">NT$' + f"{r['market_value_twd']:,.0f}" + '</span>'
+            '</div>'
+            '</div>'
+            '<div class="bg-slate-950/70 p-3 rounded-xl border border-slate-800/80">'
+            '<div class="flex justify-between text-xs mb-1.5">'
+            '<span class="text-slate-400">安全邊際量尺</span>'
+            '<span class="font-bold" style="color: ' + r['color'] + '">邊際 ' + str(r['safety_margin']) + '% / 溢價 ' + str(r['premium_rate']) + '%</span>'
+            '</div>'
+            '<div class="w-full h-2 bg-slate-800 rounded-full relative overflow-hidden">'
+            '<div class="h-full rounded-full transition-all duration-500" style="width: ' + str(gauge_pct) + '%; background-color: ' + r['color'] + ';"></div>'
+            '</div>'
+            '</div>'
+            '<div class="h-28 w-full bg-slate-950/50 rounded-xl p-2 border border-slate-800/60">'
+            '<canvas id="chart-' + str(idx) + '"></canvas>'
+            '</div>'
+            '<div class="grid grid-cols-3 gap-2 text-xs bg-slate-950/60 p-3 rounded-xl border border-slate-800/60">'
+            '<div><span class="text-slate-500">持有成本</span><div class="font-bold text-slate-200">' + cur + str(r['cost']) + '</div></div>'
+            '<div><span class="text-slate-500">200MA 均線</span><div class="font-bold text-slate-200">' + cur + str(r['ma200']) + '</div></div>'
+            '<div><span class="text-slate-500">RSI (14)</span><div class="font-bold text-amber-400">' + str(r['rsi14']) + '</div></div>'
+            '<div><span class="text-slate-500">60D 波段高</span><div class="font-bold text-slate-200">' + cur + str(r['peak_price']) + '</div></div>'
+            '<div><span class="text-slate-500">高點回撤</span><div class="font-bold text-rose-400">' + str(r['drawdown_from_peak']) + '%</div></div>'
+            '<div><span class="text-slate-500">停損緩衝</span><div class="font-bold text-purple-400">' + stop_buffer_str + '</div></div>'
+            '<div><span class="text-slate-500">AI新聞情緒</span><div class="font-bold text-blue-400">' + str(r['nlp_score']) + ' 分</div></div>'
+            '<div><span class="text-slate-500">回測勝率</span><div class="font-bold text-emerald-400">' + str(r['backtest']['win_rate']) + '%</div></div>'
+            '<div><span class="text-slate-500">策略回撤</span><div class="font-bold text-rose-400">' + str(r['backtest']['max_drawdown']) + '%</div></div>'
+            '</div>'
+            '<div class="p-3.5 rounded-xl border" style="background-color: ' + r['color'] + '15; border-color: ' + r['color'] + '40;">'
+            '<div class="text-xs font-extrabold" style="color: ' + r['color'] + ';">⚡ 指令：' + r['action'] + '</div>'
+            '<p class="text-xs text-slate-300 mt-1 leading-relaxed">' + r['desc'] + '</p>'
+            '</div>'
+            '</div>'
+            '</div>'
+            '<div class="px-5 py-3 bg-slate-950/90 border-t border-slate-800 flex justify-between text-xs">'
+            '<a href="https://finance.yahoo.com/quote/' + r['symbol'] + '" target="_blank" class="text-blue-400 hover:text-blue-300 font-semibold">Yahoo 報價 ↗</a>'
+            '<a href="https://www.tradingview.com/symbols/' + r['symbol'].replace('.TW', '') + '/" target="_blank" class="text-slate-400 hover:text-slate-200">TradingView 線圖 ↗</a>'
+            '</div>'
+            '</div>'
+        )
 
     charts_json = json.dumps([{"id": f"chart-{idx}", "dates": r["history_dates"], "prices": r["history_prices"], "fair": r["fair_value"], "color": r["color"]} for idx, r in enumerate(eval_results)], ensure_ascii=False)
     pie_json = json.dumps({"labels": pie_labels, "values": pie_values}, ensure_ascii=False)
 
-    # 取得專案的 GitHub Repo 網址以便自動建構重新整理按鈕連結
-    repo_actions_url = "https://github.com/settings/tokens" # 預設導向設定或提示
-    html = f"""<!DOCTYPE html>
+    html = """<!DOCTYPE html>
 <html lang="zh-TW" class="dark">
 <head>
     <meta charset="UTF-8">
@@ -463,60 +462,59 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float):
                     <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">機構級旗艦動態 EPS 操盤室</h1>
                 </div>
                 <p class="text-xs sm:text-sm text-slate-400 mt-1">
-                    即時匯率 USD/TWD: <span class="text-amber-400 font-mono">{usd_twd:.2f}</span> ｜ 雙 API 備援 + AI 新聞情感分析 ｜ 更新時間: <span class="text-slate-200 font-mono">{updated_time}</span>
+                    即時匯率 USD/TWD: <span class="text-amber-400 font-mono">""" + f"{usd_twd:.2f}" + """</span> ｜ 雙 API 備援 + AI 新聞情感分析 ｜ 更新時間: <span class="text-slate-200 font-mono">""" + updated_time + """</span>
                 </p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                <!-- 即時強制重新整理按鈕 -->
                 <a href="https://github.com" target="_blank" onclick="triggerRefresh(event)" id="refresh-btn" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow flex items-center gap-1.5 transition">
                     <span>🔄 強制重新整理資料</span>
                 </a>
-                <button onclick="filterCards('ALL')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white shadow">全部標的 ({total_count})</button>
+                <button onclick="filterCards('ALL')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white shadow">全部標的 (""" + str(total_count) + """)</button>
                 <button onclick="filterCards('US')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">美股 US</button>
                 <button onclick="filterCards('TW')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">台股 TW</button>
-                <button onclick="filterCards('ALERT')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-rose-950 text-rose-300 border border-rose-800/80">警戒 ({high_risk_count})</button>
+                <button onclick="filterCards('ALERT')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-rose-950 text-rose-300 border border-rose-800/80">警戒 (""" + str(high_risk_count) + """)</button>
             </div>
         </header>
 
         <section class="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg">
                 <span class="text-xs text-slate-400 block mb-1">總市值 (NT$) / 總成本</span>
-                <div class="text-xl sm:text-2xl font-black text-white">NT${total_market_val:,.0f}</div>
-                <span class="text-xs text-slate-400">總投入: NT${total_invested_cost:,.0f}</span>
+                <div class="text-xl sm:text-2xl font-black text-white">NT$""" + f"{total_market_val:,.0f}" + """</div>
+                <span class="text-xs text-slate-400">總投入: NT$""" + f"{total_invested_cost:,.0f}" + """</span>
             </div>
             <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg">
                 <span class="text-xs text-slate-400 block mb-1">組合總未實現損益 (NT$)</span>
-                <div class="text-xl sm:text-2xl font-black {total_pnl_color}">NT${total_pnl_amount:+,.0f} ({total_pnl_pct:+.2f}%)</div>
+                <div class="text-xl sm:text-2xl font-black """ + total_pnl_color + '">NT$' + f"{total_pnl_amount:+,.0f} ({total_pnl_pct:+.2f}%)" + """</div>
             </div>
             <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg">
                 <span class="text-xs text-slate-400 block mb-1">高科技持倉濃度曝險 (Tech)</span>
-                <div class="text-xl sm:text-2xl font-black text-amber-400">{tech_exposure_pct}%</div>
+                <div class="text-xl sm:text-2xl font-black text-amber-400">""" + str(tech_exposure_pct) + """%</div>
                 <span class="text-xs text-slate-400">過度集中警報門檻 &gt;75%</span>
             </div>
             <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg">
                 <span class="text-xs text-slate-400 block mb-1">市場總體避險狀態</span>
-                <div class="text-lg sm:text-xl font-black" style="color: {macro['color']};">{macro['bubble_level']}</div>
-                <span class="text-xs text-slate-400">VIX: {macro['vix']} | 費半: ${macro['sox_price']}</span>
+                <div class="text-lg sm:text-xl font-black" style="color: """ + macro['color'] + """;">""" + macro['bubble_level'] + """</div>
+                <span class="text-xs text-slate-400">VIX: """ + str(macro['vix']) + """ | 費半: $""" + str(macro['sox_price']) + """</span>
             </div>
         </section>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <section class="lg:col-span-2 rounded-2xl border p-5 shadow-2xl flex flex-col justify-between" style="background: linear-gradient(135deg, {m_color}22 0%, #0F172A 75%); border-color: {m_color}60;">
+            <section class="lg:col-span-2 rounded-2xl border p-5 shadow-2xl flex flex-col justify-between" style="background: linear-gradient(135deg, """ + m_color + """22 0%, #0F172A 75%); border-color: """ + m_color + """60;">
                 <div>
                     <div class="flex justify-between items-center mb-3">
                         <div class="flex items-center gap-2.5">
                             <span class="text-xl">🛡️</span>
                             <h2 class="text-base sm:text-lg font-black text-white">華爾街總經與大戶避險戰情雷達</h2>
                         </div>
-                        <span class="px-4 py-1.5 rounded-full text-xs font-extrabold text-white shadow-md" style="background-color: {m_color};">{macro['bubble_level']}</span>
+                        <span class="px-4 py-1.5 rounded-full text-xs font-extrabold text-white shadow-md" style="background-color: """ + m_color + """;">""" + macro['bubble_level'] + """</span>
                     </div>
-                    <p class="text-xs sm:text-sm text-slate-200 leading-relaxed mb-4">{macro['action']} — {macro['desc']}</p>
+                    <p class="text-xs sm:text-sm text-slate-200 leading-relaxed mb-4">""" + macro['action'] + """ — """ + macro['desc'] + """</p>
                 </div>
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-slate-950/80 p-4 rounded-xl border border-slate-800/80">
-                    <div><span class="text-slate-400 block mb-0.5">VIX 恐慌指數</span><div class="text-base font-bold text-amber-400">{macro['vix']}</div></div>
-                    <div><span class="text-slate-400 block mb-0.5">費半指數 (^SOX)</span><div class="text-base font-bold {sox_cls}">${macro['sox_price']}</div></div>
-                    <div><span class="text-slate-400 block mb-0.5">大戶避險 SPXU 量比</span><div class="text-base font-bold {spxu_cls}">{macro['spxu_vol_ratio']}x</div></div>
-                    <div><span class="text-slate-400 block mb-0.5">美元指數 (DXY)</span><div class="text-base font-bold text-blue-400">{macro['dxy_price']}</div></div>
+                    <div><span class="text-slate-400 block mb-0.5">VIX 恐慌指數</span><div class="text-base font-bold text-amber-400">""" + str(macro['vix']) + """</div></div>
+                    <div><span class="text-slate-400 block mb-0.5">費半指數 (^SOX)</span><div class="text-base font-bold """ + sox_cls + """">$""" + str(macro['sox_price']) + """</div></div>
+                    <div><span class="text-slate-400 block mb-0.5">大戶避險 SPXU 量比</span><div class="text-base font-bold """ + spxu_cls + """">""" + str(macro['spxu_vol_ratio']) + """x</div></div>
+                    <div><span class="text-slate-400 block mb-0.5">美元指數 (DXY)</span><div class="text-base font-bold text-blue-400">""" + str(macro['dxy_price']) + """</div></div>
                 </div>
             </section>
             
@@ -527,68 +525,67 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float):
         </div>
 
         <main class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {cards_html}
+            """ + cards_html + """
         </main>
     </div>
 
     <script>
-        const chartConfigs = {charts_json};
-        const pieData = {pie_json};
+        const chartConfigs = """ + charts_json + """;
+        const pieData = """ + pie_json + """;
 
-        window.addEventListener('DOMContentLoaded', () => {{
-            chartConfigs.forEach(cfg => {{
+        window.addEventListener('DOMContentLoaded', () => {
+            chartConfigs.forEach(cfg => {
                 const ctx = document.getElementById(cfg.id);
                 if (!ctx) return;
-                new Chart(ctx, {{
+                new Chart(ctx, {
                     type: 'line',
-                    data: {{
+                    data: {
                         labels: cfg.dates,
                         datasets: [
-                            {{ data: cfg.prices, borderColor: cfg.color, borderWidth: 2, pointRadius: 0, fill: true, backgroundColor: cfg.color + '20', tension: 0.3 }},
-                            {{ data: Array(cfg.dates.length).fill(cfg.fair), borderColor: '#94A3B8', borderDash: [4, 4], borderWidth: 1, pointRadius: 0, fill: false }}
+                            { data: cfg.prices, borderColor: cfg.color, borderWidth: 2, pointRadius: 0, fill: true, backgroundColor: cfg.color + '20', tension: 0.3 },
+                            { data: Array(cfg.dates.length).fill(cfg.fair), borderColor: '#94A3B8', borderDash: [4, 4], borderWidth: 1, pointRadius: 0, fill: false }
                         ]
-                    }},
-                    options: {{
+                    },
+                    options: {
                         responsive: true, maintainAspectRatio: false,
-                        plugins: {{ legend: {{ display: false }} }},
-                        scales: {{ x: {{ display: false }}, y: {{ ticks: {{ color: '#64748B', font: {{ size: 9 }} }}, grid: {{ color: '#1E293B' }} }} }}
-                    }}
-                }});
-            }});
+                        plugins: { legend: { display: false } },
+                        scales: { x: { display: false }, y: { ticks: { color: '#64748B', font: { size: 9 } }, grid: { color: '#1E293B' } } }
+                    }
+                });
+            });
 
             const pieCtx = document.getElementById('portfolio-pie');
-            if (pieCtx && pieData.labels.length > 0) {{
-                new Chart(pieCtx, {{
+            if (pieCtx && pieData.labels.length > 0) {
+                new Chart(pieCtx, {
                     type: 'doughnut',
-                    data: {{
+                    data: {
                         labels: pieData.labels,
-                        datasets: [{{ data: pieData.values, backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1', '#14B8A6', '#F97316', '#A855F7'], borderWidth: 0 }}]
-                    }},
-                    options: {{ responsive: true, maintainAspectRatio: false, plugins: {{ legend: {{ position: 'right', labels: {{ color: '#94A3B8', boxWidth: 8, font: {{ size: 9 }} }} }} }} }}
-                }});
-            }}
-        }});
+                        datasets: [{ data: pieData.values, backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1', '#14B8A6', '#F97316', '#A855F7'], borderWidth: 0 }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#94A3B8', boxWidth: 8, font: { size: 9 } } } } }
+                });
+            }
+        });
 
-        function triggerRefresh(e) {{
+        function triggerRefresh(e) {
             e.preventDefault();
             const btn = document.getElementById('refresh-btn');
             btn.innerHTML = '<span>⏳ 正在導向 GitHub Actions 觸發更新...</span>';
-            // 請在此處將下方網址替換為您個人的 GitHub Actions 頁面網址
-            setTimeout(() => {{
+            setTimeout(() => {
                 window.open('https://github.com', '_blank');
                 btn.innerHTML = '<span>🔄 強制重新整理資料</span>';
             }, 800);
-        }}
+        }
 
-        function filterCards(mode) {{
-            document.querySelectorAll('.stock-card').forEach(card => {{
+        function filterCards(mode) {
+            document.querySelectorAll('.stock-card').forEach(card => {
                 const market = card.getAttribute('data-market');
                 const risk = card.getAttribute('data-risk');
                 if (mode === 'ALL') card.style.display = 'flex';
                 else if (mode === 'US' || mode === 'TW') card.style.display = (market === mode) ? 'flex' : 'none';
                 else if (mode === 'ALERT') card.style.display = (risk === '停損警戒' || risk === '高風險 (嚴重昂貴)') ? 'flex' : 'none';
-            }});
-        }}
+            });
+        }
     </script>
 </body>
 </html>"""
