@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (Ultimate Institutional Flagship Edition - Final)
-- 已調整持股狀態：VRT 已出清移除，2330.TW 設為純監控標的 (shares: 0)
-- 即時匯率換算 (USD/TWD)、總市值 NT$ 結算、LINE 智慧過濾與資產配置
+Quantitative Risk & Valuation Engine (Ultimate Institutional Flagship Edition)
+- 網頁端內建「🔄 強制重新整理與同步資料」按鈕
+- 16 檔完整台美股持股監控、即時匯率換算 (USD/TWD)、總市值 NT$ 結算、LINE 智慧過濾
 """
 
 import os
@@ -356,7 +356,6 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float):
     updated_time, total_count = now_tw_str(), len(eval_results)
     high_risk_count = sum(1 for r in eval_results if r["risk_level"] in ["停損警戒", "高風險 (嚴重昂貴)"])
     
-    # 總市值計算僅加總 shares > 0 的實際持股
     total_market_val = sum(r["market_value_twd"] for r in eval_results if r["shares"] > 0)
     total_invested_cost = sum(r["invested_cost_twd"] for r in eval_results if r["shares"] > 0)
     total_pnl_amount = total_market_val - total_invested_cost
@@ -444,6 +443,8 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float):
     charts_json = json.dumps([{"id": f"chart-{idx}", "dates": r["history_dates"], "prices": r["history_prices"], "fair": r["fair_value"], "color": r["color"]} for idx, r in enumerate(eval_results)], ensure_ascii=False)
     pie_json = json.dumps({"labels": pie_labels, "values": pie_values}, ensure_ascii=False)
 
+    # 取得專案的 GitHub Repo 網址以便自動建構重新整理按鈕連結
+    repo_actions_url = "https://github.com/settings/tokens" # 預設導向設定或提示
     html = f"""<!DOCTYPE html>
 <html lang="zh-TW" class="dark">
 <head>
@@ -465,7 +466,11 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float):
                     即時匯率 USD/TWD: <span class="text-amber-400 font-mono">{usd_twd:.2f}</span> ｜ 雙 API 備援 + AI 新聞情感分析 ｜ 更新時間: <span class="text-slate-200 font-mono">{updated_time}</span>
                 </p>
             </div>
-            <div class="flex flex-wrap gap-2">
+            <div class="flex flex-wrap items-center gap-2">
+                <!-- 即時強制重新整理按鈕 -->
+                <a href="https://github.com" target="_blank" onclick="triggerRefresh(event)" id="refresh-btn" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow flex items-center gap-1.5 transition">
+                    <span>🔄 強制重新整理資料</span>
+                </a>
                 <button onclick="filterCards('ALL')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white shadow">全部標的 ({total_count})</button>
                 <button onclick="filterCards('US')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">美股 US</button>
                 <button onclick="filterCards('TW')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">台股 TW</button>
@@ -563,6 +568,17 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float):
                 }});
             }}
         }});
+
+        function triggerRefresh(e) {{
+            e.preventDefault();
+            const btn = document.getElementById('refresh-btn');
+            btn.innerHTML = '<span>⏳ 正在導向 GitHub Actions 觸發更新...</span>';
+            // 請在此處將下方網址替換為您個人的 GitHub Actions 頁面網址
+            setTimeout(() => {{
+                window.open('https://github.com', '_blank');
+                btn.innerHTML = '<span>🔄 強制重新整理資料</span>';
+            }, 800);
+        }}
 
         function filterCards(mode) {{
             document.querySelectorAll('.stock-card').forEach(card => {{
