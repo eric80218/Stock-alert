@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (Ultimate Autonomous Low-Frequency Edition - Syntax Fixed)
-- 已完全修復 Python 多行字串與 JavaScript 語法衝突造成的 SyntaxError
+Quantitative Risk & Valuation Engine (Ultimate Autonomous Low-Frequency Edition - Updated Cost Basis)
+- 已更新台股最新帳面成交均價 (0050: 84.17, 009816: 15.75, 2002: 21.05 等)
 - 具備 DCA 定期定額自動記帳、48hr 增減對比、一鍵智慧排序、21號扣款與週五週報
 """
 
@@ -17,7 +17,7 @@ import pandas as pd
 import yfinance as yf
 
 # ==========================================
-# 1. 完整持股與定期定額 (DCA) 監控清單設定
+# 1. 完整持股與定期定額 (DCA) 監控清單設定 (已更新最新台股均價)
 # ==========================================
 GITHUB_REPO = os.environ.get("GITHUB_REPOSITORY", "eric80218/Stock-alert")
 
@@ -31,13 +31,13 @@ WATCHLIST = {
     "0050.TW": {
         "name": "元大台灣50", "market": "TW", "currency": "NT$", "is_etf": True,
         "shares": 150, "target_pe": 20.0, "fallback_fair_value": 120.0,
-        "cost": 73.4, "est_yield": 3.2, "stop_loss_pct": None, "trailing_stop_pct": -20.0, "flash_pct": 2.5,
+        "cost": 84.17, "est_yield": 3.2, "stop_loss_pct": None, "trailing_stop_pct": -20.0, "flash_pct": 2.5,
         "dca_monthly_twd": 5000, "dca_day": 22,    # 每月 22 號定期定額 5,000
     },
     "009816.TW": {
         "name": "凱基台灣TOP50", "market": "TW", "currency": "NT$", "is_etf": True,
         "shares": 959, "target_pe": 20.0, "fallback_fair_value": 16.0,
-        "cost": 15.49, "est_yield": 4.2, "stop_loss_pct": None, "trailing_stop_pct": -20.0, "flash_pct": 2.5,
+        "cost": 15.75, "est_yield": 4.2, "stop_loss_pct": None, "trailing_stop_pct": -20.0, "flash_pct": 2.5,
         "dca_monthly_twd": 5000, "dca_day": 22,    # 每月 22 號定期定額 5,000
     },
     "2330.TW": {
@@ -91,7 +91,7 @@ WATCHLIST = {
     "2002.TW": {
         "name": "中鋼", "market": "TW", "currency": "NT$", "is_etf": False,
         "shares": 1000, "target_pe": 15.0, "fallback_fair_value": 23.5,
-        "cost": 25.0, "est_yield": 3.5, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 2.5,
+        "cost": 21.05, "est_yield": 3.5, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 2.5,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "1232.TW": {
@@ -103,13 +103,13 @@ WATCHLIST = {
     "1904.TW": {
         "name": "正隆", "market": "TW", "currency": "NT$", "is_etf": False,
         "shares": 1, "target_pe": 15.0, "fallback_fair_value": 29.0,
-        "cost": 25.75, "est_yield": 3.8, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 2.5,
+        "cost": 25.0, "est_yield": 3.8, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 2.5,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "2616.TW": {
         "name": "山隆", "market": "TW", "currency": "NT$", "is_etf": False,
         "shares": 1, "target_pe": 15.0, "fallback_fair_value": 31.0,
-        "cost": 22.1, "est_yield": 4.0, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 2.5,
+        "cost": 22.0, "est_yield": 4.0, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 2.5,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "6182.TWO": {
@@ -885,7 +885,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
         f'const pieData = {pie_json};',
         f'const equityData = {equity_json};',
         f'const githubRepo = "{GITHUB_REPO}";',
-        """
+        r"""
         window.addEventListener('DOMContentLoaded', () => {
             chartConfigs.forEach(cfg => {
                 const ctx = document.getElementById(cfg.id);
@@ -976,7 +976,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
 
         function configGithubToken() {
             const current = localStorage.getItem('gh_pat_token') || '';
-            const input = prompt('【選填】請輸入您的 GitHub Personal Access Token (勾選 repo 與 workflow 權限)。\\nToken 僅安全儲存在您當前瀏覽器的 localStorage 中，設定後點擊重新整理即可直接在背景喚醒 GitHub Actions 重算：', current);
+            const input = prompt('【選填】請輸入您的 GitHub Personal Access Token (勾選 repo 與 workflow 權限)。\nToken 僅安全儲存在您當前瀏覽器的 localStorage 中，設定後點擊重新整理即可直接在背景喚醒 GitHub Actions 重算：', current);
             if (input !== null) {
                 localStorage.setItem('gh_pat_token', input.trim());
                 alert('設定已儲存！');
@@ -1036,7 +1036,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
     html = "".join(html_parts)
     with open(DASHBOARD_FILE, "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"[完成] 寬螢幕流暢版（含完整安聯基金與排程）操盤室儀表板已輸出至 {DASHBOARD_FILE}")
+    print(f"[完成] 寬螢幕流暢版（含最新台股均價）操盤室儀表板已輸出至 {DASHBOARD_FILE}")
 
 
 # ==========================================
@@ -1149,7 +1149,7 @@ def main():
             except Exception:
                 pass
 
-        print("[完成] 寬螢幕流暢版（含完整安聯基金與排程）操盤平台執行完畢。")
+        print("[完成] 寬螢幕流暢版（含最新台股均價）操盤平台執行完畢。")
 
 
 if __name__ == "__main__":
