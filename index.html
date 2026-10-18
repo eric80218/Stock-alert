@@ -16,13 +16,13 @@
                     <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">機構級旗艦動態 EPS 操盤室</h1>
                 </div>
                 <p class="text-xs sm:text-sm text-slate-400 mt-1">
-                    即時匯率 USD/TWD: <span class="text-amber-400 font-mono">32.43</span> ｜ 雙 API 備援 + AI 新聞情感分析 ｜ 更新時間: <span class="text-slate-200 font-mono">2026-10-18 08:27:29</span>
+                    即時匯率 USD/TWD: <span class="text-amber-400 font-mono">32.43</span> ｜ 雙 API 備援 + AI 新聞情感分析 ｜ 更新時間: <span class="text-slate-200 font-mono">2026-10-18 08:32:34</span>
                 </p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                <a href="https://github.com" target="_blank" onclick="triggerRefresh(event)" id="refresh-btn" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow flex items-center gap-1.5 transition">
+                <button onclick="triggerAutoRefresh()" id="refresh-btn" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow flex items-center gap-1.5 transition">
                     <span>🔄 強制重新整理資料</span>
-                </a>
+                </button>
                 <button onclick="filterCards('ALL')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white shadow">全部標的 (15)</button>
                 <button onclick="filterCards('US')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">美股 US</button>
                 <button onclick="filterCards('TW')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">台股 TW</button>
@@ -121,10 +121,10 @@
             }
         });
 
-        function triggerRefresh(e) {
-            e.preventDefault();
+        function triggerAutoRefresh() {
             const btn = document.getElementById('refresh-btn');
             btn.innerHTML = '<span>⏳ 正在導向 GitHub Actions 觸發更新...</span>';
+            // 直接引導至您的 GitHub Actions 頁面手動點擊觸發
             setTimeout(() => {
                 window.open('https://github.com', '_blank');
                 btn.innerHTML = '<span>🔄 強制重新整理資料</span>';
