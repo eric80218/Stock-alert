@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (Ultimate Autonomous Low-Frequency Edition - Dual-Currency Dry Powder)
-- 更新 NVDA：加碼 2 股，總持股更新為 22.01 股，成交均價更新為 $219.80
-- 升級「台美雙幣戰備金池」：
-  * 台股交割戶獨立加碼戰備金：RESERVE_CASH_TWD = NT$12,960 (自動試算台股可買股數)
-  * 美股帳戶可動資金：US_RESERVE_CASH_USD = $369.78 (自動試算美股可買零股數)
-- 具備台積電(2股/2405)、旺宏/合晶出清監控、DCA 自動記帳、48hr 增減對比與一鍵智慧排序
+Quantitative Risk & Valuation Engine (Ultimate Autonomous Low-Frequency Edition - Full Valuation Calibrated)
+- 全面校準 17 檔標的之估值模型：
+  1. 下修已出清之旺宏(2337.TW -> 92元)與合晶(6182.TWO -> 96元)合理價，嚴格把關未來抄底價位
+  2. 空手監控標的(0股)若遇單日重挫，改顯示「空手避開閃崩」，不計入右上角持倉警戒數
+  3. ETF (0050/009816/GLD) 改採「200MA 年線 × 1.05」動態合理價，徹底解決死板目標價問題
+  4. 景氣循環股 (2002/1904/2616) 加入 EPS 谷底防呆保護，防止微利期算出極端低估值
 """
 
 import os
@@ -37,61 +37,61 @@ WATCHLIST = {
     },
     "0050.TW": {
         "name": "元大台灣50", "market": "TW", "currency": "NT$", "is_etf": True,
-        "shares": 150, "target_pe": 20.0, "fallback_fair_value": 120.0,
+        "shares": 150, "target_pe": 20.0, "fallback_fair_value": 195.0,
         "cost": 84.17, "est_yield": 3.2, "stop_loss_pct": None, "trailing_stop_pct": -20.0, "flash_pct": 2.5,
         "dca_monthly_twd": 5000, "dca_day": 22,
     },
     "009816.TW": {
         "name": "凱基台灣TOP50", "market": "TW", "currency": "NT$", "is_etf": True,
-        "shares": 959, "target_pe": 20.0, "fallback_fair_value": 16.0,
+        "shares": 959, "target_pe": 20.0, "fallback_fair_value": 16.5,
         "cost": 15.75, "est_yield": 4.2, "stop_loss_pct": None, "trailing_stop_pct": -20.0, "flash_pct": 2.5,
         "dca_monthly_twd": 5000, "dca_day": 22,
     },
     "2330.TW": {
         "name": "台積電", "market": "TW", "currency": "NT$", "is_etf": False,
-        "shares": 2, "target_pe": 20.0, "fallback_fair_value": 1350.0,
+        "shares": 2, "target_pe": 24.0, "fallback_fair_value": 2750.0,
         "cost": 2405.0, "est_yield": 1.5, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 3.5,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "AMZN": {
         "name": "亞馬遜", "market": "US", "currency": "$", "is_etf": False,
-        "shares": 2.0, "target_pe": 35.0, "fallback_fair_value": 240.0,
+        "shares": 2.0, "target_pe": 32.0, "fallback_fair_value": 275.0,
         "cost": 250.26, "cost_fx": 31.8, "est_yield": 0.0, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 4.0,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "NVDA": {
         "name": "輝達", "market": "US", "currency": "$", "is_etf": False,
-        "shares": 22.01, "target_pe": 35.0, "fallback_fair_value": 220.0,
+        "shares": 22.01, "target_pe": 35.0, "fallback_fair_value": 250.0,
         "cost": 219.80, "cost_fx": 31.8, "est_yield": 0.03, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 4.0,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "AMAT": {
         "name": "應用材料", "market": "US", "currency": "$", "is_etf": False,
-        "shares": 19.0, "target_pe": 22.0, "fallback_fair_value": 420.0,
+        "shares": 19.0, "target_pe": 22.0, "fallback_fair_value": 410.0,
         "cost": 316.35, "cost_fx": 31.8, "est_yield": 0.8, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 4.0,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "BRK-B": {
         "name": "波克夏 B", "market": "US", "currency": "$", "is_etf": False,
-        "shares": 5.0, "target_pe": 20.0, "fallback_fair_value": 510.0,
+        "shares": 5.0, "target_pe": 21.0, "fallback_fair_value": 550.0,
         "cost": 492.03, "cost_fx": 31.8, "est_yield": 0.0, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 3.0,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "COST": {
         "name": "好市多", "market": "US", "currency": "$", "is_etf": False,
-        "shares": 8.0, "target_pe": 35.0, "fallback_fair_value": 920.0,
+        "shares": 8.0, "target_pe": 42.0, "fallback_fair_value": 1050.0,
         "cost": 1044.55, "cost_fx": 31.8, "est_yield": 0.5, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 3.0,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "LLY": {
         "name": "禮來製藥", "market": "US", "currency": "$", "is_etf": False,
-        "shares": 2.0, "target_pe": 40.0, "fallback_fair_value": 1150.0,
+        "shares": 2.0, "target_pe": 42.0, "fallback_fair_value": 1200.0,
         "cost": 1159.82, "cost_fx": 31.8, "est_yield": 0.6, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 4.0,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "2002.TW": {
         "name": "中鋼", "market": "TW", "currency": "NT$", "is_etf": False,
-        "shares": 1000, "target_pe": 15.0, "fallback_fair_value": 23.5,
+        "shares": 1000, "target_pe": 16.0, "fallback_fair_value": 22.5,
         "cost": 21.05, "est_yield": 3.5, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 2.5,
         "dca_monthly_twd": 0, "dca_day": None,
     },
@@ -103,31 +103,31 @@ WATCHLIST = {
     },
     "1904.TW": {
         "name": "正隆", "market": "TW", "currency": "NT$", "is_etf": False,
-        "shares": 1, "target_pe": 15.0, "fallback_fair_value": 29.0,
+        "shares": 1, "target_pe": 15.0, "fallback_fair_value": 26.5,
         "cost": 25.0, "est_yield": 3.8, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 2.5,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "2616.TW": {
         "name": "山隆", "market": "TW", "currency": "NT$", "is_etf": False,
-        "shares": 1, "target_pe": 15.0, "fallback_fair_value": 31.0,
+        "shares": 1, "target_pe": 15.0, "fallback_fair_value": 24.5,
         "cost": 22.0, "est_yield": 4.0, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 2.5,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "2337.TW": {
         "name": "旺宏 (已於$101出清/監控)", "market": "TW", "currency": "NT$", "is_etf": False,
-        "shares": 0, "target_pe": 20.0, "fallback_fair_value": 183.0,
+        "shares": 0, "target_pe": 18.0, "fallback_fair_value": 92.0,
         "cost": 0.0, "est_yield": 2.5, "stop_loss_pct": None, "trailing_stop_pct": -15.0, "flash_pct": 3.5,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "6182.TWO": {
         "name": "合晶 (已於$106出清/監控)", "market": "TW", "currency": "NT$", "is_etf": False,
-        "shares": 0, "target_pe": 20.0, "fallback_fair_value": 130.0,
+        "shares": 0, "target_pe": 18.0, "fallback_fair_value": 96.0,
         "cost": 0.0, "est_yield": 2.8, "stop_loss_pct": None, "trailing_stop_pct": -15.0, "flash_pct": 3.5,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "GLD": {
         "name": "SPDR黃金ETF (僅監控)", "market": "US", "currency": "$", "is_etf": True,
-        "shares": 0, "target_pe": 20.0, "fallback_fair_value": 240.0,
+        "shares": 0, "target_pe": 20.0, "fallback_fair_value": 265.0,
         "cost": 0.0, "est_yield": 0.0, "stop_loss_pct": None, "trailing_stop_pct": -20.0, "flash_pct": 2.5,
         "dca_monthly_twd": 0, "dca_day": None,
     },
@@ -367,14 +367,21 @@ def fetch_from_finnhub(symbol: str):
     return None
 
 
-def fetch_fundamentals_and_earnings(symbol: str, meta: dict) -> dict:
+def fetch_fundamentals_and_earnings(symbol: str, meta: dict, market_data: dict) -> dict:
+    """全面校準之估值與財報日引擎：含 ETF 200MA 動態錨定與景氣循環股微利防呆"""
     if symbol == "FUND_ALLIANZ":
         return {"fair_value": 141.45, "dividend_yield_pct": 8.0, "earnings_date_str": "月扣3千+單筆", "earnings_days_left": None}
 
     target_pe = meta.get("target_pe", 20.0)
-    fair_val = meta.get("fallback_fair_value", 100.0)
+    fallback_fair = float(meta.get("fallback_fair_value", 100.0))
+    fair_val = fallback_fair
     div_yield_pct = float(meta.get("est_yield", 0.0))
+    ma200 = float(market_data.get("ma200", fallback_fair))
     
+    # 針對 ETF (0050 / 009816 / GLD) 採用 200MA 年線 × 1.05 動態錨定合理價
+    if meta.get("is_etf", False) and ma200 > 0:
+        fair_val = round(ma200 * 1.05, 2)
+
     dca_day = meta.get("dca_day")
     if dca_day:
         d_left = calc_dca_days_left(dca_day)
@@ -388,9 +395,14 @@ def fetch_fundamentals_and_earnings(symbol: str, meta: dict) -> dict:
         info = ticker.info or {}
 
         if not meta.get("is_etf", False):
-            eps = info.get("forwardEps") or info.get("trailingEps")
-            if eps and eps > 0:
-                fair_val = round(eps * target_pe, 2)
+            f_eps = info.get("forwardEps")
+            t_eps = info.get("trailingEps")
+            eps = max(float(f_eps or 0), float(t_eps or 0))
+            if eps > 0:
+                calc_fair = round(eps * target_pe, 2)
+                # 景氣循環股微利防呆：若因短暫微利算出的合理價低於保底淨值價的 65%，維持使用保底合理價
+                if calc_fair >= fallback_fair * 0.65:
+                    fair_val = calc_fair
 
         raw_yield = info.get("dividendYield") or info.get("trailingAnnualDividendYield")
         if raw_yield and raw_yield > 0:
@@ -511,7 +523,7 @@ def fetch_macro_gold_radar(prev_macro_state: dict) -> dict:
 
 
 # ==========================================
-# 4. 量化風控矩陣 (整合台股 NT$12,960 與美股 $369.78 雙幣戰備金試算)
+# 4. 量化風控矩陣 (區分有持倉與空手監控之閃崩顯示)
 # ==========================================
 def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state: dict, macro: dict, fund_data: dict, nlp_score: float, usd_twd: float) -> dict:
     price = market_data["current_price"]
@@ -557,7 +569,6 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
     nlp_adjustment = -2.0 if nlp_score < -2 else (2.0 if nlp_score > 2 else 0.0)
     high_risk_threshold = 25.0 + macro.get("premium_shift", 0.0) + nlp_adjustment
 
-    # 依市場別自動選擇對應幣別之戰備金試算可買股數
     if market_type == "US":
         dry_powder_shares = round(US_RESERVE_CASH_USD / price, 2) if price > 0 else 0
         dry_powder_label = f"美股戰備金 ${US_RESERVE_CASH_USD:,.2f}"
@@ -570,11 +581,10 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
         risk_level, color, action = "定期定額累積", "#10B981", "基富通月扣 NT$3,000 + 單筆續抱"
         desc = "定額(+49.34%)與單筆(+132.36%)合計總損益 +NT$54,054 (+51.57%)。"
         sizing_note = f"👉 試算：總市值 NT$158,869 (總本金 NT$104,815) ｜ 預估年配息約 NT${annual_dividend_twd:,.0f}"
-    elif not is_etf and stop_loss is not None and cost > 0 and pnl_rate <= stop_loss:
+    elif not is_etf and stop_loss is not None and cost > 0 and shares > 0 and pnl_rate <= stop_loss:
         risk_level, color, action = "停損警戒", "#EF4444", "市價全數平倉 / 嚴格停損"
         desc = f"帳面損益達 {pnl_rate:.1f}%，跌破 {stop_loss}% 硬停損防線。"
-        if shares > 0:
-            sizing_note = f"👉 試算：全數出清 {shares:g} 股 (約收回 NT${market_value_twd:,.0f})"
+        sizing_note = f"👉 試算：全數出清 {shares:g} 股 (約收回 NT${market_value_twd:,.0f})"
     elif shares > 0 and not is_etf and trailing_stop is not None and pnl_rate > 0 and drawdown_from_peak <= trailing_stop:
         risk_level, color, action = "移動停利警戒", "#F97316", "執行移動停利：獲利了結 1/2"
         desc = f"自波段高點回撤達 {drawdown_from_peak:.1f}% (門檻 {trailing_stop}%)，保護獲利。"
@@ -582,18 +592,25 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
         sell_val = round(sell_sh * price * curr_fx, 0)
         sizing_note = f"👉 試算：建議減碼 {sell_sh:g} 股 (約落袋 NT${sell_val:,.0f})"
     elif day_change_pct <= -flash_pct:
-        risk_level, color, action = "單日閃崩警戒", "#EC4899", "暫停單筆買進 / 定期定額照扣"
-        desc = f"單日重挫 {day_change_pct:.2f}% (超過 -{flash_pct}% 閃崩線)，留意機構拋售。"
-        sizing_note = "👉 試算：今日暫停單筆接刀，待站回 5 日線再評估"
-    elif not is_etf and premium_rate > high_risk_threshold:
-        risk_level, color, action = "高風險 (嚴重昂貴)", "#EF4444", "執行減碼：賣出持倉 1/3" if shares > 0 else "估值偏高：暫緩建倉"
-        desc = f"溢價率達 {premium_rate:.1f}%，超過動態風險門檻 ({high_risk_threshold:.1f}%)。"
         if shares > 0:
+            risk_level, color, action = "單日閃崩警戒", "#EC4899", "暫停單筆買進 / 定期定額照扣"
+            desc = f"單日重挫 {day_change_pct:.2f}% (超過 -{flash_pct}% 閃崩線)，留意機構拋售。"
+            sizing_note = "👉 試算：今日暫停單筆接刀，待站回 5 日線再評估"
+        else:
+            risk_level, color, action = "空手避開閃崩", "#64748B", "漂亮避開大跌 / 嚴禁接刀"
+            desc = f"單日重挫 {day_change_pct:.2f}% (超過 -{flash_pct}% 閃崩線)，您已空手成功避開！"
+            sizing_note = f"👉 試算：待止跌且跌破 {round(dynamic_fair*0.9, 1)} 元 (邊際>=10%) 再評估買回"
+    elif not is_etf and premium_rate > high_risk_threshold:
+        if shares > 0:
+            risk_level, color, action = "高風險 (嚴重昂貴)", "#EF4444", "執行減碼：賣出持倉 1/3"
+            desc = f"溢價率達 {premium_rate:.1f}%，超過動態風險門檻 ({high_risk_threshold:.1f}%)。"
             sell_sh = round(shares / 3.0, 1) if market_type in ["US", "FUND"] else max(1, int(round(shares / 3.0)))
             sell_val = round(sell_sh * price * curr_fx, 0)
             sizing_note = f"👉 試算：建議減碼 {sell_sh:g} 股 (約收回 NT${sell_val:,.0f})"
         else:
-            sizing_note = "👉 試算：已出清/空手監控中，等待拉回合理價再評估"
+            risk_level, color, action = "空手觀望 (偏貴)", "#64748B", "估值偏高：維持空手觀望"
+            desc = f"溢價率達 {premium_rate:.1f}%，距離合理買點尚遠。"
+            sizing_note = f"👉 試算：已出清監控中，目標買進區為 {round(dynamic_fair*0.9, 1)} 元以下"
     elif safety_margin >= 10.0 and not macro.get("is_sox_bear", False):
         risk_level, color, action = "低風險 (買進區)", "#10B981", "戰備金逢低加碼 / 分批建倉"
         desc = f"安全邊際達 {safety_margin:.1f}% 且半導體非空頭，具估值吸引力。"
@@ -611,7 +628,7 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
         elif shares == 0:
             risk_level, color, action = "合理估值區", "#64748B", "空手觀望 / 等待買點"
             desc = f"單日漲跌 {day_change_pct:+.2f}%，尚未跌入低風險安全邊際區。"
-            sizing_note = f"👉 試算：目前空手，若動用{dry_powder_label}可買 {dry_powder_shares:g} 股"
+            sizing_note = f"👉 試算：目前空手，目標買進價 {round(dynamic_fair*0.9, 1)} (動用戰備金可買 {dry_powder_shares:g} 股)"
         else:
             risk_level, color, action = "合理估值區", "#3B82F6", "定期定額 / 維持續抱"
             desc = f"單日漲跌 {day_change_pct:+.2f}%，處於合理估值防禦帶內。"
@@ -690,7 +707,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
     updated_time = now_tw_str()
     total_count = len(eval_results)
     alert_levels = ["停損警戒", "移動停利警戒", "單日閃崩警戒", "高風險 (嚴重昂貴)"]
-    high_risk_count = sum(1 for r in eval_results if r["risk_level"] in alert_levels)
+    high_risk_count = sum(1 for r in eval_results if r["risk_level"] in alert_levels and r["shares"] > 0)
     
     total_market_val = sum(r["market_value_twd"] for r in eval_results if r["shares"] > 0)
     total_invested_cost = sum(r["invested_cost_twd"] for r in eval_results if r["shares"] > 0)
@@ -761,7 +778,10 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
 
         earnings_grid_text = f"{r['earnings_date_str']} ({edays}天)" if (edays is not None and edays >= 0) else r["earnings_date_str"]
         risk_score_map = {"停損警戒": 5, "移動停利警戒": 4, "單日閃崩警戒": 3, "高風險 (嚴重昂貴)": 2, "低風險 (買進區)": 1, "合理估值區": 0, "定期定額累積": 0}
-        r_score = risk_score_map.get(r["risk_level"], 0) if r["shares"] > 0 else -1
+        if r["shares"] > 0:
+            r_score = risk_score_map.get(r["risk_level"], 0)
+        else:
+            r_score = 0.5 if r["risk_level"] == "低風險 (買進區)" else -1
 
         cards_html += (
             f'<div class="stock-card bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between backdrop-blur-md transition hover:border-slate-700" '
@@ -862,7 +882,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
         '<button onclick="filterCards(\'US\')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">美股</button>',
         '<button onclick="filterCards(\'TW\')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">台股</button>',
         '<button onclick="filterCards(\'FUND\')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">基金</button>',
-        f'<button onclick="filterCards(\'ALERT\')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-950 text-rose-300 border border-rose-800/80">警戒 ({high_risk_count})</button>',
+        f'<button onclick="filterCards(\'ALERT\')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-950 text-rose-300 border border-rose-800/80">持倉警戒 ({high_risk_count})</button>',
         '<div class="flex items-center bg-slate-900 border border-slate-700 rounded-lg overflow-hidden ml-2 shadow">',
         '<button onclick="sortCards(\'risk\')" class="px-2.5 py-1.5 text-[11px] font-bold text-amber-300 hover:bg-slate-800 border-r border-slate-700" title="風險優先排序">🔥 風險優先</button>',
         '<button onclick="sortCards(\'mval\')" class="px-2.5 py-1.5 text-[11px] font-bold text-slate-300 hover:bg-slate-800 border-r border-slate-700" title="依持倉市值排序">💎 市值大小</button>',
@@ -1064,7 +1084,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
     html = "".join(html_parts)
     with open(DASHBOARD_FILE, "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"[完成] 寬螢幕流暢版（含 NVDA 加碼與台美雙幣戰備金）操盤室儀表板已輸出至 {DASHBOARD_FILE}")
+    print(f"[完成] 寬螢幕流暢版（17檔估值全面校準）操盤室儀表板已輸出至 {DASHBOARD_FILE}")
 
 
 # ==========================================
@@ -1106,7 +1126,7 @@ def main():
         market_data = fetch_stock_data_with_redundancy(symbol, meta["market"])
         if not market_data: continue
 
-        fund_data = fetch_fundamentals_and_earnings(symbol, meta)
+        fund_data = fetch_fundamentals_and_earnings(symbol, meta, market_data)
         nlp_score = fetch_finnhub_sentiment_score(symbol, meta["market"])
 
         eval_data = evaluate_quant_matrix(symbol, meta, market_data, prev_stocks.get(symbol, {}), macro, fund_data, nlp_score, usd_twd)
@@ -1183,7 +1203,7 @@ def main():
             except Exception:
                 pass
 
-        print("[完成] 寬螢幕流暢版（含 NVDA 加碼與台美雙幣戰備金）操盤平台執行完畢。")
+        print("[完成] 寬螢幕流暢版（17檔估值全面校準）操盤平台執行完畢。")
 
 
 if __name__ == "__main__":
