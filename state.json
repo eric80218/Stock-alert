@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-20 06:18:38",
+  "updated_at": "2026-10-20 06:54:02",
   "macro_gold": {
     "bubble_level": "資金安穩：市場多頭運行",
     "color": "#10B981",
@@ -18,103 +18,103 @@
       "risk_level": "定期定額累積",
       "current_price": 141.45,
       "peak_price": 143.5,
-      "updated_at": "2026-10-20 06:18:34"
+      "updated_at": "2026-10-20 06:53:58"
     },
     "0050.TW": {
       "risk_level": "定期定額累積",
       "current_price": 108.15,
       "peak_price": 116.6,
-      "updated_at": "2026-10-20 06:18:34"
+      "updated_at": "2026-10-20 06:53:58"
     },
     "009816.TW": {
       "risk_level": "定期定額累積",
       "current_price": 16.2,
       "peak_price": 17.09,
-      "updated_at": "2026-10-20 06:18:35"
+      "updated_at": "2026-10-20 06:53:58"
     },
     "2330.TW": {
       "risk_level": "低風險 (買進區)",
       "current_price": 2420.0,
       "peak_price": 2590.0,
-      "updated_at": "2026-10-20 06:18:35"
+      "updated_at": "2026-10-20 06:53:59"
     },
     "AMZN": {
       "risk_level": "低風險 (買進區)",
       "current_price": 262.45,
       "peak_price": 287.2,
-      "updated_at": "2026-10-20 06:18:35"
+      "updated_at": "2026-10-20 06:53:59"
     },
     "NVDA": {
       "risk_level": "低風險 (買進區)",
       "current_price": 217.09,
       "peak_price": 243.37,
-      "updated_at": "2026-10-20 06:18:35"
+      "updated_at": "2026-10-20 06:53:59"
     },
     "AMAT": {
       "risk_level": "移動停利警戒",
       "current_price": 413.11,
       "peak_price": 563.16,
-      "updated_at": "2026-10-20 06:18:36"
+      "updated_at": "2026-10-20 06:54:00"
     },
     "BRK-B": {
       "risk_level": "低風險 (買進區)",
       "current_price": 532.23,
       "peak_price": 537.74,
-      "updated_at": "2026-10-20 06:18:36"
+      "updated_at": "2026-10-20 06:54:00"
     },
     "COST": {
       "risk_level": "合理估值區",
       "current_price": 995.53,
       "peak_price": 1008.37,
-      "updated_at": "2026-10-20 06:18:36"
+      "updated_at": "2026-10-20 06:54:00"
     },
     "LLY": {
       "risk_level": "低風險 (買進區)",
       "current_price": 1240.34,
       "peak_price": 1292.65,
-      "updated_at": "2026-10-20 06:18:37"
+      "updated_at": "2026-10-20 06:54:01"
     },
     "2002.TW": {
       "risk_level": "低風險 (買進區)",
       "current_price": 19.5,
       "peak_price": 19.9,
-      "updated_at": "2026-10-20 06:18:37"
+      "updated_at": "2026-10-20 06:54:01"
     },
     "1232.TW": {
       "risk_level": "合理估值區",
       "current_price": 155.5,
       "peak_price": 159.5,
-      "updated_at": "2026-10-20 06:18:37"
+      "updated_at": "2026-10-20 06:54:01"
     },
     "1904.TW": {
       "risk_level": "低風險 (買進區)",
       "current_price": 25.0,
       "peak_price": 26.45,
-      "updated_at": "2026-10-20 06:18:37"
+      "updated_at": "2026-10-20 06:54:01"
     },
     "2616.TW": {
       "risk_level": "停損警戒",
       "current_price": 13.15,
       "peak_price": 13.98,
-      "updated_at": "2026-10-20 06:18:37"
+      "updated_at": "2026-10-20 06:54:02"
     },
     "2337.TW": {
       "risk_level": "空手避開閃崩",
       "current_price": 102.0,
       "peak_price": 144.5,
-      "updated_at": "2026-10-20 06:18:38"
+      "updated_at": "2026-10-20 06:54:02"
     },
     "6182.TWO": {
       "risk_level": "合理估值區",
       "current_price": 107.5,
       "peak_price": 140.0,
-      "updated_at": "2026-10-20 06:18:38"
+      "updated_at": "2026-10-20 06:54:02"
     },
     "GLD": {
       "risk_level": "低風險 (買進區)",
       "current_price": 379.69,
       "peak_price": 429.42,
-      "updated_at": "2026-10-20 06:18:38"
+      "updated_at": "2026-10-20 06:54:02"
     }
   },
   "results": [
@@ -1269,7 +1269,7 @@
       "currency": "NT$",
       "current_price": 155.5,
       "day_change_pct": -0.96,
-      "fair_value": 162.18,
+      "fair_value": 160.56,
       "cost": 144.0,
       "shares": 50.0,
       "market_value_twd": 7775.0,
@@ -1281,8 +1281,8 @@
       "dca_days_left": null,
       "earnings_date_str": "無近期財報",
       "earnings_days_left": null,
-      "safety_margin": 4.12,
-      "premium_rate": -4.12,
+      "safety_margin": 3.15,
+      "premium_rate": -3.15,
       "pnl_rate": 7.99,
       "ma200": 146.15,
       "ma20": 154.47,
