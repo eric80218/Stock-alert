@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (Ultimate Autonomous Low-Frequency Edition)
-- 已將 2337.TW (旺宏) 與 6182.TWO (合晶) 設為已出清 (shares: 0, 僅監控買點)
-- 具備 AMZN、更新 NVDA 均價、DCA 定期定額自動記帳、48hr 增減對比與一鍵智慧排序
+Quantitative Risk & Valuation Engine (Ultimate Autonomous Low-Frequency Edition - Dedicated Dry Powder)
+- 獨立鎖定「加碼專用戰備金 (RESERVE_CASH_TWD = NT$12,960)」，不與每月22號定期定額扣款互扣
+- 當個股進入「低風險 (買進區)」時，自動以 NT$12,960 戰備金試算可立即買進的零股數量
+- 具備台積電建倉(2股/2405)、旺宏/合晶出清監控、DCA 自動記帳、48hr 增減對比與一鍵智慧排序
 """
 
 import os
@@ -17,9 +18,12 @@ import pandas as pd
 import yfinance as yf
 
 # ==========================================
-# 1. 完整持股與定期定額 (DCA) 監控清單設定
+# 1. 完整持股與獨立加碼戰備金設定
 # ==========================================
 GITHUB_REPO = os.environ.get("GITHUB_REPOSITORY", "eric80218/Stock-alert")
+
+REALIZED_PNL_TWD = -3940       # 累計已實現損益 (旺宏 -2200, 合晶 -1740)
+RESERVE_CASH_TWD = 12960       # 獨立保留於交割戶之「未來逢低加碼專用戰備金」(不扣抵定期定額)
 
 WATCHLIST = {
     "FUND_ALLIANZ": {
@@ -39,6 +43,12 @@ WATCHLIST = {
         "shares": 959, "target_pe": 20.0, "fallback_fair_value": 16.0,
         "cost": 15.75, "est_yield": 4.2, "stop_loss_pct": None, "trailing_stop_pct": -20.0, "flash_pct": 2.5,
         "dca_monthly_twd": 5000, "dca_day": 22,
+    },
+    "2330.TW": {
+        "name": "台積電", "market": "TW", "currency": "NT$", "is_etf": False,
+        "shares": 2, "target_pe": 20.0, "fallback_fair_value": 1350.0,
+        "cost": 2405.0, "est_yield": 1.5, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 3.5,
+        "dca_monthly_twd": 0, "dca_day": None,
     },
     "AMZN": {
         "name": "亞馬遜", "market": "US", "currency": "$", "is_etf": False,
@@ -100,20 +110,14 @@ WATCHLIST = {
         "cost": 22.0, "est_yield": 4.0, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 2.5,
         "dca_monthly_twd": 0, "dca_day": None,
     },
-    "2330.TW": {
-        "name": "台積電 (僅監控)", "market": "TW", "currency": "NT$", "is_etf": False,
-        "shares": 0, "target_pe": 20.0, "fallback_fair_value": 1350.0,
-        "cost": 0.0, "est_yield": 1.5, "stop_loss_pct": None, "trailing_stop_pct": -15.0, "flash_pct": 3.5,
-        "dca_monthly_twd": 0, "dca_day": None,
-    },
     "2337.TW": {
-        "name": "旺宏 (已出清/僅監控)", "market": "TW", "currency": "NT$", "is_etf": False,
+        "name": "旺宏 (已於$101出清/監控)", "market": "TW", "currency": "NT$", "is_etf": False,
         "shares": 0, "target_pe": 20.0, "fallback_fair_value": 183.0,
         "cost": 0.0, "est_yield": 2.5, "stop_loss_pct": None, "trailing_stop_pct": -15.0, "flash_pct": 3.5,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "6182.TWO": {
-        "name": "合晶 (已出清/僅監控)", "market": "TW", "currency": "NT$", "is_etf": False,
+        "name": "合晶 (已於$106出清/監控)", "market": "TW", "currency": "NT$", "is_etf": False,
         "shares": 0, "target_pe": 20.0, "fallback_fair_value": 130.0,
         "cost": 0.0, "est_yield": 2.8, "stop_loss_pct": None, "trailing_stop_pct": -15.0, "flash_pct": 3.5,
         "dca_monthly_twd": 0, "dca_day": None,
@@ -152,6 +156,7 @@ def calc_dca_days_left(dca_day: int) -> int:
 
 
 def check_and_execute_dca(watchlist: dict, current_prices: dict, usd_twd: float):
+    """每月定期定額自動累加股數與成本 (不動用獨立保留之加碼戰備金)"""
     today = datetime.datetime.now(TW_TZ)
     state = load_state()
     dca_log = state.get("dca_execution_log", {})
@@ -220,7 +225,8 @@ def save_state(macro_gold: dict, stocks_dict: dict, eval_results: list, prev_tot
         "stocks": stocks_dict,
         "results": clean_results,
         "prev_total_market_val": prev_total_val,
-        "dca_execution_log": load_state().get("dca_execution_log", {})
+        "dca_execution_log": load_state().get("dca_execution_log", {}),
+        "reserve_cash_twd": RESERVE_CASH_TWD
     }
     with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=2)
@@ -501,7 +507,7 @@ def fetch_macro_gold_radar(prev_macro_state: dict) -> dict:
 
 
 # ==========================================
-# 4. 量化風控矩陣
+# 4. 量化風控矩陣 (整合戰備金 NT$12,960 加碼試算)
 # ==========================================
 def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state: dict, macro: dict, fund_data: dict, nlp_score: float, usd_twd: float) -> dict:
     price = market_data["current_price"]
@@ -530,12 +536,12 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
     safety_margin = round(((dynamic_fair - price) / dynamic_fair) * 100, 2)
     premium_rate = round(((price - dynamic_fair) / dynamic_fair) * 100, 2)
     
+    curr_fx = usd_twd if market_type == "US" else 1.0
     if symbol == "FUND_ALLIANZ":
         market_value_twd = 158869.0
         invested_cost_twd = 104815.0
         pnl_rate = 51.57
     else:
-        curr_fx = usd_twd if market_type == "US" else 1.0
         cost_fx = float(meta.get("cost_fx", usd_twd)) if market_type == "US" else 1.0
         market_value_twd = round(price * shares * curr_fx, 2)
         invested_cost_twd = round(cost * shares * cost_fx, 2)
@@ -546,6 +552,10 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
 
     nlp_adjustment = -2.0 if nlp_score < -2 else (2.0 if nlp_score > 2 else 0.0)
     high_risk_threshold = 25.0 + macro.get("premium_shift", 0.0) + nlp_adjustment
+
+    # 計算若動用戰備金 NT$12,960 可買進之股數
+    price_twd = price * curr_fx
+    dry_powder_shares = round(RESERVE_CASH_TWD / price_twd, 2) if market_type == "US" else int(RESERVE_CASH_TWD // price_twd) if price_twd > 0 else 0
 
     sizing_note = ""
     if symbol == "FUND_ALLIANZ":
@@ -561,7 +571,7 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
         risk_level, color, action = "移動停利警戒", "#F97316", "執行移動停利：獲利了結 1/2"
         desc = f"自波段高點回撤達 {drawdown_from_peak:.1f}% (門檻 {trailing_stop}%)，保護獲利。"
         sell_sh = round(shares * 0.5, 1) if market_type in ["US", "FUND"] else max(1, int(round(shares * 0.5)))
-        sell_val = round(sell_sh * price * (usd_twd if market_type == "US" else 1.0), 0)
+        sell_val = round(sell_sh * price * curr_fx, 0)
         sizing_note = f"👉 試算：建議減碼 {sell_sh:g} 股 (約落袋 NT${sell_val:,.0f})"
     elif day_change_pct <= -flash_pct:
         risk_level, color, action = "單日閃崩警戒", "#EC4899", "暫停單筆買進 / 定期定額照扣"
@@ -572,19 +582,17 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
         desc = f"溢價率達 {premium_rate:.1f}%，超過動態風險門檻 ({high_risk_threshold:.1f}%)。"
         if shares > 0:
             sell_sh = round(shares / 3.0, 1) if market_type in ["US", "FUND"] else max(1, int(round(shares / 3.0)))
-            sell_val = round(sell_sh * price * (usd_twd if market_type == "US" else 1.0), 0)
+            sell_val = round(sell_sh * price * curr_fx, 0)
             sizing_note = f"👉 試算：建議減碼 {sell_sh:g} 股 (約收回 NT${sell_val:,.0f})"
         else:
             sizing_note = "👉 試算：已出清/空手監控中，等待拉回合理價再評估"
     elif safety_margin >= 10.0 and not macro.get("is_sox_bear", False):
-        risk_level, color, action = "低風險 (買進區)", "#10B981", "啟動分批建倉：買進 1/3"
+        risk_level, color, action = "低風險 (買進區)", "#10B981", "戰備金逢低加碼 / 分批建倉"
         desc = f"安全邊際達 {safety_margin:.1f}% 且半導體非空頭，具估值吸引力。"
         if shares > 0:
-            buy_sh = round(shares / 3.0, 1) if market_type in ["US", "FUND"] else max(1, int(round(shares / 3.0)))
-            buy_val = round(buy_sh * price * (usd_twd if market_type == "US" else 1.0), 0)
-            sizing_note = f"👉 試算：加碼 1/3 部位約 {buy_sh:g} 股 (需資金 NT${buy_val:,.0f})"
+            sizing_note = f"🎯 戰備金試算：動用 NT${RESERVE_CASH_TWD:,} 可加碼約 {dry_powder_shares:g} 股 (現持有 {shares:g} 股)"
         else:
-            sizing_note = "👉 試算：空手監控標的可重新建首倉 (分批買進)"
+            sizing_note = f"🎯 戰備金試算：動用 NT${RESERVE_CASH_TWD:,} 可買回約 {dry_powder_shares:g} 股建首倉"
     else:
         if dca_monthly_twd > 0 and dca_day:
             est_buy_shares = int(round(dca_monthly_twd / price)) if price > 0 else 0
@@ -595,7 +603,7 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
         elif shares == 0:
             risk_level, color, action = "合理估值區", "#64748B", "空手觀望 / 等待買點"
             desc = f"單日漲跌 {day_change_pct:+.2f}%，尚未跌入低風險安全邊際區。"
-            sizing_note = "👉 試算：目前空手 (0股)，待安全邊際 >= 10% 自動通知"
+            sizing_note = f"👉 試算：目前空手，若動用戰備金可買 {dry_powder_shares:g} 股 (待安全邊際 >= 10% 通知)"
         else:
             risk_level, color, action = "合理估值區", "#3B82F6", "定期定額 / 維持續抱"
             desc = f"單日漲跌 {day_change_pct:+.2f}%，處於合理估值防禦帶內。"
@@ -607,7 +615,7 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
     if symbol == "FUND_ALLIANZ":
         raw_series_30d = clean_hist_30 * (158869.0 / 141.45)
     else:
-        raw_series_30d = clean_hist_30 * shares * (usd_twd if market_type == "US" else 1.0)
+        raw_series_30d = clean_hist_30 * shares * curr_fx
 
     return {
         "symbol": symbol, "name": meta["name"], "market": market_type, "currency": meta["currency"],
@@ -835,7 +843,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
         '<span class="h-3 w-3 rounded-full bg-emerald-500 animate-pulse"></span>',
         '<h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">對沖基金級動態 EPS 與 Alpha 操盤室</h1>',
         '</div>',
-        f'<p class="text-xs sm:text-sm text-slate-400 mt-1">即時匯率 USD/TWD: <span class="text-amber-400 font-mono">{usd_twd:.2f}</span> ｜ 定期定額: <span class="text-emerald-400 font-bold">NT${total_monthly_dca_twd:,}/月</span> (0050/009816 22號扣5千 + 基富通3千) ｜ 更新時間: <span id="sync-time" class="text-slate-200 font-mono">{updated_time}</span></p>',
+        f'<p class="text-xs sm:text-sm text-slate-400 mt-1">即時匯率 USD/TWD: <span class="text-amber-400 font-mono">{usd_twd:.2f}</span> ｜ 獨立加碼戰備金: <span class="text-emerald-400 font-bold">NT${RESERVE_CASH_TWD:,}</span> ｜ 定期定額: <span class="text-cyan-400 font-bold">NT${total_monthly_dca_twd:,}/月</span> ｜ 更新: <span id="sync-time" class="text-slate-200 font-mono">{updated_time}</span></p>',
         '</div>',
         '<div class="flex flex-wrap items-center gap-2">',
         '<div class="flex items-center bg-emerald-700/80 rounded-lg overflow-hidden shadow">',
@@ -856,8 +864,8 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
         '</div>',
         '</header>',
         '<section class="grid grid-cols-2 lg:grid-cols-5 gap-4">',
-        f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">總市值 (NT$) / 較前次增減</span><div class="text-xl font-black text-white">NT${total_market_val:,.0f}</div><span class="text-xs font-bold {diff_cls}">48hr 增減: {diff_str}</span></div>',
-        f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">總未實現損益 (含基金)</span><div class="text-xl font-black {total_pnl_color}">NT${total_pnl_amount:+,.0f} ({total_pnl_pct:+.2f}%)</div><span class="text-xs text-slate-400">近30日 {alpha_str}</span></div>',
+        f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">證券總市值 (NT$) / 48hr 增減</span><div class="text-xl font-black text-white">NT${total_market_val:,.0f}</div><span class="text-xs font-bold {diff_cls}">48hr 增減: {diff_str}</span></div>',
+        f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">總未實現損益 / 獨立加碼戰備金</span><div class="text-xl font-black {total_pnl_color}">NT${total_pnl_amount:+,.0f} ({total_pnl_pct:+.2f}%)</div><span class="text-xs text-emerald-300 font-bold">🎯 加碼專用戰備金: NT${RESERVE_CASH_TWD:,}</span></div>',
         f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">💰 預估年領股息 / 定期定額</span><div class="text-xl font-black text-cyan-400">NT${total_annual_div_twd:,.0f}<span class="text-xs font-normal text-slate-400">/年息</span></div><span class="text-xs text-slate-400">月被動息 NT${monthly_div_twd:,.0f} ｜ 月扣 NT${total_monthly_dca_twd:,}</span></div>',
         f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">95% 單日風險價值 (VaR)</span><div class="text-xl font-black text-rose-400">-NT${equity_data["var_95_twd"]:,.0f}</div><span class="text-xs text-slate-400">半導體曝險濃度: <strong class="text-amber-400">{tech_exposure_pct}%</strong></span></div>',
         f'<div class="col-span-2 lg:col-span-1 bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">市場總體避險狀態</span><div class="text-base sm:text-lg font-black truncate" style="color: {macro["color"]};">{macro["bubble_level"]}</div><span class="text-xs text-slate-400">VIX: {macro["vix"]} | 費半: ${macro["sox_price"]}</span></div>',
@@ -1048,7 +1056,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
     html = "".join(html_parts)
     with open(DASHBOARD_FILE, "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"[完成] 寬螢幕流暢版（已將旺宏與合晶轉為空手監控）操盤室儀表板已輸出至 {DASHBOARD_FILE}")
+    print(f"[完成] 寬螢幕流暢版（含獨立加碼戰備金 NT$12,960）操盤室儀表板已輸出至 {DASHBOARD_FILE}")
 
 
 # ==========================================
@@ -1105,7 +1113,6 @@ def main():
         is_quality_changed = (last_risk != eval_data["risk_level"])
         is_urgent_stop = ("停損" in eval_data["risk_level"] or "移動停利" in eval_data["risk_level"])
 
-        # 空手監控標的（shares == 0）只在跌入「低風險 (買進區)」時才推播通知，避免高風險減碼通知干擾
         should_notify_stock = False
         if eval_data["shares"] > 0:
             should_notify_stock = (is_quality_changed or is_urgent_stop) and eval_data["risk_level"] not in ["合理估值區", "定期定額累積"]
@@ -1134,7 +1141,7 @@ def main():
                 "header": {"type": "box", "layout": "vertical", "backgroundColor": "#0D9488", "paddingAll": "15px",
                            "contents": [{"type": "text", "text": "🗓️ 定期定額扣款前一日提醒", "weight": "bold", "color": "#FFFFFF", "size": "sm"}]},
                 "body": {"type": "box", "layout": "vertical", "spacing": "sm",
-                         "contents": [{"type": "text", "text": "明天 (22號) 將執行 0050、009816 定期定額扣款共 NT$10,000（另有基富通月扣 NT$3,000），請確認交割帳戶餘額充足！", "size": "xs", "wrap": True, "color": "#334155"}]}
+                         "contents": [{"type": "text", "text": f"明天 (22號) 將執行 0050、009816 定期定額扣款共 NT$10,000，請確認日常扣款資金已入帳（交割戶另有獨立保留之加碼戰備金 NT${RESERVE_CASH_TWD:,}）！", "size": "xs", "wrap": True, "color": "#334155"}]}
             })
         elif today_now.weekday() == 5 and today_now.hour < 10:
             current_total_val = sum(r["market_value_twd"] for r in eval_results if r["shares"] > 0)
@@ -1143,7 +1150,7 @@ def main():
                 "header": {"type": "box", "layout": "vertical", "backgroundColor": "#3B82F6", "paddingAll": "15px",
                            "contents": [{"type": "text", "text": "📊 本週操盤室與 Alpha 週報", "weight": "bold", "color": "#FFFFFF", "size": "sm"}]},
                 "body": {"type": "box", "layout": "vertical", "spacing": "sm",
-                         "contents": [{"type": "text", "text": f"本週總市值: NT${current_total_val:,.0f} ｜ 定期定額持續累積中。祝您週末愉快！", "size": "xs", "wrap": True, "color": "#334155"}]}
+                         "contents": [{"type": "text", "text": f"本週證券總市值: NT${current_total_val:,.0f} ｜ 獨立加碼戰備金: NT${RESERVE_CASH_TWD:,}。祝您週末愉快！", "size": "xs", "wrap": True, "color": "#334155"}]}
             })
 
     if eval_results:
@@ -1168,7 +1175,7 @@ def main():
             except Exception:
                 pass
 
-        print("[完成] 寬螢幕流暢版（已將旺宏與合晶轉為空手監控）操盤平台執行完畢。")
+        print("[完成] 寬螢幕流暢版（含獨立加碼戰備金 NT$12,960）操盤平台執行完畢。")
 
 
 if __name__ == "__main__":
