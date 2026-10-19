@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (Ultimate Autonomous Low-Frequency Edition - Dedicated Dry Powder)
-- 獨立鎖定「加碼專用戰備金 (RESERVE_CASH_TWD = NT$12,960)」，不與每月22號定期定額扣款互扣
-- 當個股進入「低風險 (買進區)」時，自動以 NT$12,960 戰備金試算可立即買進的零股數量
-- 具備台積電建倉(2股/2405)、旺宏/合晶出清監控、DCA 自動記帳、48hr 增減對比與一鍵智慧排序
+Quantitative Risk & Valuation Engine (Ultimate Autonomous Low-Frequency Edition - Dual-Currency Dry Powder)
+- 更新 NVDA：加碼 2 股，總持股更新為 22.01 股，成交均價更新為 $219.80
+- 升級「台美雙幣戰備金池」：
+  * 台股交割戶獨立加碼戰備金：RESERVE_CASH_TWD = NT$12,960 (自動試算台股可買股數)
+  * 美股帳戶可動資金：US_RESERVE_CASH_USD = $369.78 (自動試算美股可買零股數)
+- 具備台積電(2股/2405)、旺宏/合晶出清監控、DCA 自動記帳、48hr 增減對比與一鍵智慧排序
 """
 
 import os
@@ -18,12 +20,13 @@ import pandas as pd
 import yfinance as yf
 
 # ==========================================
-# 1. 完整持股與獨立加碼戰備金設定
+# 1. 完整持股與台美雙幣加碼戰備金設定
 # ==========================================
 GITHUB_REPO = os.environ.get("GITHUB_REPOSITORY", "eric80218/Stock-alert")
 
 REALIZED_PNL_TWD = -3940       # 累計已實現損益 (旺宏 -2200, 合晶 -1740)
-RESERVE_CASH_TWD = 12960       # 獨立保留於交割戶之「未來逢低加碼專用戰備金」(不扣抵定期定額)
+RESERVE_CASH_TWD = 12960       # 台股交割戶「未來逢低加碼專用戰備金」(NT$)
+US_RESERVE_CASH_USD = 369.78   # 美股帳戶「可動用現金餘額」(USD)
 
 WATCHLIST = {
     "FUND_ALLIANZ": {
@@ -58,8 +61,8 @@ WATCHLIST = {
     },
     "NVDA": {
         "name": "輝達", "market": "US", "currency": "$", "is_etf": False,
-        "shares": 20.01, "target_pe": 35.0, "fallback_fair_value": 220.0,
-        "cost": 220.05, "cost_fx": 31.8, "est_yield": 0.03, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 4.0,
+        "shares": 22.01, "target_pe": 35.0, "fallback_fair_value": 220.0,
+        "cost": 219.80, "cost_fx": 31.8, "est_yield": 0.03, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 4.0,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "AMAT": {
@@ -226,7 +229,8 @@ def save_state(macro_gold: dict, stocks_dict: dict, eval_results: list, prev_tot
         "results": clean_results,
         "prev_total_market_val": prev_total_val,
         "dca_execution_log": load_state().get("dca_execution_log", {}),
-        "reserve_cash_twd": RESERVE_CASH_TWD
+        "reserve_cash_twd": RESERVE_CASH_TWD,
+        "us_reserve_cash_usd": US_RESERVE_CASH_USD
     }
     with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=2)
@@ -507,7 +511,7 @@ def fetch_macro_gold_radar(prev_macro_state: dict) -> dict:
 
 
 # ==========================================
-# 4. 量化風控矩陣 (整合戰備金 NT$12,960 加碼試算)
+# 4. 量化風控矩陣 (整合台股 NT$12,960 與美股 $369.78 雙幣戰備金試算)
 # ==========================================
 def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state: dict, macro: dict, fund_data: dict, nlp_score: float, usd_twd: float) -> dict:
     price = market_data["current_price"]
@@ -553,9 +557,13 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
     nlp_adjustment = -2.0 if nlp_score < -2 else (2.0 if nlp_score > 2 else 0.0)
     high_risk_threshold = 25.0 + macro.get("premium_shift", 0.0) + nlp_adjustment
 
-    # 計算若動用戰備金 NT$12,960 可買進之股數
-    price_twd = price * curr_fx
-    dry_powder_shares = round(RESERVE_CASH_TWD / price_twd, 2) if market_type == "US" else int(RESERVE_CASH_TWD // price_twd) if price_twd > 0 else 0
+    # 依市場別自動選擇對應幣別之戰備金試算可買股數
+    if market_type == "US":
+        dry_powder_shares = round(US_RESERVE_CASH_USD / price, 2) if price > 0 else 0
+        dry_powder_label = f"美股戰備金 ${US_RESERVE_CASH_USD:,.2f}"
+    else:
+        dry_powder_shares = int(RESERVE_CASH_TWD // price) if price > 0 else 0
+        dry_powder_label = f"台股戰備金 NT${RESERVE_CASH_TWD:,}"
 
     sizing_note = ""
     if symbol == "FUND_ALLIANZ":
@@ -590,9 +598,9 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
         risk_level, color, action = "低風險 (買進區)", "#10B981", "戰備金逢低加碼 / 分批建倉"
         desc = f"安全邊際達 {safety_margin:.1f}% 且半導體非空頭，具估值吸引力。"
         if shares > 0:
-            sizing_note = f"🎯 戰備金試算：動用 NT${RESERVE_CASH_TWD:,} 可加碼約 {dry_powder_shares:g} 股 (現持有 {shares:g} 股)"
+            sizing_note = f"🎯 試算：動用{dry_powder_label} 可再加碼約 {dry_powder_shares:g} 股 (現持 {shares:g} 股)"
         else:
-            sizing_note = f"🎯 戰備金試算：動用 NT${RESERVE_CASH_TWD:,} 可買回約 {dry_powder_shares:g} 股建首倉"
+            sizing_note = f"🎯 試算：動用{dry_powder_label} 可買回約 {dry_powder_shares:g} 股建首倉"
     else:
         if dca_monthly_twd > 0 and dca_day:
             est_buy_shares = int(round(dca_monthly_twd / price)) if price > 0 else 0
@@ -603,7 +611,7 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
         elif shares == 0:
             risk_level, color, action = "合理估值區", "#64748B", "空手觀望 / 等待買點"
             desc = f"單日漲跌 {day_change_pct:+.2f}%，尚未跌入低風險安全邊際區。"
-            sizing_note = f"👉 試算：目前空手，若動用戰備金可買 {dry_powder_shares:g} 股 (待安全邊際 >= 10% 通知)"
+            sizing_note = f"👉 試算：目前空手，若動用{dry_powder_label}可買 {dry_powder_shares:g} 股"
         else:
             risk_level, color, action = "合理估值區", "#3B82F6", "定期定額 / 維持續抱"
             desc = f"單日漲跌 {day_change_pct:+.2f}%，處於合理估值防禦帶內。"
@@ -843,7 +851,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
         '<span class="h-3 w-3 rounded-full bg-emerald-500 animate-pulse"></span>',
         '<h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">對沖基金級動態 EPS 與 Alpha 操盤室</h1>',
         '</div>',
-        f'<p class="text-xs sm:text-sm text-slate-400 mt-1">即時匯率 USD/TWD: <span class="text-amber-400 font-mono">{usd_twd:.2f}</span> ｜ 獨立加碼戰備金: <span class="text-emerald-400 font-bold">NT${RESERVE_CASH_TWD:,}</span> ｜ 定期定額: <span class="text-cyan-400 font-bold">NT${total_monthly_dca_twd:,}/月</span> ｜ 更新: <span id="sync-time" class="text-slate-200 font-mono">{updated_time}</span></p>',
+        f'<p class="text-xs sm:text-sm text-slate-400 mt-1">即時匯率 USD/TWD: <span class="text-amber-400 font-mono">{usd_twd:.2f}</span> ｜ 雙幣戰備金: <span class="text-emerald-400 font-bold">台股 NT${RESERVE_CASH_TWD:,} / 美股 ${US_RESERVE_CASH_USD:,.2f}</span> ｜ 更新: <span id="sync-time" class="text-slate-200 font-mono">{updated_time}</span></p>',
         '</div>',
         '<div class="flex flex-wrap items-center gap-2">',
         '<div class="flex items-center bg-emerald-700/80 rounded-lg overflow-hidden shadow">',
@@ -865,7 +873,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
         '</header>',
         '<section class="grid grid-cols-2 lg:grid-cols-5 gap-4">',
         f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">證券總市值 (NT$) / 48hr 增減</span><div class="text-xl font-black text-white">NT${total_market_val:,.0f}</div><span class="text-xs font-bold {diff_cls}">48hr 增減: {diff_str}</span></div>',
-        f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">總未實現損益 / 獨立加碼戰備金</span><div class="text-xl font-black {total_pnl_color}">NT${total_pnl_amount:+,.0f} ({total_pnl_pct:+.2f}%)</div><span class="text-xs text-emerald-300 font-bold">🎯 加碼專用戰備金: NT${RESERVE_CASH_TWD:,}</span></div>',
+        f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">總未實現損益 / 雙幣加碼戰備金</span><div class="text-xl font-black {total_pnl_color}">NT${total_pnl_amount:+,.0f} ({total_pnl_pct:+.2f}%)</div><span class="text-xs text-emerald-300 font-bold">🎯 台股 NT${RESERVE_CASH_TWD:,} ｜ 美股 ${US_RESERVE_CASH_USD:,.2f}</span></div>',
         f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">💰 預估年領股息 / 定期定額</span><div class="text-xl font-black text-cyan-400">NT${total_annual_div_twd:,.0f}<span class="text-xs font-normal text-slate-400">/年息</span></div><span class="text-xs text-slate-400">月被動息 NT${monthly_div_twd:,.0f} ｜ 月扣 NT${total_monthly_dca_twd:,}</span></div>',
         f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">95% 單日風險價值 (VaR)</span><div class="text-xl font-black text-rose-400">-NT${equity_data["var_95_twd"]:,.0f}</div><span class="text-xs text-slate-400">半導體曝險濃度: <strong class="text-amber-400">{tech_exposure_pct}%</strong></span></div>',
         f'<div class="col-span-2 lg:col-span-1 bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">市場總體避險狀態</span><div class="text-base sm:text-lg font-black truncate" style="color: {macro["color"]};">{macro["bubble_level"]}</div><span class="text-xs text-slate-400">VIX: {macro["vix"]} | 費半: ${macro["sox_price"]}</span></div>',
@@ -1056,7 +1064,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
     html = "".join(html_parts)
     with open(DASHBOARD_FILE, "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"[完成] 寬螢幕流暢版（含獨立加碼戰備金 NT$12,960）操盤室儀表板已輸出至 {DASHBOARD_FILE}")
+    print(f"[完成] 寬螢幕流暢版（含 NVDA 加碼與台美雙幣戰備金）操盤室儀表板已輸出至 {DASHBOARD_FILE}")
 
 
 # ==========================================
@@ -1141,7 +1149,7 @@ def main():
                 "header": {"type": "box", "layout": "vertical", "backgroundColor": "#0D9488", "paddingAll": "15px",
                            "contents": [{"type": "text", "text": "🗓️ 定期定額扣款前一日提醒", "weight": "bold", "color": "#FFFFFF", "size": "sm"}]},
                 "body": {"type": "box", "layout": "vertical", "spacing": "sm",
-                         "contents": [{"type": "text", "text": f"明天 (22號) 將執行 0050、009816 定期定額扣款共 NT$10,000，請確認日常扣款資金已入帳（交割戶另有獨立保留之加碼戰備金 NT${RESERVE_CASH_TWD:,}）！", "size": "xs", "wrap": True, "color": "#334155"}]}
+                         "contents": [{"type": "text", "text": f"明天 (22號) 將執行 0050、009816 定期定額扣款共 NT$10,000，請確認日常扣款資金已入帳（目前雙幣戰備金：台股 NT${RESERVE_CASH_TWD:,} / 美股 ${US_RESERVE_CASH_USD:,.2f}）！", "size": "xs", "wrap": True, "color": "#334155"}]}
             })
         elif today_now.weekday() == 5 and today_now.hour < 10:
             current_total_val = sum(r["market_value_twd"] for r in eval_results if r["shares"] > 0)
@@ -1150,7 +1158,7 @@ def main():
                 "header": {"type": "box", "layout": "vertical", "backgroundColor": "#3B82F6", "paddingAll": "15px",
                            "contents": [{"type": "text", "text": "📊 本週操盤室與 Alpha 週報", "weight": "bold", "color": "#FFFFFF", "size": "sm"}]},
                 "body": {"type": "box", "layout": "vertical", "spacing": "sm",
-                         "contents": [{"type": "text", "text": f"本週證券總市值: NT${current_total_val:,.0f} ｜ 獨立加碼戰備金: NT${RESERVE_CASH_TWD:,}。祝您週末愉快！", "size": "xs", "wrap": True, "color": "#334155"}]}
+                         "contents": [{"type": "text", "text": f"本週證券總市值: NT${current_total_val:,.0f} ｜ 雙幣戰備金：台股 NT${RESERVE_CASH_TWD:,} / 美股 ${US_RESERVE_CASH_USD:,.2f}。祝您週末愉快！", "size": "xs", "wrap": True, "color": "#334155"}]}
             })
 
     if eval_results:
@@ -1175,7 +1183,7 @@ def main():
             except Exception:
                 pass
 
-        print("[完成] 寬螢幕流暢版（含獨立加碼戰備金 NT$12,960）操盤平台執行完畢。")
+        print("[完成] 寬螢幕流暢版（含 NVDA 加碼與台美雙幣戰備金）操盤平台執行完畢。")
 
 
 if __name__ == "__main__":
