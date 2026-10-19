@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (Ultimate Autonomous Low-Frequency Edition - Charts Fixed)
-- 已修復中段 30 日組合淨值曲線與右側持倉圓餅圖的 Chart.js 渲染問題
+Quantitative Risk & Valuation Engine (Ultimate Autonomous Low-Frequency Edition)
+- 已將 2337.TW (旺宏) 與 6182.TWO (合晶) 設為已出清 (shares: 0, 僅監控買點)
 - 具備 AMZN、更新 NVDA 均價、DCA 定期定額自動記帳、48hr 增減對比與一鍵智慧排序
 """
 
@@ -76,24 +76,6 @@ WATCHLIST = {
         "cost": 1159.82, "cost_fx": 31.8, "est_yield": 0.6, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 4.0,
         "dca_monthly_twd": 0, "dca_day": None,
     },
-    "GLD": {
-        "name": "SPDR黃金ETF (僅監控)", "market": "US", "currency": "$", "is_etf": True,
-        "shares": 0, "target_pe": 20.0, "fallback_fair_value": 240.0,
-        "cost": 0.0, "est_yield": 0.0, "stop_loss_pct": None, "trailing_stop_pct": -20.0, "flash_pct": 2.5,
-        "dca_monthly_twd": 0, "dca_day": None,
-    },
-    "2330.TW": {
-        "name": "台積電 (僅監控)", "market": "TW", "currency": "NT$", "is_etf": False,
-        "shares": 0, "target_pe": 20.0, "fallback_fair_value": 1350.0,
-        "cost": 0.0, "est_yield": 1.5, "stop_loss_pct": None, "trailing_stop_pct": -15.0, "flash_pct": 3.5,
-        "dca_monthly_twd": 0, "dca_day": None,
-    },
-    "2337.TW": {
-        "name": "旺宏", "market": "TW", "currency": "NT$", "is_etf": False,
-        "shares": 50, "target_pe": 20.0, "fallback_fair_value": 183.0,
-        "cost": 145.0, "est_yield": 2.5, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 3.5,
-        "dca_monthly_twd": 0, "dca_day": None,
-    },
     "2002.TW": {
         "name": "中鋼", "market": "TW", "currency": "NT$", "is_etf": False,
         "shares": 1000, "target_pe": 15.0, "fallback_fair_value": 23.5,
@@ -118,10 +100,28 @@ WATCHLIST = {
         "cost": 22.0, "est_yield": 4.0, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 2.5,
         "dca_monthly_twd": 0, "dca_day": None,
     },
+    "2330.TW": {
+        "name": "台積電 (僅監控)", "market": "TW", "currency": "NT$", "is_etf": False,
+        "shares": 0, "target_pe": 20.0, "fallback_fair_value": 1350.0,
+        "cost": 0.0, "est_yield": 1.5, "stop_loss_pct": None, "trailing_stop_pct": -15.0, "flash_pct": 3.5,
+        "dca_monthly_twd": 0, "dca_day": None,
+    },
+    "2337.TW": {
+        "name": "旺宏 (已出清/僅監控)", "market": "TW", "currency": "NT$", "is_etf": False,
+        "shares": 0, "target_pe": 20.0, "fallback_fair_value": 183.0,
+        "cost": 0.0, "est_yield": 2.5, "stop_loss_pct": None, "trailing_stop_pct": -15.0, "flash_pct": 3.5,
+        "dca_monthly_twd": 0, "dca_day": None,
+    },
     "6182.TWO": {
-        "name": "合晶", "market": "TW", "currency": "NT$", "is_etf": False,
-        "shares": 120, "target_pe": 20.0, "fallback_fair_value": 130.0,
-        "cost": 120.5, "est_yield": 2.8, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 3.5,
+        "name": "合晶 (已出清/僅監控)", "market": "TW", "currency": "NT$", "is_etf": False,
+        "shares": 0, "target_pe": 20.0, "fallback_fair_value": 130.0,
+        "cost": 0.0, "est_yield": 2.8, "stop_loss_pct": None, "trailing_stop_pct": -15.0, "flash_pct": 3.5,
+        "dca_monthly_twd": 0, "dca_day": None,
+    },
+    "GLD": {
+        "name": "SPDR黃金ETF (僅監控)", "market": "US", "currency": "$", "is_etf": True,
+        "shares": 0, "target_pe": 20.0, "fallback_fair_value": 240.0,
+        "cost": 0.0, "est_yield": 0.0, "stop_loss_pct": None, "trailing_stop_pct": -20.0, "flash_pct": 2.5,
         "dca_monthly_twd": 0, "dca_day": None,
     },
 }
@@ -568,12 +568,14 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
         desc = f"單日重挫 {day_change_pct:.2f}% (超過 -{flash_pct}% 閃崩線)，留意機構拋售。"
         sizing_note = "👉 試算：今日暫停單筆接刀，待站回 5 日線再評估"
     elif not is_etf and premium_rate > high_risk_threshold:
-        risk_level, color, action = "高風險 (嚴重昂貴)", "#EF4444", "執行減碼：賣出持倉 1/3"
+        risk_level, color, action = "高風險 (嚴重昂貴)", "#EF4444", "執行減碼：賣出持倉 1/3" if shares > 0 else "估值偏高：暫緩建倉"
         desc = f"溢價率達 {premium_rate:.1f}%，超過動態風險門檻 ({high_risk_threshold:.1f}%)。"
         if shares > 0:
             sell_sh = round(shares / 3.0, 1) if market_type in ["US", "FUND"] else max(1, int(round(shares / 3.0)))
             sell_val = round(sell_sh * price * (usd_twd if market_type == "US" else 1.0), 0)
             sizing_note = f"👉 試算：建議減碼 {sell_sh:g} 股 (約收回 NT${sell_val:,.0f})"
+        else:
+            sizing_note = "👉 試算：已出清/空手監控中，等待拉回合理價再評估"
     elif safety_margin >= 10.0 and not macro.get("is_sox_bear", False):
         risk_level, color, action = "低風險 (買進區)", "#10B981", "啟動分批建倉：買進 1/3"
         desc = f"安全邊際達 {safety_margin:.1f}% 且半導體非空頭，具估值吸引力。"
@@ -582,7 +584,7 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
             buy_val = round(buy_sh * price * (usd_twd if market_type == "US" else 1.0), 0)
             sizing_note = f"👉 試算：加碼 1/3 部位約 {buy_sh:g} 股 (需資金 NT${buy_val:,.0f})"
         else:
-            sizing_note = f"👉 試算：監控標的可建首倉 1~5 股"
+            sizing_note = "👉 試算：空手監控標的可重新建首倉 (分批買進)"
     else:
         if dca_monthly_twd > 0 and dca_day:
             est_buy_shares = int(round(dca_monthly_twd / price)) if price > 0 else 0
@@ -590,6 +592,10 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
             action = f"每月 {dca_day} 號扣款 NT${dca_monthly_twd:,}"
             desc = f"距離下次扣款還有 {dca_days_left} 天，按現價預估可買入約 {est_buy_shares} 股。"
             sizing_note = f"👉 試算：22號自動扣款買進約 {est_buy_shares} 股 ｜ 預估年息 NT${annual_dividend_twd:,.0f}"
+        elif shares == 0:
+            risk_level, color, action = "合理估值區", "#64748B", "空手觀望 / 等待買點"
+            desc = f"單日漲跌 {day_change_pct:+.2f}%，尚未跌入低風險安全邊際區。"
+            sizing_note = "👉 試算：目前空手 (0股)，待安全邊際 >= 10% 自動通知"
         else:
             risk_level, color, action = "合理估值區", "#3B82F6", "定期定額 / 維持續抱"
             desc = f"單日漲跌 {day_change_pct:+.2f}%，處於合理估值防禦帶內。"
@@ -739,7 +745,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
 
         earnings_grid_text = f"{r['earnings_date_str']} ({edays}天)" if (edays is not None and edays >= 0) else r["earnings_date_str"]
         risk_score_map = {"停損警戒": 5, "移動停利警戒": 4, "單日閃崩警戒": 3, "高風險 (嚴重昂貴)": 2, "低風險 (買進區)": 1, "合理估值區": 0, "定期定額累積": 0}
-        r_score = risk_score_map.get(r["risk_level"], 0)
+        r_score = risk_score_map.get(r["risk_level"], 0) if r["shares"] > 0 else -1
 
         cards_html += (
             f'<div class="stock-card bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between backdrop-blur-md transition hover:border-slate-700" '
@@ -1042,7 +1048,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
     html = "".join(html_parts)
     with open(DASHBOARD_FILE, "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"[完成] 寬螢幕流暢版（含 AMZN 與修復圖表）操盤室儀表板已輸出至 {DASHBOARD_FILE}")
+    print(f"[完成] 寬螢幕流暢版（已將旺宏與合晶轉為空手監控）操盤室儀表板已輸出至 {DASHBOARD_FILE}")
 
 
 # ==========================================
@@ -1099,7 +1105,14 @@ def main():
         is_quality_changed = (last_risk != eval_data["risk_level"])
         is_urgent_stop = ("停損" in eval_data["risk_level"] or "移動停利" in eval_data["risk_level"])
 
-        if (is_quality_changed or is_urgent_stop) and eval_data["risk_level"] not in ["合理估值區", "定期定額累積"]:
+        # 空手監控標的（shares == 0）只在跌入「低風險 (買進區)」時才推播通知，避免高風險減碼通知干擾
+        should_notify_stock = False
+        if eval_data["shares"] > 0:
+            should_notify_stock = (is_quality_changed or is_urgent_stop) and eval_data["risk_level"] not in ["合理估值區", "定期定額累積"]
+        else:
+            should_notify_stock = is_quality_changed and eval_data["risk_level"] == "低風險 (買進區)"
+
+        if should_notify_stock:
             pnl_sign = "+" if eval_data["pnl_rate"] > 0 else ""
             bubbles_to_push.append({
                 "type": "bubble", "size": "mega",
@@ -1155,7 +1168,7 @@ def main():
             except Exception:
                 pass
 
-        print("[完成] 寬螢幕流暢版（含 AMZN 與修復圖表）操盤平台執行完畢。")
+        print("[完成] 寬螢幕流暢版（已將旺宏與合晶轉為空手監控）操盤平台執行完畢。")
 
 
 if __name__ == "__main__":
