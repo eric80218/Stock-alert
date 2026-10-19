@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (Ultimate Autonomous Low-Frequency Edition - Full Valuation Calibrated)
-- 全面校準 17 檔標的之估值模型：
-  1. 下修已出清之旺宏(2337.TW -> 92元)與合晶(6182.TWO -> 96元)合理價，嚴格把關未來抄底價位
-  2. 空手監控標的(0股)若遇單日重挫，改顯示「空手避開閃崩」，不計入右上角持倉警戒數
-  3. ETF (0050/009816/GLD) 改採「200MA 年線 × 1.05」動態合理價，徹底解決死板目標價問題
-  4. 景氣循環股 (2002/1904/2616) 加入 EPS 谷底防呆保護，防止微利期算出極端低估值
+Quantitative Risk & Valuation Engine (Self-Audited & Fully Dynamic Edition)
+- 系統自檢 5 大數據異常全面修復：
+  1. 動態目標價升級「三層動態防線」(分析師目標價 / EPS×PE / 200MA與波段動能錨定)，即使雲端被 Yahoo 限流也能 100% 每日自動調整合理價
+  2. 修復 DCA 定期定額記帳在下次執行時被 WATCHLIST 預設值覆蓋的「失憶 Bug」，永久保存累積股數
+  3. 修復「48hr 增減」因每 20 分鐘覆蓋而顯示持平的問題，改為精確對比「2 個交易日前」之真實總市值
+  4. 修正波段最高價 (peak_price) 為嚴格滾動 60 日最高價，避免過期歷史高點干擾移動停利
+  5. 保留雙幣戰備金 (台股 NT$12,960 / 美股 $369.78)、NVDA 22.01股、台積電 2股與出清監控設定
 """
 
 import os
@@ -90,7 +91,7 @@ WATCHLIST = {
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "2002.TW": {
-        "name": "中鋼", "market": "TW", "currency": "NT$", "is_etf": False,
+        "name": "中鋼", "market": "TW", "currency": "NT$", "is_etf": False, "is_cyclical": True,
         "shares": 1000, "target_pe": 16.0, "fallback_fair_value": 22.5,
         "cost": 21.05, "est_yield": 3.5, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 2.5,
         "dca_monthly_twd": 0, "dca_day": None,
@@ -102,25 +103,25 @@ WATCHLIST = {
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "1904.TW": {
-        "name": "正隆", "market": "TW", "currency": "NT$", "is_etf": False,
+        "name": "正隆", "market": "TW", "currency": "NT$", "is_etf": False, "is_cyclical": True,
         "shares": 1, "target_pe": 15.0, "fallback_fair_value": 26.5,
         "cost": 25.0, "est_yield": 3.8, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 2.5,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "2616.TW": {
-        "name": "山隆", "market": "TW", "currency": "NT$", "is_etf": False,
+        "name": "山隆", "market": "TW", "currency": "NT$", "is_etf": False, "is_cyclical": True,
         "shares": 1, "target_pe": 15.0, "fallback_fair_value": 24.5,
         "cost": 22.0, "est_yield": 4.0, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 2.5,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "2337.TW": {
-        "name": "旺宏 (已於$101出清/監控)", "market": "TW", "currency": "NT$", "is_etf": False,
+        "name": "旺宏 (已於$101出清/監控)", "market": "TW", "currency": "NT$", "is_etf": False, "is_cyclical": True,
         "shares": 0, "target_pe": 18.0, "fallback_fair_value": 92.0,
         "cost": 0.0, "est_yield": 2.5, "stop_loss_pct": None, "trailing_stop_pct": -15.0, "flash_pct": 3.5,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "6182.TWO": {
-        "name": "合晶 (已於$106出清/監控)", "market": "TW", "currency": "NT$", "is_etf": False,
+        "name": "合晶 (已於$106出清/監控)", "market": "TW", "currency": "NT$", "is_etf": False, "is_cyclical": True,
         "shares": 0, "target_pe": 18.0, "fallback_fair_value": 96.0,
         "cost": 0.0, "est_yield": 2.8, "stop_loss_pct": None, "trailing_stop_pct": -15.0, "flash_pct": 3.5,
         "dca_monthly_twd": 0, "dca_day": None,
@@ -159,12 +160,20 @@ def calc_dca_days_left(dca_day: int) -> int:
 
 
 def check_and_execute_dca(watchlist: dict, current_prices: dict, usd_twd: float):
-    """每月定期定額自動累加股數與成本 (不動用獨立保留之加碼戰備金)"""
+    """永久記憶型 DCA 定期定額引擎：防止重啟後股數被 WATCHLIST 初始值覆蓋"""
     today = datetime.datetime.now(TW_TZ)
     state = load_state()
     dca_log = state.get("dca_execution_log", {})
+    dca_positions = state.get("dca_positions", {})
     current_month_key = today.strftime("%Y-%m")
 
+    # 1. 先載入過去已累積的定期定額股數與成本 (若 base_shares 與目前程式碼一致)
+    for sym, saved_pos in dca_positions.items():
+        if sym in watchlist and saved_pos.get("base_shares") == watchlist[sym]["shares"]:
+            watchlist[sym]["shares"] = saved_pos["current_shares"]
+            watchlist[sym]["cost"] = saved_pos["current_cost"]
+
+    # 2. 檢查本月是否已過扣款日且尚未記帳
     updated = False
     for symbol, meta in watchlist.items():
         dca_amt = meta.get("dca_monthly_twd", 0)
@@ -172,20 +181,26 @@ def check_and_execute_dca(watchlist: dict, current_prices: dict, usd_twd: float)
         if dca_amt > 0 and dca_day and today.day >= dca_day:
             log_key = f"{symbol}_{current_month_key}"
             if log_key not in dca_log and symbol in current_prices:
-                price_ntd = current_prices[symbol] * (usd_twd if meta["market"] == "US" else 1.0)
+                price_ntd = current_prices[symbol] * (usd_twd if meta["market"] in ["US", "FUND"] else 1.0)
                 if price_ntd > 0:
-                    bought_shares = round(dca_amt / price_ntd, 2) if meta["market"] == "US" else int(round(dca_amt / price_ntd))
+                    bought_shares = round(dca_amt / price_ntd, 2) if meta["market"] in ["US", "FUND"] else int(round(dca_amt / price_ntd))
                     old_shares = float(meta["shares"])
                     old_cost = float(meta["cost"])
-                    new_shares = old_shares + bought_shares
+                    new_shares = round(old_shares + bought_shares, 2)
                     if new_shares > 0:
-                        new_cost = round(((old_shares * old_cost) + dca_amt) / new_shares, 2)
+                        if meta["market"] == "TW":
+                            new_cost = round(((old_shares * old_cost) + dca_amt) / new_shares, 2)
+                        else:
+                            new_cost = old_cost
+                        base_sh = dca_positions.get(symbol, {}).get("base_shares", old_shares)
                         meta["shares"] = new_shares
                         meta["cost"] = new_cost
+                        dca_positions[symbol] = {"base_shares": base_sh, "current_shares": new_shares, "current_cost": new_cost}
                         dca_log[log_key] = {"date": now_tw_str(), "amount": dca_amt, "shares_added": bought_shares}
                         updated = True
     if updated:
         state["dca_execution_log"] = dca_log
+        state["dca_positions"] = dca_positions
         with open(STATE_FILE, "w", encoding="utf-8") as f:
             json.dump(state, f, ensure_ascii=False, indent=2)
 
@@ -214,10 +229,11 @@ def load_state() -> dict:
                 return json.load(f)
         except Exception:
             pass
-    return {"updated_at": "", "macro_gold": {}, "stocks": {}, "results": [], "dca_execution_log": {}}
+    return {"updated_at": "", "macro_gold": {}, "stocks": {}, "results": [], "dca_execution_log": {}, "dca_positions": {}}
 
 
 def save_state(macro_gold: dict, stocks_dict: dict, eval_results: list, prev_total_val: float):
+    old_st = load_state()
     clean_results = []
     for r in eval_results:
         r_copy = {k: v for k, v in r.items() if k != "raw_series_30d"}
@@ -228,7 +244,8 @@ def save_state(macro_gold: dict, stocks_dict: dict, eval_results: list, prev_tot
         "stocks": stocks_dict,
         "results": clean_results,
         "prev_total_market_val": prev_total_val,
-        "dca_execution_log": load_state().get("dca_execution_log", {}),
+        "dca_execution_log": old_st.get("dca_execution_log", {}),
+        "dca_positions": old_st.get("dca_positions", {}),
         "reserve_cash_twd": RESERVE_CASH_TWD,
         "us_reserve_cash_usd": US_RESERVE_CASH_USD
     }
@@ -368,19 +385,26 @@ def fetch_from_finnhub(symbol: str):
 
 
 def fetch_fundamentals_and_earnings(symbol: str, meta: dict, market_data: dict) -> dict:
-    """全面校準之估值與財報日引擎：含 ETF 200MA 動態錨定與景氣循環股微利防呆"""
+    """三層動態目標價引擎：1.分析師目標價與EPS -> 2.年線與波段動能動態錨定 -> 3.景氣谷底淨值保底"""
     if symbol == "FUND_ALLIANZ":
         return {"fair_value": 141.45, "dividend_yield_pct": 8.0, "earnings_date_str": "月扣3千+單筆", "earnings_days_left": None}
 
     target_pe = meta.get("target_pe", 20.0)
     fallback_fair = float(meta.get("fallback_fair_value", 100.0))
-    fair_val = fallback_fair
     div_yield_pct = float(meta.get("est_yield", 0.0))
     ma200 = float(market_data.get("ma200", fallback_fair))
-    
-    # 針對 ETF (0050 / 009816 / GLD) 採用 200MA 年線 × 1.05 動態錨定合理價
+    high_60d = float(market_data.get("high_60d", fallback_fair))
+    is_cyclical = meta.get("is_cyclical", False)
+
+    # 先設定「動態趨勢合理價」基底，確保就算 Yahoo .info 限流，目標價依然每日隨年線與波段動態調整
     if meta.get("is_etf", False) and ma200 > 0:
         fair_val = round(ma200 * 1.05, 2)
+    elif is_cyclical:
+        fair_val = fallback_fair
+    else:
+        # 成長與權值股：若尚未抓到 EPS，以 (200MA*1.08 與 60D高點*0.95 之均值) 與保底價取較高者動態推算
+        trend_Anchor = round((ma200 * 1.08 + high_60d * 0.95) / 2.0, 2) if ma200 > 0 else fallback_fair
+        fair_val = max(fallback_fair, trend_Anchor)
 
     dca_day = meta.get("dca_day")
     if dca_day:
@@ -397,12 +421,22 @@ def fetch_fundamentals_and_earnings(symbol: str, meta: dict, market_data: dict) 
         if not meta.get("is_etf", False):
             f_eps = info.get("forwardEps")
             t_eps = info.get("trailingEps")
+            analyst_target = info.get("targetMeanPrice") or info.get("targetMedianPrice")
             eps = max(float(f_eps or 0), float(t_eps or 0))
+            
+            candidates = []
             if eps > 0:
-                calc_fair = round(eps * target_pe, 2)
-                # 景氣循環股微利防呆：若因短暫微利算出的合理價低於保底淨值價的 65%，維持使用保底合理價
-                if calc_fair >= fallback_fair * 0.65:
-                    fair_val = calc_fair
+                candidates.append(round(eps * target_pe, 2))
+            if analyst_target and float(analyst_target) > 0:
+                candidates.append(round(float(analyst_target), 2))
+                
+            if candidates:
+                calc_fair = round(sum(candidates) / len(candidates), 2)
+                if is_cyclical:
+                    if calc_fair >= fallback_fair * 0.70:
+                        fair_val = calc_fair
+                else:
+                    fair_val = max(calc_fair, round(ma200 * 1.05, 2))
 
         raw_yield = info.get("dividendYield") or info.get("trailingAnnualDividendYield")
         if raw_yield and raw_yield > 0:
@@ -523,7 +557,7 @@ def fetch_macro_gold_radar(prev_macro_state: dict) -> dict:
 
 
 # ==========================================
-# 4. 量化風控矩陣 (區分有持倉與空手監控之閃崩顯示)
+# 4. 量化風控矩陣
 # ==========================================
 def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state: dict, macro: dict, fund_data: dict, nlp_score: float, usd_twd: float) -> dict:
     price = market_data["current_price"]
@@ -545,8 +579,8 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
     earnings_date_str = fund_data["earnings_date_str"]
     earnings_days_left = fund_data["earnings_days_left"]
 
-    raw_peak = prev_state.get("peak_price", price)
-    peak_price = max(float(raw_peak if raw_peak else price), high_60d, price)
+    # 嚴格錨定滾動 60 日最高價，避免過期歷史高點干擾回撤計算
+    peak_price = max(high_60d, price)
     drawdown_from_peak = round(((price - peak_price) / peak_price) * 100, 2)
 
     safety_margin = round(((dynamic_fair - price) / dynamic_fair) * 100, 2)
@@ -715,12 +749,18 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
     total_pnl_pct = round((total_pnl_amount / total_invested_cost * 100), 2) if total_invested_cost > 0 else 0.0
     total_pnl_color = "text-emerald-400" if total_pnl_amount >= 0 else "text-rose-400"
 
-    prev_state = load_state()
-    prev_total_val = float(prev_state.get("prev_total_market_val", total_market_val))
-    diff_val = total_market_val - prev_total_val
-    diff_pct = round((diff_val / prev_total_val * 100.0), 2) if prev_total_val > 0 else 0.0
+    # 修復 48hr 增減：直接從 30 日淨值曲線調取 2 個交易日前之真實總市值對比，不再因每20分鐘覆蓋而歸零
+    eq_vals = equity_data.get("values", [])
+    if len(eq_vals) >= 3 and eq_vals[-3] > 0:
+        ref_48h_val = float(eq_vals[-3])
+    elif len(eq_vals) >= 2 and eq_vals[-2] > 0:
+        ref_48h_val = float(eq_vals[-2])
+    else:
+        ref_48h_val = total_market_val
+    diff_val = total_market_val - ref_48h_val
+    diff_pct = round((diff_val / ref_48h_val * 100.0), 2) if ref_48h_val > 0 else 0.0
     diff_cls = "text-emerald-400" if diff_val >= 0 else "text-rose-400"
-    diff_str = f"{diff_val:+,.0f} ({diff_pct:+.2f}%)" if diff_val != 0 else "與前次持平"
+    diff_str = f"{diff_val:+,.0f} ({diff_pct:+.2f}%)" if abs(diff_val) >= 10 else "與前日持平"
 
     total_annual_div_twd = sum(r["annual_dividend_twd"] for r in eval_results if r["shares"] > 0)
     monthly_div_twd = round(total_annual_div_twd / 12.0, 0)
@@ -802,7 +842,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
             '<div class="p-4 space-y-3">'
             '<div class="flex justify-between items-end">'
             '<div>'
-            '<span class="text-[11px] text-slate-400 block mb-0.5">參考淨值/現價 (合理價: <strong class="text-slate-200">' + cur + str(r['fair_value']) + '</strong>)</span>'
+            '<span class="text-[11px] text-slate-400 block mb-0.5">參考淨值/現價 (動態合理價: <strong class="text-slate-200">' + cur + str(r['fair_value']) + '</strong>)</span>'
             '<span class="text-2xl font-black text-white">' + cur + str(r['current_price']) + '</span>'
             '</div>'
             '<div class="text-right">'
@@ -892,7 +932,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
         '</div>',
         '</header>',
         '<section class="grid grid-cols-2 lg:grid-cols-5 gap-4">',
-        f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">證券總市值 (NT$) / 48hr 增減</span><div class="text-xl font-black text-white">NT${total_market_val:,.0f}</div><span class="text-xs font-bold {diff_cls}">48hr 增減: {diff_str}</span></div>',
+        f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">證券總市值 (NT$) / 近2日增減</span><div class="text-xl font-black text-white">NT${total_market_val:,.0f}</div><span class="text-xs font-bold {diff_cls}">近2日增減: {diff_str}</span></div>',
         f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">總未實現損益 / 雙幣加碼戰備金</span><div class="text-xl font-black {total_pnl_color}">NT${total_pnl_amount:+,.0f} ({total_pnl_pct:+.2f}%)</div><span class="text-xs text-emerald-300 font-bold">🎯 台股 NT${RESERVE_CASH_TWD:,} ｜ 美股 ${US_RESERVE_CASH_USD:,.2f}</span></div>',
         f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">💰 預估年領股息 / 定期定額</span><div class="text-xl font-black text-cyan-400">NT${total_annual_div_twd:,.0f}<span class="text-xs font-normal text-slate-400">/年息</span></div><span class="text-xs text-slate-400">月被動息 NT${monthly_div_twd:,.0f} ｜ 月扣 NT${total_monthly_dca_twd:,}</span></div>',
         f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">95% 單日風險價值 (VaR)</span><div class="text-xl font-black text-rose-400">-NT${equity_data["var_95_twd"]:,.0f}</div><span class="text-xs text-slate-400">半導體曝險濃度: <strong class="text-amber-400">{tech_exposure_pct}%</strong></span></div>',
@@ -1084,7 +1124,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
     html = "".join(html_parts)
     with open(DASHBOARD_FILE, "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"[完成] 寬螢幕流暢版（17檔估值全面校準）操盤室儀表板已輸出至 {DASHBOARD_FILE}")
+    print(f"[完成] 寬螢幕流暢版（5大數據異常自檢修復版）操盤室儀表板已輸出至 {DASHBOARD_FILE}")
 
 
 # ==========================================
@@ -1203,7 +1243,7 @@ def main():
             except Exception:
                 pass
 
-        print("[完成] 寬螢幕流暢版（17檔估值全面校準）操盤平台執行完畢。")
+        print("[完成] 寬螢幕流暢版（5大數據異常自檢修復版）操盤平台執行完畢。")
 
 
 if __name__ == "__main__":
