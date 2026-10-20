@@ -1,14 +1,14 @@
 {
-  "updated_at": "2026-10-21 02:08:29",
+  "updated_at": "2026-10-21 02:17:17",
   "macro_gold": {
     "bubble_level": "資金安穩：市場多頭運行",
     "color": "#10B981",
     "action": "✅ 華爾街機構資金留駐股市，維持標準估值運作。",
-    "desc": "SPXU 量比 0.87x, VIX 恐慌指數 17.32, 費半 多頭。",
-    "vix": 17.32,
+    "desc": "SPXU 量比 0.87x, VIX 恐慌指數 17.36, 費半 多頭。",
+    "vix": 17.36,
     "dxy_price": 101.72,
     "spxu_vol_ratio": 0.87,
-    "sox_price": 11366.0,
+    "sox_price": 11370.7,
     "is_sox_bear": false,
     "premium_shift": 0.0,
     "must_push": false
@@ -18,103 +18,103 @@
       "risk_level": "定期定額累積",
       "current_price": 141.45,
       "peak_price": 143.5,
-      "updated_at": "2026-10-21 02:08:25"
+      "updated_at": "2026-10-21 02:17:11"
     },
     "0050.TW": {
       "risk_level": "定期定額累積",
       "current_price": 108.15,
       "peak_price": 116.6,
-      "updated_at": "2026-10-21 02:08:25"
+      "updated_at": "2026-10-21 02:17:11"
     },
     "009816.TW": {
       "risk_level": "定期定額累積",
       "current_price": 16.07,
       "peak_price": 17.09,
-      "updated_at": "2026-10-21 02:08:25"
+      "updated_at": "2026-10-21 02:17:12"
     },
     "2330.TW": {
       "risk_level": "低風險 (買進區)",
       "current_price": 2420.0,
       "peak_price": 2590.0,
-      "updated_at": "2026-10-21 02:08:25"
+      "updated_at": "2026-10-21 02:17:12"
     },
     "AMZN": {
       "risk_level": "低風險 (買進區)",
-      "current_price": 262.8,
+      "current_price": 262.87,
       "peak_price": 287.2,
-      "updated_at": "2026-10-21 02:08:26"
+      "updated_at": "2026-10-21 02:17:12"
     },
     "NVDA": {
       "risk_level": "低風險 (買進區)",
-      "current_price": 217.13,
+      "current_price": 217.16,
       "peak_price": 243.37,
-      "updated_at": "2026-10-21 02:08:26"
+      "updated_at": "2026-10-21 02:17:13"
     },
     "AMAT": {
       "risk_level": "移動停利警戒",
-      "current_price": 406.18,
+      "current_price": 406.01,
       "peak_price": 563.16,
-      "updated_at": "2026-10-21 02:08:26"
+      "updated_at": "2026-10-21 02:17:14"
     },
     "BRK-B": {
       "risk_level": "低風險 (買進區)",
-      "current_price": 538.05,
+      "current_price": 538.08,
       "peak_price": 538.97,
-      "updated_at": "2026-10-21 02:08:27"
+      "updated_at": "2026-10-21 02:17:14"
     },
     "COST": {
       "risk_level": "合理估值區",
-      "current_price": 995.38,
+      "current_price": 995.22,
       "peak_price": 1008.37,
-      "updated_at": "2026-10-21 02:08:27"
+      "updated_at": "2026-10-21 02:17:15"
     },
     "LLY": {
       "risk_level": "低風險 (買進區)",
-      "current_price": 1291.96,
+      "current_price": 1288.56,
       "peak_price": 1311.75,
-      "updated_at": "2026-10-21 02:08:27"
+      "updated_at": "2026-10-21 02:17:15"
     },
     "2002.TW": {
       "risk_level": "低風險 (買進區)",
       "current_price": 19.5,
       "peak_price": 19.9,
-      "updated_at": "2026-10-21 02:08:27"
+      "updated_at": "2026-10-21 02:17:15"
     },
     "1232.TW": {
       "risk_level": "合理估值區",
       "current_price": 155.5,
       "peak_price": 159.5,
-      "updated_at": "2026-10-21 02:08:28"
+      "updated_at": "2026-10-21 02:17:16"
     },
     "1904.TW": {
       "risk_level": "低風險 (買進區)",
       "current_price": 25.0,
       "peak_price": 26.45,
-      "updated_at": "2026-10-21 02:08:28"
+      "updated_at": "2026-10-21 02:17:16"
     },
     "2616.TW": {
       "risk_level": "停損警戒",
       "current_price": 13.15,
       "peak_price": 13.98,
-      "updated_at": "2026-10-21 02:08:28"
+      "updated_at": "2026-10-21 02:17:16"
     },
     "2337.TW": {
       "risk_level": "空手避開閃崩",
       "current_price": 102.0,
       "peak_price": 144.5,
-      "updated_at": "2026-10-21 02:08:28"
+      "updated_at": "2026-10-21 02:17:16"
     },
     "6182.TWO": {
       "risk_level": "合理估值區",
       "current_price": 107.5,
       "peak_price": 140.0,
-      "updated_at": "2026-10-21 02:08:28"
+      "updated_at": "2026-10-21 02:17:17"
     },
     "GLD": {
       "risk_level": "低風險 (買進區)",
-      "current_price": 378.22,
+      "current_price": 378.09,
       "peak_price": 429.42,
-      "updated_at": "2026-10-21 02:08:29"
+      "updated_at": "2026-10-21 02:17:17"
     }
   },
   "results": [
@@ -539,12 +539,12 @@
       "name": "亞馬遜 (3股/均價$254.55)",
       "market": "US",
       "currency": "$",
-      "current_price": 262.8,
-      "day_change_pct": 0.13,
+      "current_price": 262.87,
+      "day_change_pct": 0.16,
       "fair_value": 364.74,
       "cost": 254.55,
       "shares": 3.0,
-      "market_value_twd": 25725.49,
+      "market_value_twd": 25732.34,
       "invested_cost_twd": 24284.07,
       "dividend_yield_pct": 0.0,
       "annual_dividend_twd": 0.0,
@@ -553,15 +553,15 @@
       "dca_days_left": null,
       "earnings_date_str": "10/30",
       "earnings_days_left": 9,
-      "safety_margin": 27.95,
-      "premium_rate": -27.95,
-      "pnl_rate": 5.94,
+      "safety_margin": 27.93,
+      "premium_rate": -27.93,
+      "pnl_rate": 5.96,
       "ma200": 243.07,
       "ma20": 253.82,
-      "rsi14": 57.5,
+      "rsi14": 57.6,
       "peak_price": 287.2,
-      "drawdown_from_peak": -8.5,
-      "stop_buffer_pct": 15.9,
+      "drawdown_from_peak": -8.47,
+      "stop_buffer_pct": 16.0,
       "risk_level": "低風險 (買進區)",
       "color": "#10B981",
       "action": "戰備金逢低加碼 / 分批建倉",
@@ -635,7 +635,7 @@
         254.76,
         250.0,
         262.45,
-        262.8
+        262.87
       ]
     },
     {
@@ -643,12 +643,12 @@
       "name": "輝達",
       "market": "US",
       "currency": "$",
-      "current_price": 217.13,
-      "day_change_pct": 0.02,
+      "current_price": 217.16,
+      "day_change_pct": 0.03,
       "fair_value": 442.87,
       "cost": 219.8,
       "shares": 22.01,
-      "market_value_twd": 155939.79,
+      "market_value_twd": 155961.34,
       "invested_cost_twd": 153841.98,
       "dividend_yield_pct": 0.03,
       "annual_dividend_twd": 47.0,
@@ -659,12 +659,12 @@
       "earnings_days_left": 28,
       "safety_margin": 50.97,
       "premium_rate": -50.97,
-      "pnl_rate": 1.36,
+      "pnl_rate": 1.38,
       "ma200": 202.96,
       "ma20": 227.08,
       "rsi14": 41.6,
       "peak_price": 243.37,
-      "drawdown_from_peak": -10.78,
+      "drawdown_from_peak": -10.77,
       "stop_buffer_pct": 11.4,
       "risk_level": "低風險 (買進區)",
       "color": "#10B981",
@@ -739,7 +739,7 @@
         217.23,
         214.13,
         217.09,
-        217.13
+        217.16
       ]
     },
     {
@@ -747,12 +747,12 @@
       "name": "應用材料 (已於$426.1減碼9股)",
       "market": "US",
       "currency": "$",
-      "current_price": 406.18,
-      "day_change_pct": -1.68,
+      "current_price": 406.01,
+      "day_change_pct": -1.72,
       "fair_value": 517.32,
       "cost": 316.35,
       "shares": 10.0,
-      "market_value_twd": 132536.53,
+      "market_value_twd": 132481.06,
       "invested_cost_twd": 100599.3,
       "dividend_yield_pct": 0.51,
       "annual_dividend_twd": 676.0,
@@ -761,20 +761,20 @@
       "dca_days_left": null,
       "earnings_date_str": "11/13",
       "earnings_days_left": 23,
-      "safety_margin": 21.48,
-      "premium_rate": -21.48,
-      "pnl_rate": 31.75,
+      "safety_margin": 21.52,
+      "premium_rate": -21.52,
+      "pnl_rate": 31.69,
       "ma200": 439.86,
-      "ma20": 484.5,
+      "ma20": 484.49,
       "rsi14": 29.5,
       "peak_price": 563.16,
-      "drawdown_from_peak": -27.87,
-      "stop_buffer_pct": 41.8,
+      "drawdown_from_peak": -27.91,
+      "stop_buffer_pct": 41.7,
       "risk_level": "移動停利警戒",
       "color": "#F97316",
       "action": "執行移動停利：獲利了結 1/2",
       "desc": "自波段高點回撤達 -27.9% (門檻 -15.0%)，保護獲利。",
-      "sizing_note": "👉 試算：建議減碼 5 股 (約落袋 NT$66,268)",
+      "sizing_note": "👉 試算：建議減碼 5 股 (約落袋 NT$66,241)",
       "nlp_score": 5.0,
       "backtest": {
         "return_pct": 30.2,
@@ -843,7 +843,7 @@
         430.01,
         409.29,
         413.11,
-        406.18
+        406.01
       ]
     },
     {
@@ -851,12 +851,12 @@
       "name": "波克夏 B",
       "market": "US",
       "currency": "$",
-      "current_price": 538.05,
-      "day_change_pct": 1.09,
+      "current_price": 538.08,
+      "day_change_pct": 1.1,
       "fair_value": 691.32,
       "cost": 492.03,
       "shares": 5.0,
-      "market_value_twd": 87782.86,
+      "market_value_twd": 87787.75,
       "invested_cost_twd": 78232.77,
       "dividend_yield_pct": 0.0,
       "annual_dividend_twd": 0.0,
@@ -947,7 +947,7 @@
         525.68,
         532.02,
         532.23,
-        538.05
+        538.08
       ]
     },
     {
@@ -955,12 +955,12 @@
       "name": "好市多",
       "market": "US",
       "currency": "$",
-      "current_price": 995.38,
-      "day_change_pct": -0.02,
+      "current_price": 995.22,
+      "day_change_pct": -0.03,
       "fair_value": 1058.37,
       "cost": 1044.55,
       "shares": 8.0,
-      "market_value_twd": 259834.0,
+      "market_value_twd": 259792.23,
       "invested_cost_twd": 265733.52,
       "dividend_yield_pct": 0.59,
       "annual_dividend_twd": 1533.0,
@@ -969,19 +969,19 @@
       "dca_days_left": null,
       "earnings_date_str": "12/11",
       "earnings_days_left": 51,
-      "safety_margin": 5.95,
-      "premium_rate": -5.95,
-      "pnl_rate": -2.22,
+      "safety_margin": 5.97,
+      "premium_rate": -5.97,
+      "pnl_rate": -2.24,
       "ma200": 965.72,
-      "ma20": 943.39,
-      "rsi14": 73.9,
+      "ma20": 943.38,
+      "rsi14": 73.8,
       "peak_price": 1008.37,
-      "drawdown_from_peak": -1.29,
+      "drawdown_from_peak": -1.3,
       "stop_buffer_pct": 7.8,
       "risk_level": "合理估值區",
       "color": "#3B82F6",
       "action": "定期定額 / 維持續抱",
-      "desc": "單日漲跌 -0.02%，處於合理估值防禦帶內。",
+      "desc": "單日漲跌 -0.03%，處於合理估值防禦帶內。",
       "sizing_note": "👉 試算：維持現有 8 股部位，預估年息 NT$1,533",
       "nlp_score": 5.0,
       "backtest": {
@@ -1051,7 +1051,7 @@
         978.01,
         989.11,
         995.53,
-        995.38
+        995.22
       ]
     },
     {
@@ -1059,37 +1059,37 @@
       "name": "禮來製藥",
       "market": "US",
       "currency": "$",
-      "current_price": 1291.96,
-      "day_change_pct": 4.16,
+      "current_price": 1288.56,
+      "day_change_pct": 3.89,
       "fair_value": 1656.37,
       "cost": 1159.82,
       "shares": 2.0,
-      "market_value_twd": 84313.31,
+      "market_value_twd": 84091.43,
       "invested_cost_twd": 73764.55,
       "dividend_yield_pct": 0.56,
-      "annual_dividend_twd": 472.0,
+      "annual_dividend_twd": 471.0,
       "dca_monthly_twd": 0,
       "dca_day": null,
       "dca_days_left": null,
       "earnings_date_str": "10/29",
       "earnings_days_left": 8,
-      "safety_margin": 22.0,
-      "premium_rate": -22.0,
-      "pnl_rate": 14.3,
-      "ma200": 1079.63,
-      "ma20": 1188.63,
-      "rsi14": 70.8,
+      "safety_margin": 22.21,
+      "premium_rate": -22.21,
+      "pnl_rate": 14.0,
+      "ma200": 1079.61,
+      "ma20": 1188.46,
+      "rsi14": 70.4,
       "peak_price": 1311.75,
-      "drawdown_from_peak": -1.51,
-      "stop_buffer_pct": 24.3,
+      "drawdown_from_peak": -1.77,
+      "stop_buffer_pct": 24.0,
       "risk_level": "低風險 (買進區)",
       "color": "#10B981",
       "action": "戰備金逢低加碼 / 分批建倉",
-      "desc": "安全邊際達 22.0% 且半導體非空頭，具估值吸引力。",
+      "desc": "安全邊際達 22.2% 且半導體非空頭，具估值吸引力。",
       "sizing_note": "🎯 試算：動用美股戰備金 $369.78 可再加碼約 0.29 股 (現持 2 股)",
-      "nlp_score": 2.0,
+      "nlp_score": 5.0,
       "backtest": {
-        "return_pct": -11.1,
+        "return_pct": -11.3,
         "max_drawdown": -34.5,
         "win_rate": 42.3
       },
@@ -1155,7 +1155,7 @@
         1251.61,
         1257.03,
         1240.34,
-        1291.96
+        1288.56
       ]
     },
     {
@@ -1787,9 +1787,9 @@
       "name": "SPDR黃金ETF (僅監控)",
       "market": "US",
       "currency": "$",
-      "current_price": 378.22,
-      "day_change_pct": -0.39,
-      "fair_value": 435.54,
+      "current_price": 378.09,
+      "day_change_pct": -0.42,
+      "fair_value": 435.53,
       "cost": 0.0,
       "shares": 0.0,
       "market_value_twd": 0.0,
@@ -1801,14 +1801,14 @@
       "dca_days_left": null,
       "earnings_date_str": "無近期財報",
       "earnings_days_left": null,
-      "safety_margin": 13.16,
-      "premium_rate": -13.16,
+      "safety_margin": 13.19,
+      "premium_rate": -13.19,
       "pnl_rate": 0.0,
-      "ma200": 414.8,
+      "ma200": 414.79,
       "ma20": 382.29,
-      "rsi14": 42.3,
+      "rsi14": 42.2,
       "peak_price": 429.42,
-      "drawdown_from_peak": -11.92,
+      "drawdown_from_peak": -11.95,
       "stop_buffer_pct": 99.9,
       "risk_level": "低風險 (買進區)",
       "color": "#10B981",
@@ -1883,11 +1883,11 @@
         382.71,
         382.01,
         379.69,
-        378.22
+        378.09
       ]
     }
   ],
-  "prev_total_market_val": 968787.7600000001,
+  "prev_total_market_val": 968501.93,
   "dca_execution_log": {},
   "dca_positions": {},
   "reserve_cash_twd": 12960,
