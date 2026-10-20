@@ -1,12 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (Self-Audited & UBS Cash Pool Edition)
-- 已更新 AMAT 獲利了結紀錄：
-  * AMAT 於 $426.10 減碼 9 股，剩餘持有 10.0 股 (成本 $316.35)
-  * 賣出總額 $3,834.90 USD 獨立記錄於 UBS 銀行帳戶 (UBS_CASH_USD)
-  * 單筆已實現獲利 +$987.75 USD (約 +NT$32,548)，總累計已實現損益轉正為 +NT$28,608
-- 具備三層動態目標價、DCA 永久記憶引擎、近2日真實市值對比與雙幣戰備金試算
+Quantitative Risk & Valuation Engine (Self-Audited & AMZN 3 Shares Corrected Edition)
+- 校正 AMZN (亞馬遜) 為持有 3 股，每股單位成本更新為 $254.55 USD
+- 包含 AMAT 減碼後 10 股、UBS 銀行現金池 ($3,834.90)、台美雙幣戰備金與三層動態目標價引擎
 """
 
 import os
@@ -55,9 +52,9 @@ WATCHLIST = {
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "AMZN": {
-        "name": "亞馬遜", "market": "US", "currency": "$", "is_etf": False,
-        "shares": 2.0, "target_pe": 32.0, "fallback_fair_value": 275.0,
-        "cost": 250.26, "cost_fx": 31.8, "est_yield": 0.0, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 4.0,
+        "name": "亞馬遜 (3股/均價$254.55)", "market": "US", "currency": "$", "is_etf": False,
+        "shares": 3.0, "target_pe": 32.0, "fallback_fair_value": 275.0,
+        "cost": 254.55, "cost_fx": 31.8, "est_yield": 0.0, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 4.0,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "NVDA": {
@@ -675,7 +672,7 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
 
     return {
         "symbol": symbol, "name": meta["name"], "market": market_type, "currency": meta["currency"],
-        "current_price": price, "day_change_pct": day_change_pct, "fair_value": dynamic_fair, "cost": cost, "shares": shares,
+        "current_price": price, "day_change_pct": day_change_pct, "fair_value": dynamic_fair, "cost": round(cost, 2), "shares": shares,
         "market_value_twd": market_value_twd, "invested_cost_twd": invested_cost_twd,
         "dividend_yield_pct": div_yield_pct, "annual_dividend_twd": annual_dividend_twd,
         "dca_monthly_twd": dca_monthly_twd, "dca_day": dca_day, "dca_days_left": dca_days_left,
@@ -1060,44 +1057,56 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
 
         function configGithubToken() {
             const current = localStorage.getItem('gh_pat_token') || '';
-            const input = prompt('【選填】請輸入您的 GitHub Personal Access Token (勾選 repo 與 workflow 權限).\nToken 僅安全儲存在您當前瀏覽器的 localStorage 中，設定後點擊重新整理即可直接在背景喚醒 GitHub Actions 重算：', current);
+            const input = prompt('【設定 GitHub Token】請輸入您的 GitHub Personal Access Token (需勾選 repo 與 workflow 權限)。\n設定後點擊「強制重新整理資料」即可遠端喚醒 GitHub Actions 雲端重算：', current);
             if (input !== null) {
                 localStorage.setItem('gh_pat_token', input.trim());
-                alert('設定已儲存！');
+                alert('✅ Token 設定已儲存！現在可以點擊「強制重新整理資料」測試雲端重算。');
             }
         }
 
         async function triggerSmartRefresh() {
             const btn = document.getElementById('refresh-btn');
             const pat = localStorage.getItem('gh_pat_token');
-            btn.innerHTML = '<span>⏳ 正在同步最新數據...</span>';
+
+            if (!pat) {
+                alert('⚠️ 尚未設定 GitHub Token！\n請先點擊旁邊的「⚙️」按鈕輸入您的 Personal Access Token (需勾選 repo 與 workflow 權限)，才能遠端喚醒 GitHub 雲端重算。');
+                return;
+            }
+
+            btn.innerHTML = '<span>⏳ 正在呼叫 GitHub 雲端重算...</span>';
             btn.disabled = true;
 
             try {
-                if (pat) {
-                    const res = await fetch(`https://api.github.com/repos/${githubRepo}/dispatches`, {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/vnd.github.v3+json',
-                            'Authorization': `token ${pat}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ event_type: 'trigger-quant-refresh' })
-                    });
-                    if (res.status === 204) {
-                        btn.innerHTML = '<span>✅ 已啟動雲端重算 (約35秒後自動刷新)</span>';
-                        setTimeout(() => { window.location.href = window.location.pathname + '?t=' + Date.now(); }, 35000);
-                        return;
-                    }
+                const res = await fetch(`https://api.github.com/repos/${githubRepo}/dispatches`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Authorization': `Bearer ${pat}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ event_type: 'trigger-quant-refresh' })
+                });
+
+                if (res.status === 204) {
+                    let sec = 40;
+                    const timer = setInterval(() => {
+                        sec--;
+                        btn.innerHTML = `<span>✅ 雲端計算中 (${sec}秒後自動刷新)...</span>`;
+                        if (sec <= 0) {
+                            clearInterval(timer);
+                            window.location.href = window.location.pathname + '?t=' + Date.now();
+                        }
+                    }, 1000);
+                } else {
+                    const errData = await res.json().catch(() => ({}));
+                    alert(`❌ 啟動雲端重算失敗 (HTTP ${res.status})！\n原因：${errData.message || '請檢查 Token 是否過期或是否勾選 repo 與 workflow 權限'}\n請點擊「⚙️」重新確認 Token。`);
+                    btn.innerHTML = '<span>🔄 強制重新整理資料</span>';
+                    btn.disabled = false;
                 }
-                const stateRes = await fetch('state.json?t=' + Date.now(), { cache: 'no-store' });
-                if (stateRes.ok) {
-                    const data = await stateRes.json();
-                    document.getElementById('sync-time').innerText = data.updated_at;
-                }
-                window.location.href = window.location.pathname + '?t=' + Date.now();
             } catch (e) {
-                window.location.reload();
+                alert('❌ 網路連線異常：' + e.message);
+                btn.innerHTML = '<span>🔄 強制重新整理資料</span>';
+                btn.disabled = false;
             }
         }
 
@@ -1120,7 +1129,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
     html = "".join(html_parts)
     with open(DASHBOARD_FILE, "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"[完成] 寬螢幕流暢版（含 AMAT 減碼與 UBS 資金池）操盤室儀表板已輸出至 {DASHBOARD_FILE}")
+    print(f"[完成] 寬螢幕流暢版（含 AMZN 3股/均價$254.55校正）操盤室儀表板已輸出至 {DASHBOARD_FILE}")
 
 
 # ==========================================
@@ -1239,7 +1248,7 @@ def main():
             except Exception:
                 pass
 
-        print("[完成] 寬螢幕流暢版（含 AMAT 減碼與 UBS 資金池）操盤平台執行完畢。")
+        print("[完成] 寬螢幕流暢版（含 AMZN 3股/均價$254.55校正）操盤平台執行完畢。")
 
 
 if __name__ == "__main__":
