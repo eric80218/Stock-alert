@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (Self-Audited & Fully Dynamic Edition)
-- 系統自檢 5 大數據異常全面修復：
-  1. 動態目標價升級「三層動態防線」(分析師目標價 / EPS×PE / 200MA與波段動能錨定)，即使雲端被 Yahoo 限流也能 100% 每日自動調整合理價
-  2. 修復 DCA 定期定額記帳在下次執行時被 WATCHLIST 預設值覆蓋的「失憶 Bug」，永久保存累積股數
-  3. 修復「48hr 增減」因每 20 分鐘覆蓋而顯示持平的問題，改為精確對比「2 個交易日前」之真實總市值
-  4. 修正波段最高價 (peak_price) 為嚴格滾動 60 日最高價，避免過期歷史高點干擾移動停利
-  5. 保留雙幣戰備金 (台股 NT$12,960 / 美股 $369.78)、NVDA 22.01股、台積電 2股與出清監控設定
+Quantitative Risk & Valuation Engine (Self-Audited & UBS Cash Pool Edition)
+- 已更新 AMAT 獲利了結紀錄：
+  * AMAT 於 $426.10 減碼 9 股，剩餘持有 10.0 股 (成本 $316.35)
+  * 賣出總額 $3,834.90 USD 獨立記錄於 UBS 銀行帳戶 (UBS_CASH_USD)
+  * 單筆已實現獲利 +$987.75 USD (約 +NT$32,548)，總累計已實現損益轉正為 +NT$28,608
+- 具備三層動態目標價、DCA 永久記憶引擎、近2日真實市值對比與雙幣戰備金試算
 """
 
 import os
@@ -21,13 +20,14 @@ import pandas as pd
 import yfinance as yf
 
 # ==========================================
-# 1. 完整持股與台美雙幣加碼戰備金設定
+# 1. 完整持股與三軌現金池設定 (台股 / 美股券商 / UBS銀行)
 # ==========================================
 GITHUB_REPO = os.environ.get("GITHUB_REPOSITORY", "eric80218/Stock-alert")
 
-REALIZED_PNL_TWD = -3940       # 累計已實現損益 (旺宏 -2200, 合晶 -1740)
+REALIZED_PNL_TWD = 28608       # 累計已實現損益：旺宏(-2200) + 合晶(-1740) + AMAT減碼9股(+32548) = +NT$28,608
 RESERVE_CASH_TWD = 12960       # 台股交割戶「未來逢低加碼專用戰備金」(NT$)
-US_RESERVE_CASH_USD = 369.78   # 美股帳戶「可動用現金餘額」(USD)
+US_RESERVE_CASH_USD = 369.78   # 美股交易帳戶「可動用現金餘額」(USD)
+UBS_CASH_USD = 3834.90         # UBS 銀行帳戶存放之 AMAT 減碼收回資金 (9股 * $426.10 = $3,834.90 USD)
 
 WATCHLIST = {
     "FUND_ALLIANZ": {
@@ -67,8 +67,8 @@ WATCHLIST = {
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "AMAT": {
-        "name": "應用材料", "market": "US", "currency": "$", "is_etf": False,
-        "shares": 19.0, "target_pe": 22.0, "fallback_fair_value": 410.0,
+        "name": "應用材料 (已於$426.1減碼9股)", "market": "US", "currency": "$", "is_etf": False,
+        "shares": 10.0, "target_pe": 22.0, "fallback_fair_value": 410.0,
         "cost": 316.35, "cost_fx": 31.8, "est_yield": 0.8, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 4.0,
         "dca_monthly_twd": 0, "dca_day": None,
     },
@@ -167,13 +167,11 @@ def check_and_execute_dca(watchlist: dict, current_prices: dict, usd_twd: float)
     dca_positions = state.get("dca_positions", {})
     current_month_key = today.strftime("%Y-%m")
 
-    # 1. 先載入過去已累積的定期定額股數與成本 (若 base_shares 與目前程式碼一致)
     for sym, saved_pos in dca_positions.items():
         if sym in watchlist and saved_pos.get("base_shares") == watchlist[sym]["shares"]:
             watchlist[sym]["shares"] = saved_pos["current_shares"]
             watchlist[sym]["cost"] = saved_pos["current_cost"]
 
-    # 2. 檢查本月是否已過扣款日且尚未記帳
     updated = False
     for symbol, meta in watchlist.items():
         dca_amt = meta.get("dca_monthly_twd", 0)
@@ -247,7 +245,9 @@ def save_state(macro_gold: dict, stocks_dict: dict, eval_results: list, prev_tot
         "dca_execution_log": old_st.get("dca_execution_log", {}),
         "dca_positions": old_st.get("dca_positions", {}),
         "reserve_cash_twd": RESERVE_CASH_TWD,
-        "us_reserve_cash_usd": US_RESERVE_CASH_USD
+        "us_reserve_cash_usd": US_RESERVE_CASH_USD,
+        "ubs_cash_usd": UBS_CASH_USD,
+        "realized_pnl_twd": REALIZED_PNL_TWD
     }
     with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=2)
@@ -396,13 +396,11 @@ def fetch_fundamentals_and_earnings(symbol: str, meta: dict, market_data: dict) 
     high_60d = float(market_data.get("high_60d", fallback_fair))
     is_cyclical = meta.get("is_cyclical", False)
 
-    # 先設定「動態趨勢合理價」基底，確保就算 Yahoo .info 限流，目標價依然每日隨年線與波段動態調整
     if meta.get("is_etf", False) and ma200 > 0:
         fair_val = round(ma200 * 1.05, 2)
     elif is_cyclical:
         fair_val = fallback_fair
     else:
-        # 成長與權值股：若尚未抓到 EPS，以 (200MA*1.08 與 60D高點*0.95 之均值) 與保底價取較高者動態推算
         trend_Anchor = round((ma200 * 1.08 + high_60d * 0.95) / 2.0, 2) if ma200 > 0 else fallback_fair
         fair_val = max(fallback_fair, trend_Anchor)
 
@@ -579,7 +577,6 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
     earnings_date_str = fund_data["earnings_date_str"]
     earnings_days_left = fund_data["earnings_days_left"]
 
-    # 嚴格錨定滾動 60 日最高價，避免過期歷史高點干擾回撤計算
     peak_price = max(high_60d, price)
     drawdown_from_peak = round(((price - peak_price) / peak_price) * 100, 2)
 
@@ -749,7 +746,6 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
     total_pnl_pct = round((total_pnl_amount / total_invested_cost * 100), 2) if total_invested_cost > 0 else 0.0
     total_pnl_color = "text-emerald-400" if total_pnl_amount >= 0 else "text-rose-400"
 
-    # 修復 48hr 增減：直接從 30 日淨值曲線調取 2 個交易日前之真實總市值對比，不再因每20分鐘覆蓋而歸零
     eq_vals = equity_data.get("values", [])
     if len(eq_vals) >= 3 and eq_vals[-3] > 0:
         ref_48h_val = float(eq_vals[-3])
@@ -911,7 +907,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
         '<span class="h-3 w-3 rounded-full bg-emerald-500 animate-pulse"></span>',
         '<h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">對沖基金級動態 EPS 與 Alpha 操盤室</h1>',
         '</div>',
-        f'<p class="text-xs sm:text-sm text-slate-400 mt-1">即時匯率 USD/TWD: <span class="text-amber-400 font-mono">{usd_twd:.2f}</span> ｜ 雙幣戰備金: <span class="text-emerald-400 font-bold">台股 NT${RESERVE_CASH_TWD:,} / 美股 ${US_RESERVE_CASH_USD:,.2f}</span> ｜ 更新: <span id="sync-time" class="text-slate-200 font-mono">{updated_time}</span></p>',
+        f'<p class="text-xs sm:text-sm text-slate-400 mt-1">匯率: <span class="text-amber-400 font-mono">{usd_twd:.2f}</span> ｜ 🏦 UBS: <span class="text-amber-300 font-bold">${UBS_CASH_USD:,.2f}</span> ｜ 戰備金: <span class="text-emerald-400 font-bold">台股 NT${RESERVE_CASH_TWD:,} / 美股 ${US_RESERVE_CASH_USD:,.2f}</span> ｜ 更新: <span id="sync-time" class="text-slate-200 font-mono">{updated_time}</span></p>',
         '</div>',
         '<div class="flex flex-wrap items-center gap-2">',
         '<div class="flex items-center bg-emerald-700/80 rounded-lg overflow-hidden shadow">',
@@ -933,7 +929,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
         '</header>',
         '<section class="grid grid-cols-2 lg:grid-cols-5 gap-4">',
         f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">證券總市值 (NT$) / 近2日增減</span><div class="text-xl font-black text-white">NT${total_market_val:,.0f}</div><span class="text-xs font-bold {diff_cls}">近2日增減: {diff_str}</span></div>',
-        f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">總未實現損益 / 雙幣加碼戰備金</span><div class="text-xl font-black {total_pnl_color}">NT${total_pnl_amount:+,.0f} ({total_pnl_pct:+.2f}%)</div><span class="text-xs text-emerald-300 font-bold">🎯 台股 NT${RESERVE_CASH_TWD:,} ｜ 美股 ${US_RESERVE_CASH_USD:,.2f}</span></div>',
+        f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">未實現損益 / 已實現: +NT${REALIZED_PNL_TWD:,}</span><div class="text-xl font-black {total_pnl_color}">NT${total_pnl_amount:+,.0f} ({total_pnl_pct:+.2f}%)</div><span class="text-xs text-amber-300 font-bold">🏦 UBS: ${UBS_CASH_USD:,.2f} ｜ 美股: ${US_RESERVE_CASH_USD:,.2f}</span></div>',
         f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">💰 預估年領股息 / 定期定額</span><div class="text-xl font-black text-cyan-400">NT${total_annual_div_twd:,.0f}<span class="text-xs font-normal text-slate-400">/年息</span></div><span class="text-xs text-slate-400">月被動息 NT${monthly_div_twd:,.0f} ｜ 月扣 NT${total_monthly_dca_twd:,}</span></div>',
         f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">95% 單日風險價值 (VaR)</span><div class="text-xl font-black text-rose-400">-NT${equity_data["var_95_twd"]:,.0f}</div><span class="text-xs text-slate-400">半導體曝險濃度: <strong class="text-amber-400">{tech_exposure_pct}%</strong></span></div>',
         f'<div class="col-span-2 lg:col-span-1 bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">市場總體避險狀態</span><div class="text-base sm:text-lg font-black truncate" style="color: {macro["color"]};">{macro["bubble_level"]}</div><span class="text-xs text-slate-400">VIX: {macro["vix"]} | 費半: ${macro["sox_price"]}</span></div>',
@@ -1124,7 +1120,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
     html = "".join(html_parts)
     with open(DASHBOARD_FILE, "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"[完成] 寬螢幕流暢版（5大數據異常自檢修復版）操盤室儀表板已輸出至 {DASHBOARD_FILE}")
+    print(f"[完成] 寬螢幕流暢版（含 AMAT 減碼與 UBS 資金池）操盤室儀表板已輸出至 {DASHBOARD_FILE}")
 
 
 # ==========================================
@@ -1209,7 +1205,7 @@ def main():
                 "header": {"type": "box", "layout": "vertical", "backgroundColor": "#0D9488", "paddingAll": "15px",
                            "contents": [{"type": "text", "text": "🗓️ 定期定額扣款前一日提醒", "weight": "bold", "color": "#FFFFFF", "size": "sm"}]},
                 "body": {"type": "box", "layout": "vertical", "spacing": "sm",
-                         "contents": [{"type": "text", "text": f"明天 (22號) 將執行 0050、009816 定期定額扣款共 NT$10,000，請確認日常扣款資金已入帳（目前雙幣戰備金：台股 NT${RESERVE_CASH_TWD:,} / 美股 ${US_RESERVE_CASH_USD:,.2f}）！", "size": "xs", "wrap": True, "color": "#334155"}]}
+                         "contents": [{"type": "text", "text": f"明天 (22號) 將執行 0050、009816 定期定額扣款共 NT$10,000，請確認日常扣款資金已入帳（目前戰備金：UBS ${UBS_CASH_USD:,.2f} / 美股 ${US_RESERVE_CASH_USD:,.2f} / 台股 NT${RESERVE_CASH_TWD:,}）！", "size": "xs", "wrap": True, "color": "#334155"}]}
             })
         elif today_now.weekday() == 5 and today_now.hour < 10:
             current_total_val = sum(r["market_value_twd"] for r in eval_results if r["shares"] > 0)
@@ -1218,7 +1214,7 @@ def main():
                 "header": {"type": "box", "layout": "vertical", "backgroundColor": "#3B82F6", "paddingAll": "15px",
                            "contents": [{"type": "text", "text": "📊 本週操盤室與 Alpha 週報", "weight": "bold", "color": "#FFFFFF", "size": "sm"}]},
                 "body": {"type": "box", "layout": "vertical", "spacing": "sm",
-                         "contents": [{"type": "text", "text": f"本週證券總市值: NT${current_total_val:,.0f} ｜ 雙幣戰備金：台股 NT${RESERVE_CASH_TWD:,} / 美股 ${US_RESERVE_CASH_USD:,.2f}。祝您週末愉快！", "size": "xs", "wrap": True, "color": "#334155"}]}
+                         "contents": [{"type": "text", "text": f"本週證券總市值: NT${current_total_val:,.0f} ｜ 累計已實現: +NT${REALIZED_PNL_TWD:,} ｜ UBS 現金: ${UBS_CASH_USD:,.2f}。祝您週末愉快！", "size": "xs", "wrap": True, "color": "#334155"}]}
             })
 
     if eval_results:
@@ -1243,7 +1239,7 @@ def main():
             except Exception:
                 pass
 
-        print("[完成] 寬螢幕流暢版（5大數據異常自檢修復版）操盤平台執行完畢。")
+        print("[完成] 寬螢幕流暢版（含 AMAT 減碼與 UBS 資金池）操盤平台執行完畢。")
 
 
 if __name__ == "__main__":
