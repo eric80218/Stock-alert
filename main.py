@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (Institutional 4D Regime-Switching Edition)
-- 完整實作「四維度機構級自適應風控」：
-  1. 核心護城河股 (is_core=True) 享有「黃金坑估值反轉」：跌深且安全邊際>=12%時優先亮綠燈買進，絕不誤觸停損
-  2. 相對強度診斷 (Alpha vs. Beta) + RSI<32 超賣禁售熔斷：跟隨大盤錯殺或極度超賣時自動「鎖倉觀望」，嚴禁砍在阿呆谷
-  3. 底倉豁免權 (base_locked=True)：AMAT 已於 $426.1 獲利了結 9 股，剩餘 10 股底倉自動放寬回撤容忍度至 -25%
-  4. 完整包含 AMZN (3股/$254.55)、NVDA (22.01股)、台積電 (2股)、三軌現金池 (台股/美股/UBS) 與前端按鈕錯誤診斷
+Quantitative Risk & Valuation Engine (Institutional 4D Multi-Benchmark & ATR Edition)
+- 完整集成 4 大機構級模組：
+  1. 分流對標引擎：半導體對標 ^SOX，台股對標 ^TWII，美股對標 ^GSPC，精算真實 10 日 Alpha
+  2. 金字塔分批試算：依安全邊際深度動態分配戰備金投入比例 (30% / 50% / 100%)
+  3. 14日 ATR 動態波動率通道：自動適應個股真實波幅，動態伸縮閃崩與停利防線
+  4. UBS 換匯與美元匯率雷達：即時評估匯率位階與結匯時機
+  5. 包含 AMZN (3股/$254.55)、NVDA、台積電、UBS 現金池 ($3,834.90) 與完整風控
 """
 
 import os
@@ -20,14 +21,14 @@ import pandas as pd
 import yfinance as yf
 
 # ==========================================
-# 1. 完整持股與三軌現金池設定 (台股 / 美股券商 / UBS銀行)
+# 1. 完整持股與三軌現金池設定
 # ==========================================
 GITHUB_REPO = os.environ.get("GITHUB_REPOSITORY", "eric80218/Stock-alert")
 
 REALIZED_PNL_TWD = 28608       # 累計已實現損益：旺宏(-2200) + 合晶(-1740) + AMAT減碼9股(+32548) = +NT$28,608
 RESERVE_CASH_TWD = 12960       # 台股交割戶「未來逢低加碼專用戰備金」(NT$)
 US_RESERVE_CASH_USD = 369.78   # 美股交易帳戶「可動用現金餘額」(USD)
-UBS_CASH_USD = 3834.90         # UBS 銀行帳戶存放之 AMAT 減碼收回資金 (9股 * $426.10 = $3,834.90 USD)
+UBS_CASH_USD = 3834.90         # UBS 銀行帳戶存放之 AMAT 減碼收回資金 ($3,834.90 USD)
 
 WATCHLIST = {
     "FUND_ALLIANZ": {
@@ -160,7 +161,7 @@ def calc_dca_days_left(dca_day: int) -> int:
 
 
 def check_and_execute_dca(watchlist: dict, current_prices: dict, usd_twd: float):
-    """永久記憶型 DCA 定期定額引擎：防止重啟後股數被 WATCHLIST 初始值覆蓋"""
+    """永久記憶型 DCA 定期定額引擎"""
     today = datetime.datetime.now(TW_TZ)
     state = load_state()
     dca_log = state.get("dca_execution_log", {})
@@ -265,7 +266,7 @@ def get_USD_TWD_rate() -> float:
 
 
 # ==========================================
-# 2. 基金與雙 API 備援抓取模組 (新增 10 日動能變化計算)
+# 2. 資料與指標抓取模組 (含 14 日 ATR 與分流對標)
 # ==========================================
 def fetch_stock_data_with_redundancy(symbol: str, market: str):
     if symbol == "FUND_ALLIANZ":
@@ -277,7 +278,7 @@ def fetch_stock_data_with_redundancy(symbol: str, market: str):
         return {
             "current_price": latest_nav, "prev_close": 141.20,
             "open_price": 141.20, "high_60d": 143.50,
-            "gap_pct": 0.0, "day_change_pct": 0.18, "ret_10d_pct": 0.5,
+            "gap_pct": 0.0, "day_change_pct": 0.18, "ret_10d_pct": 0.5, "atr_pct": 1.5,
             "ma200": 132.80, "ma20": 140.10, "rsi14": 56.0,
             "history_dates": [d.strftime("%m/%d") for d in b_dates],
             "history_prices": nav_list,
@@ -297,8 +298,8 @@ def fetch_from_yahoo(symbol: str):
         ticker = yf.Ticker(symbol)
         hist = ticker.history(period="1y")
         if hist is None or hist.empty: return None
-        hist = hist.dropna(subset=["Close", "Open", "High"])
-        if len(hist) < 5: return None
+        hist = hist.dropna(subset=["Close", "Open", "High", "Low"])
+        if len(hist) < 14: return None
 
         close_s = hist["Close"]
         current_price = float(close_s.iloc[-1])
@@ -308,6 +309,14 @@ def fetch_from_yahoo(symbol: str):
 
         ref_10d = float(close_s.iloc[-11]) if len(close_s) >= 11 else float(close_s.iloc[0])
         ret_10d_pct = ((current_price - ref_10d) / ref_10d) * 100.0 if ref_10d > 0 else 0.0
+
+        # 計算 14 日 ATR (%)
+        highs = hist["High"]
+        lows = hist["Low"]
+        prev_closes = close_s.shift(1)
+        tr = pd.concat([highs - lows, (highs - prev_closes).abs(), (lows - prev_closes).abs()], axis=1).max(axis=1)
+        atr_14 = tr.rolling(window=14).mean().iloc[-1]
+        atr_pct = round((float(atr_14) / current_price) * 100.0, 2) if current_price > 0 else 2.5
 
         gap_pct = ((open_price - prev_close) / prev_close) * 100
         day_change_pct = ((current_price - prev_close) / prev_close) * 100
@@ -325,7 +334,7 @@ def fetch_from_yahoo(symbol: str):
             "current_price": round(current_price, 2), "prev_close": round(prev_close, 2),
             "open_price": round(open_price, 2), "high_60d": round(high_60d, 2),
             "gap_pct": round(gap_pct, 2), "day_change_pct": round(day_change_pct, 2),
-            "ret_10d_pct": round(ret_10d_pct, 2),
+            "ret_10d_pct": round(ret_10d_pct, 2), "atr_pct": atr_pct,
             "ma200": round(ma200_val, 2), "ma20": round(ma20_val, 2), "rsi14": rsi14,
             "history_dates": [d.strftime("%m/%d") for d in recent_30.index],
             "history_prices": [round(float(p), 2) for p in recent_30["Close"].tolist()],
@@ -352,7 +361,7 @@ def fetch_from_twse_fallback(symbol: str):
                 b_dates = pd.bdate_range(end=datetime.datetime.now(TW_TZ).date(), periods=5)
                 return {
                     "current_price": price, "prev_close": y_price, "open_price": price,
-                    "high_60d": round(price * 1.05, 2), "gap_pct": 0.0, "day_change_pct": chg_pct, "ret_10d_pct": chg_pct,
+                    "high_60d": round(price * 1.05, 2), "gap_pct": 0.0, "day_change_pct": chg_pct, "ret_10d_pct": chg_pct, "atr_pct": 2.0,
                     "ma200": round(price * 0.95, 2), "ma20": round(price * 0.98, 2), "rsi14": 50.0,
                     "history_dates": [d.strftime("%m/%d") for d in b_dates],
                     "history_prices": [price] * 5,
@@ -377,7 +386,7 @@ def fetch_from_finnhub(symbol: str):
             b_dates = pd.bdate_range(end=datetime.datetime.now(TW_TZ).date(), periods=5)
             return {
                 "current_price": price, "prev_close": prev_close, "open_price": price,
-                "high_60d": round(price * 1.05, 2), "gap_pct": 0.0, "day_change_pct": round(change_pct, 2), "ret_10d_pct": round(change_pct, 2),
+                "high_60d": round(price * 1.05, 2), "gap_pct": 0.0, "day_change_pct": round(change_pct, 2), "ret_10d_pct": round(change_pct, 2), "atr_pct": 2.5,
                 "ma200": round(price * 0.95, 2), "ma20": round(price * 0.98, 2), "rsi14": 50.0,
                 "history_dates": [d.strftime("%m/%d") for d in b_dates],
                 "history_prices": [price] * 5,
@@ -389,7 +398,7 @@ def fetch_from_finnhub(symbol: str):
 
 
 def fetch_fundamentals_and_earnings(symbol: str, meta: dict, market_data: dict) -> dict:
-    """三層動態目標價引擎：1.分析師目標價與EPS -> 2.年線與波段動能動態錨定 -> 3.景氣谷底淨值保底"""
+    """三層動態目標價引擎"""
     if symbol == "FUND_ALLIANZ":
         return {"fair_value": 141.45, "dividend_yield_pct": 8.0, "earnings_date_str": "月扣3千+單筆", "earnings_days_left": None}
 
@@ -522,15 +531,17 @@ def run_vectorized_backtest(close_series: pd.Series) -> dict:
 
 
 # ==========================================
-# 3. 總經與大戶避險雷達 (新增大盤 10 日漲跌幅基準)
+# 3. 總經、分流對標與換匯雷達 (FX & Multi-Benchmark)
 # ==========================================
 def fetch_macro_gold_radar(prev_macro_state: dict) -> dict:
     try:
         spxu_hist = yf.Ticker("SPXU").history(period="3mo").dropna(subset=["Close", "Volume"])
-        sox_hist = yf.Ticker("^SOX").history(period="6mo").dropna(subset=["Close"])
         vix_hist = yf.Ticker("^VIX").history(period="1mo").dropna(subset=["Close"])
         dxy_hist = yf.Ticker("DX-Y.NYB").history(period="3mo").dropna(subset=["Close"])
         sp500_hist = yf.Ticker("^GSPC").history(period="3mo").dropna(subset=["Close"])
+        sox_hist = yf.Ticker("^SOX").history(period="3mo").dropna(subset=["Close"])
+        twii_hist = yf.Ticker("^TWII").history(period="3mo").dropna(subset=["Close"])
+        usdtwd_hist = yf.Ticker("USDTWD=X").history(period="1y").dropna(subset=["Close"])
 
         spxu_vol_ratio = round(float(spxu_hist["Volume"].iloc[-1]) / float(spxu_hist["Volume"].tail(20).mean()), 2) if not spxu_hist.empty else 1.0
         vix_val = round(float(vix_hist["Close"].iloc[-1]), 2) if not vix_hist.empty else 18.0
@@ -538,17 +549,27 @@ def fetch_macro_gold_radar(prev_macro_state: dict) -> dict:
         sox_price = round(float(sox_hist["Close"].iloc[-1]), 1) if not sox_hist.empty else 0.0
         is_sox_bear = sox_price < float(sox_hist["Close"].rolling(200).mean().iloc[-1]) if len(sox_hist) >= 200 else False
 
-        sp_ret_10d = 0.0
-        if len(sp500_hist) >= 11:
-            sp_curr = float(sp500_hist["Close"].iloc[-1])
-            sp_ref10 = float(sp500_hist["Close"].iloc[-11])
-            sp_ret_10d = round(((sp_curr - sp_ref10) / sp_ref10) * 100.0, 2)
+        # 各大指數 10 日報酬率計算
+        def get_ret10(hist):
+            if hist is None or len(hist) < 11: return 0.0
+            c = float(hist["Close"].iloc[-1])
+            p = float(hist["Close"].iloc[-11])
+            return round(((c - p) / p) * 100.0, 2)
+
+        sp_ret_10d = get_ret10(sp500_hist)
+        sox_ret_10d = get_ret10(sox_hist)
+        twii_ret_10d = get_ret10(twii_hist)
+
+        # 匯率雷達 (USD/TWD 200MA 位階)
+        usd_twd_now = float(usdtwd_hist["Close"].iloc[-1]) if not usdtwd_hist.empty else 32.39
+        usd_twd_ma200 = float(usdtwd_hist["Close"].rolling(window=200).mean().iloc[-1]) if len(usdtwd_hist) >= 200 else usd_twd_now
+        fx_status = "💱 美元處於強勢高檔 (適合 UBS 美元結匯鎖利)" if usd_twd_now >= usd_twd_ma200 else "💵 美元處於相對低檔 (適合換匯布局美股)"
 
         is_smart_money_hedging = spxu_vol_ratio >= 1.50 or vix_val >= 20.0
         bubble_level = "高度警報：機構大舉避險" if is_smart_money_hedging else "資金安穩：市場多頭運行"
         color = "#EF4444" if is_smart_money_hedging else "#10B981"
-        action = "🚨 聰明錢重押空頭，系統已啟動「錯殺鎖倉與黃金坑保護」！" if is_smart_money_hedging else "✅ 華爾街機構資金留駐股市，維持標準估值運作。"
-        desc = f"SPXU 量比 {spxu_vol_ratio}x, VIX 恐慌指數 {vix_val}, 標普10日 {sp_ret_10d:+.1f}%。"
+        action = "🚨 聰明錢重押空頭，操盤室已啟動 4D 分流鎖倉與金字塔加碼！" if is_smart_money_hedging else "✅ 華爾街機構資金留駐股市，維持標準估值運作。"
+        desc = f"VIX: {vix_val}, 標普10日: {sp_ret_10d:+.1f}%, 匯率位階: {'偏高' if usd_twd_now>=usd_twd_ma200 else '偏低'}。"
 
         prev_level = prev_macro_state.get("bubble_level", "")
         macro_quality_changed = (prev_level != bubble_level) and is_smart_money_hedging
@@ -556,28 +577,30 @@ def fetch_macro_gold_radar(prev_macro_state: dict) -> dict:
         return {
             "bubble_level": bubble_level, "color": color, "action": action, "desc": desc,
             "vix": vix_val, "dxy_price": dxy_price, "spxu_vol_ratio": spxu_vol_ratio,
-            "sox_price": sox_price, "is_sox_bear": is_sox_bear, "sp_ret_10d": sp_ret_10d,
+            "sox_price": sox_price, "is_sox_bear": is_sox_bear,
+            "sp_ret_10d": sp_ret_10d, "sox_ret_10d": sox_ret_10d, "twii_ret_10d": twii_ret_10d,
+            "usd_twd_now": usd_twd_now, "fx_status": fx_status,
             "premium_shift": -10.0 if is_smart_money_hedging else 0.0,
             "must_push": macro_quality_changed,
             "sp500_30d": sp500_hist["Close"].tail(35) if not sp500_hist.empty else pd.Series(dtype=float)
         }
     except Exception:
-        return {"bubble_level": "資料連線中", "color": "#64748B", "action": "暫以標準門檻運行", "desc": "連線異常", "vix": 18.0, "dxy_price": 100.0, "spxu_vol_ratio": 1.0, "sox_price": 0.0, "is_sox_bear": False, "sp_ret_10d": 0.0, "premium_shift": 0.0, "must_push": False, "sp500_30d": pd.Series(dtype=float)}
+        return {"bubble_level": "資料連線中", "color": "#64748B", "action": "暫以標準門檻運行", "desc": "連線異常", "vix": 18.0, "dxy_price": 100.0, "spxu_vol_ratio": 1.0, "sox_price": 0.0, "is_sox_bear": False, "sp_ret_10d": 0.0, "sox_ret_10d": 0.0, "twii_ret_10d": 0.0, "usd_twd_now": 32.39, "fx_status": "匯率平穩", "premium_shift": 0.0, "must_push": False, "sp500_30d": pd.Series(dtype=float)}
 
 
 # ==========================================
-# 4. 四維度機構級自適應風控矩陣 (4D Regime-Switching Matrix)
+# 4. 4D 自適應風控與金字塔加碼試算
 # ==========================================
 def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state: dict, macro: dict, fund_data: dict, nlp_score: float, usd_twd: float) -> dict:
     price = market_data["current_price"]
     high_60d = market_data["high_60d"]
     day_change_pct = market_data["day_change_pct"]
     ret_10d_pct = market_data.get("ret_10d_pct", 0.0)
+    atr_pct = market_data.get("atr_pct", 2.5)
     ma200, ma20, rsi14 = market_data["ma200"], market_data["ma20"], market_data["rsi14"]
     cost, shares = float(meta["cost"]), float(meta.get("shares", 0))
     stop_loss = meta.get("stop_loss_pct", None)
     trailing_stop = meta.get("trailing_stop_pct", None)
-    flash_pct = meta.get("flash_pct", 4.0)
     is_etf = meta.get("is_etf", False)
     is_core = meta.get("is_core", False)
     base_locked = meta.get("base_locked", False)
@@ -597,11 +620,20 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
     safety_margin = round(((dynamic_fair - price) / dynamic_fair) * 100, 2)
     premium_rate = round(((price - dynamic_fair) / dynamic_fair) * 100, 2)
     
-    # 計算相對於 S&P500 之近 10 日超額報酬 (Alpha)
-    sp_ret_10d = float(macro.get("sp_ret_10d", 0.0))
-    alpha_10d = round(ret_10d_pct - sp_ret_10d, 2)
+    # 智慧分流對標基準計算 Alpha
+    if symbol in ["NVDA", "AMAT", "2330.TW", "2337.TW", "6182.TWO"]:
+        benchmark_ret = float(macro.get("sox_ret_10d", 0.0))
+        benchmark_name = "費半"
+    elif market_type == "TW":
+        benchmark_ret = float(macro.get("twii_ret_10d", 0.0))
+        benchmark_name = "台股"
+    else:
+        benchmark_ret = float(macro.get("sp_ret_10d", 0.0))
+        benchmark_name = "標普"
+
+    alpha_10d = round(ret_10d_pct - benchmark_ret, 2)
     is_oversold = (rsi14 < 32.0)
-    is_systemic_drop = (macro.get("vix", 18.0) >= 20.0) or (sp_ret_10d <= -3.5) or (alpha_10d > -6.0)
+    is_systemic_drop = (macro.get("vix", 18.0) >= 20.0) or (benchmark_ret <= -3.5) or (alpha_10d > -6.0)
 
     curr_fx = usd_twd if market_type == "US" else 1.0
     if symbol == "FUND_ALLIANZ":
@@ -620,65 +652,70 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
     nlp_adjustment = -2.0 if nlp_score < -2 else (2.0 if nlp_score > 2 else 0.0)
     high_risk_threshold = 25.0 + macro.get("premium_shift", 0.0) + nlp_adjustment
 
+    # 動態閃崩線 (依 ATR 自動放寬或收緊)
+    dynamic_flash_pct = max(3.5, round(atr_pct * 1.8, 1))
+
+    # 戰備金金字塔分批試算
     if market_type == "US":
-        dry_powder_shares = round(US_RESERVE_CASH_USD / price, 2) if price > 0 else 0
-        dry_powder_label = f"美股戰備金 ${US_RESERVE_CASH_USD:,.2f}"
+        full_powder = US_RESERVE_CASH_USD
+        powder_label = f"美股戰備金 ${full_symbol_amt:=.2f}" if 'full_symbol_amt' in locals() else f"美股戰備金 ${US_RESERVE_CASH_USD:,.2f}"
     else:
-        dry_powder_shares = int(RESERVE_CASH_TWD // price) if price > 0 else 0
-        dry_powder_label = f"台股戰備金 NT${RESERVE_CASH_TWD:,}"
+        full_powder = RESERVE_CASH_TWD
+        powder_label = f"台股戰備金 NT${RESERVE_CASH_TWD:,}"
+
+    if safety_margin >= 22.0 or is_oversold:
+        deploy_pct, deploy_name = 1.0, "重拳出擊 (100% 戰備金)"
+    elif safety_margin >= 15.0:
+        deploy_pct, deploy_name = 0.5, "中度加碼 (50% 戰備金)"
+    else:
+        deploy_pct, deploy_name = 0.3, "試水溫 (30% 戰備金)"
+
+    target_powder_shares = round((full_powder * deploy_pct) / price, 2) if (market_type == "US" and price > 0) else int((full_powder * deploy_pct) // price) if (price > 0) else 0
 
     sizing_note = ""
-    # ----------------------------------------------------
-    # 四維度機構級判斷優先序：
-    # 1. 基金定額 -> 2. 核心股黃金坑反轉 -> 3. 停損診斷(含超賣/系統性錯殺鎖倉) -> 4. 底倉豁免移動停利 -> 5. 閃崩與估值
-    # ----------------------------------------------------
     if symbol == "FUND_ALLIANZ":
         risk_level, color, action = "定期定額累積", "#10B981", "基富通月扣 NT$3,000 + 單筆續抱"
         desc = "定額(+49.34%)與單筆(+132.36%)合計總損益 +NT$54,054 (+51.57%)。"
         sizing_note = f"👉 試算：總市值 NT$158,869 (總本金 NT$104,815) ｜ 預估年配息約 NT${annual_dividend_twd:,.0f}"
 
-    elif is_core and shares > 0 and safety_margin >= 12.0 and day_change_pct > -flash_pct:
-        # 維度三：核心護城河股「估值優先權反轉」(越跌越買，絕不因帳面虧損而砍在黃金坑)
-        risk_level, color, action = "💎 黃金坑買點 (核心低估)", "#10B981", "鎖定底倉禁售 / 動用戰備金分批加碼"
-        desc = f"核心資產折價達 {safety_margin:.1f}% (10日Alpha {alpha_10d:+.1f}%)，無懼短線波動，逢低撿便宜！"
-        sizing_note = f"🎯 試算：嚴禁停損！動用{dry_powder_label} 可逢低加買約 {dry_powder_shares:g} 股"
+    elif is_core and shares > 0 and safety_margin >= 12.0 and day_change_pct > -dynamic_flash_pct:
+        risk_level, color, action = "💎 黃金坑買點 (核心低估)", "#10B981", f"金字塔加碼：動用{deploy_name}"
+        desc = f"核心折價 {safety_margin:.1f}% ({benchmark_name}Alpha {alpha_10d:+.1f}%)，逢低大舉分批佈局！"
+        sizing_note = f"🎯 試算：建議動用 {deploy_name} 可買約 {target_powder_shares:g} 股"
 
     elif not is_etf and stop_loss is not None and cost > 0 and shares > 0 and pnl_rate <= stop_loss:
-        # 維度一 & 二：跌破停損線時，啟動「RSI<32 超賣禁售」與「大盤系統性錯殺鎖倉」診斷
         if is_oversold or is_core or is_systemic_drop:
-            reason_tag = f"RSI超賣({rsi14})" if is_oversold else f"跟隨大盤調整(10日Alpha {alpha_10d:+.1f}%)"
+            reason_tag = f"RSI超賣({rsi14})" if is_oversold else f"跟隨{benchmark_name}修正(Alpha {alpha_10d:+.1f}%)"
             risk_level, color, action = "🟣 錯殺鎖倉保護 (禁售)", "#8B5CF6", "啟動防洗盤鎖倉：保留底倉待反彈"
-            desc = f"雖帳面 {pnl_rate:.1f}% 觸及防線，但系統偵測為【{reason_tag}】，嚴禁砍在阿呆谷！"
-            sizing_note = f"🛡️ 保護機制：目前鎖定 {shares:g} 股不賣，待 RSI 回到 45 以上或站回月線再評估"
+            desc = f"雖觸及防線，但系統偵測為【{reason_tag}】，嚴禁砍在阿呆谷！"
+            sizing_note = f"🛡️ 保護機制：鎖定 {shares:g} 股底倉不賣，等待 RSI 回溫"
         else:
-            # 只有非核心衛星股、大盤沒跌卻獨自破底 (Alpha <= -6%) 且未超賣時，才執行破線減碼
             risk_level, color, action = "停損警戒 (個股破線)", "#EF4444", "基本面轉弱：減碼 1/2 或換股"
-            desc = f"帳面 {pnl_rate:.1f}% 且明顯弱於大盤 (10日Alpha {alpha_10d:+.1f}%)，屬個股獨立轉弱。"
+            desc = f"帳面 {pnl_rate:.1f}% 且弱於{benchmark_name} (Alpha {alpha_10d:+.1f}%)，屬個股獨立轉弱。"
             trim_sh = round(shares * 0.5, 1) if market_type == "US" else max(1, int(round(shares * 0.5)))
-            sizing_note = f"👉 試算：非大盤錯殺，建議先減碼 {trim_sh:g} 股控制風險"
+            sizing_note = f"👉 試算：建議減碼 {trim_sh:g} 股控制風險"
 
     elif shares > 0 and not is_etf and trailing_stop is not None and pnl_rate > 12.0 and drawdown_from_peak <= trailing_stop:
-        # 維度四：底倉豁免與小比例優雅減碼 (只賣 1/4，保護長線複利)
         if base_locked and price >= ma200:
             risk_level, color, action = "🔵 底倉續抱 (豁免停利)", "#3B82F6", "已高檔落袋過 / 剩餘底倉長抱"
-            desc = f"雖自高點回撤 {drawdown_from_peak:.1f}%，但您已於高檔減碼過且股價守穩年線(${ma200})之上！"
-            sizing_note = f"🛡️ 底倉保護：安心續抱剩餘 {shares:g} 股核心底倉，不因正常洗盤下車"
+            desc = f"雖回撤 {drawdown_from_peak:.1f}%，但您已於高檔減碼且守穩年線(${ma200})之上！"
+            sizing_note = f"🛡️ 底倉保護：安心續抱剩餘 {shares:g} 股核心底倉"
         else:
             risk_level, color, action = "移動停利警戒", "#F97316", "優雅調節：獲利了結 1/4 鎖住勝果"
-            desc = f"自 60 日高點回撤達 {drawdown_from_peak:.1f}% (門檻 {trailing_stop}%)，小幅調節保護獲利。"
+            desc = f"自高點回撤達 {drawdown_from_peak:.1f}% (門檻 {trailing_stop}%)，小幅調節保護獲利。"
             sell_sh = round(shares * 0.25, 1) if market_type in ["US", "FUND"] else max(1, int(round(shares * 0.25)))
             sell_val = round(sell_sh * price * curr_fx, 0)
-            sizing_note = f"👉 試算：僅微調 1/4 ({sell_sh:g} 股，約落袋 NT${sell_val:,.0f})，保留 3/4 底倉"
+            sizing_note = f"👉 試算：微調 1/4 ({sell_sh:g} 股，約落袋 NT${sell_val:,.0f})"
 
-    elif day_change_pct <= -flash_pct:
+    elif day_change_pct <= -dynamic_flash_pct:
         if shares > 0:
-            risk_level, color, action = "單日閃崩警戒", "#EC4899", "持倉鎖定禁砍 / 暫停單筆接刀"
-            desc = f"單日重挫 {day_change_pct:.2f}% (超過 -{flash_pct}% 閃崩線)，切勿恐慌殺低，靜待籌碼沉澱。"
-            sizing_note = "👉 試算：今日不賣出亦不急著接刀，待站穩 5 日線再動用戰備金"
+            risk_level, color, action = "單日閃崩警戒 (ATR通道)", "#EC4899", "持倉鎖定禁砍 / 暫停單筆接刀"
+            desc = f"單日重挫 {day_change_pct:.2f}% (超過ATR閃崩線-{dynamic_flash_pct}%)，切勿恐慌殺低。"
+            sizing_note = "👉 試算：今日不賣出亦不急著接刀，待站穩 5 日線再評估"
         else:
             risk_level, color, action = "空手避開閃崩", "#64748B", "漂亮避開大跌 / 嚴禁接刀"
-            desc = f"單日重挫 {day_change_pct:.2f}% (超過 -{flash_pct}% 閃崩線)，您已空手成功避開！"
-            sizing_note = f"👉 試算：待止跌且跌破 {round(dynamic_fair*0.9, 1)} 元 (邊際>=10%) 再評估買回"
+            desc = f"單日重挫 {day_change_pct:.2f}%，您已空手成功避開！"
+            sizing_note = f"👉 試算：待止跌且跌破 {round(dynamic_fair*0.9, 1)} 元再評估買回"
 
     elif not is_etf and premium_rate > high_risk_threshold:
         if shares > 0:
@@ -693,12 +730,9 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
             sizing_note = f"👉 試算：已出清監控中，目標買進區為 {round(dynamic_fair*0.9, 1)} 元以下"
 
     elif safety_margin >= 10.0 and not macro.get("is_sox_bear", False):
-        risk_level, color, action = "低風險 (買進區)", "#10B981", "戰備金逢低加碼 / 分批建倉"
-        desc = f"安全邊際達 {safety_margin:.1f}% 且半導體非空頭，具估值吸引力。"
-        if shares > 0:
-            sizing_note = f"🎯 試算：動用{dry_powder_label} 可再加碼約 {dry_powder_shares:g} 股 (現持 {shares:g} 股)"
-        else:
-            sizing_note = f"🎯 試算：動用{dry_powder_label} 可買回約 {dry_powder_shares:g} 股建首倉"
+        risk_level, color, action = "低風險 (買進區)", "#10B981", f"金字塔加碼：動用{deploy_name}"
+        desc = f"安全邊際達 {safety_margin:.1f}% 且非空頭，具估值吸引力。"
+        sizing_note = f"🎯 試算：動用 {deploy_name} 可買約 {target_powder_shares:g} 股"
 
     else:
         if dca_monthly_twd > 0 and dca_day:
@@ -710,10 +744,10 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
         elif shares == 0:
             risk_level, color, action = "合理估值區", "#64748B", "空手觀望 / 等待買點"
             desc = f"單日漲跌 {day_change_pct:+.2f}%，尚未跌入低風險安全邊際區。"
-            sizing_note = f"👉 試算：目前空手，目標買進價 {round(dynamic_fair*0.9, 1)} (動用戰備金可買 {dry_powder_shares:g} 股)"
+            sizing_note = f"👉 試算：目前空手，目標買進價 {round(dynamic_fair*0.9, 1)}"
         else:
             risk_level, color, action = "合理估值區", "#3B82F6", "核心底倉續抱 / 定期定額"
-            desc = f"單日 {day_change_pct:+.2f}% (10日Alpha {alpha_10d:+.1f}%)，處於合理估值防禦帶內。"
+            desc = f"單日 {day_change_pct:+.2f}% ({benchmark_name}Alpha {alpha_10d:+.1f}%)，處於合理估值防禦帶內。"
             sizing_note = f"👉 試算：安心續抱現有 {shares:g} 股部位，預估年息 NT${annual_dividend_twd:,.0f}"
 
     backtest = run_vectorized_backtest(market_data.get("full_history", pd.Series([price])))
@@ -733,7 +767,8 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
         "earnings_date_str": earnings_date_str, "earnings_days_left": earnings_days_left,
         "safety_margin": safety_margin, "premium_rate": premium_rate, "pnl_rate": pnl_rate,
         "ma200": ma200, "ma20": ma20, "rsi14": rsi14, "peak_price": peak_price,
-        "drawdown_from_peak": drawdown_from_peak, "stop_buffer_pct": stop_buffer_pct, "alpha_10d": alpha_10d,
+        "drawdown_from_peak": drawdown_from_peak, "stop_buffer_pct": stop_buffer_pct,
+        "alpha_10d": alpha_10d, "benchmark_name": benchmark_name, "atr_pct": atr_pct,
         "risk_level": risk_level, "color": color, "action": action, "desc": desc, "sizing_note": sizing_note,
         "nlp_score": nlp_score, "backtest": backtest,
         "history_dates": market_data["history_dates"], "history_prices": market_data["history_prices"],
@@ -905,7 +940,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
             '</div>'
             '<div class="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800/80">'
             '<div class="flex justify-between text-[11px] mb-1">'
-            '<span class="text-slate-400">安全邊際量尺 (10日Alpha: ' + f"{r['alpha_10d']:+.1f}%" + ')</span>'
+            '<span class="text-slate-400">安全邊際量尺 (' + r['benchmark_name'] + 'Alpha: ' + f"{r['alpha_10d']:+.1f}%" + ')</span>'
             '<span class="font-bold" style="color: ' + r['color'] + '">邊際 ' + str(r['safety_margin']) + '% / 溢價 ' + str(r['premium_rate']) + '%</span>'
             '</div>'
             '<div class="w-full h-1.5 bg-slate-800 rounded-full relative overflow-hidden">'
@@ -918,7 +953,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
             '<div class="grid grid-cols-3 gap-1.5 text-[11px] bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/60">'
             '<div><span class="text-slate-500">平均申購價</span><div class="font-bold text-slate-200">' + cur + str(r['cost']) + '</div></div>'
             '<div><span class="text-slate-500">200MA</span><div class="font-bold text-slate-200">' + cur + str(r['ma200']) + '</div></div>'
-            '<div><span class="text-slate-500">RSI (超賣&lt;32)</span><div class="font-bold text-amber-400">' + str(r['rsi14']) + '</div></div>'
+            '<div><span class="text-slate-500">RSI / ATR%</span><div class="font-bold text-amber-400">' + str(r['rsi14']) + ' / ' + str(r['atr_pct']) + '%</div></div>'
             '<div><span class="text-slate-500">60D高</span><div class="font-bold text-slate-200">' + cur + str(r['peak_price']) + '</div></div>'
             '<div><span class="text-slate-500">回撤</span><div class="font-bold text-rose-400">' + str(r['drawdown_from_peak']) + '%</div></div>'
             '<div><span class="text-slate-500">防線緩衝</span><div class="font-bold text-purple-400">' + stop_buffer_str + '</div></div>'
@@ -961,9 +996,9 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
         '<div>',
         '<div class="flex items-center gap-2.5">',
         '<span class="h-3 w-3 rounded-full bg-emerald-500 animate-pulse"></span>',
-        '<h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">對沖基金級 4D 自適應風控與 Alpha 操盤室</h1>',
+        '<h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">對沖基金級 4D 多重對標與 ATR 操盤室</h1>',
         '</div>',
-        f'<p class="text-xs sm:text-sm text-slate-400 mt-1">匯率: <span class="text-amber-400 font-mono">{usd_twd:.2f}</span> ｜ 🏦 UBS: <span class="text-amber-300 font-bold">${UBS_CASH_USD:,.2f}</span> ｜ 戰備金: <span class="text-emerald-400 font-bold">台股 NT${RESERVE_CASH_TWD:,} / 美股 ${US_RESERVE_CASH_USD:,.2f}</span> ｜ 更新: <span id="sync-time" class="text-slate-200 font-mono">{updated_time}</span></p>',
+        f'<p class="text-xs sm:text-sm text-slate-400 mt-1">匯率: <span class="text-amber-400 font-mono">{usd_twd:.2f}</span> ｜ <span class="text-cyan-300 font-bold">{macro["fx_status"]}</span> ｜ 🏦 UBS: <span class="text-amber-300 font-bold">${UBS_CASH_USD:,.2f}</span> ｜ 戰備金: <span class="text-emerald-400 font-bold">台 NT${RESERVE_CASH_TWD:,} / 美 ${US_RESERVE_CASH_USD:,.2f}</span></p>',
         '</div>',
         '<div class="flex flex-wrap items-center gap-2">',
         '<div class="flex items-center bg-emerald-700/80 rounded-lg overflow-hidden shadow">',
@@ -1188,7 +1223,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
     html = "".join(html_parts)
     with open(DASHBOARD_FILE, "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"[完成] 寬螢幕流暢版（4D 機構級自適應風控版）操盤室儀表板已輸出至 {DASHBOARD_FILE}")
+    print(f"[完成] 寬螢幕流暢版（4D 多重對標與 ATR 操盤室）已輸出至 {DASHBOARD_FILE}")
 
 
 # ==========================================
@@ -1307,7 +1342,7 @@ def main():
             except Exception:
                 pass
 
-        print("[完成] 寬螢幕流暢版（4D 機構級自適應風控版）操盤平台執行完畢。")
+        print("[完成] 寬螢幕流暢版（4D 多重對標與 ATR 操盤室）執行完畢。")
 
 
 if __name__ == "__main__":
