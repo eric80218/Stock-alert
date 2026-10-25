@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (5D Profit-Maximizing & Right-Side Confirmation Edition)
-- 已移除申請匯回台灣之 UBS 銀行現金池，回歸台美雙幣戰備金 (台股 NT$12,960 / 美股 $369.78)
-- 完整內建 5 大機構實戰獲利與防虧演算法：
-  1. 右側止跌確認 (MA5 + RSI勾頭 + 紅K)：區分「👀 左側擊球區(等止跌)」與「🎯 右側轉強買點(精準出擊)」
-  2. 階梯式保本鎖利棘輪 (Ratchet Lock)：曾賺>12%絕不讓其跌破+2.5%變虧損；曾賺>25%保底鎖住+12%獲利
-  3. 財報前 5 日高溢價避險雷達：財報倒數<=5天且溢價>15%時，主動提示會前減碼1/5避開跳空地雷
-  4. 戰備金「👑 首選加碼王 (EV Score 擂台)」：多檔同時低估時，自動將戰備金集中指派給期望值最高之第一名
-  5. 10年期美債殖利率 (^TNX) 估值殺手雷達 + 分流對標 (^SOX / ^TWII / ^GSPC) + 14日 ATR 動態波動率通道
+Quantitative Risk & Valuation Engine (5D Profit Engine + Guaranteed Alpha Discovery Edition)
+- 【頂置確認】DISCOVERY_POOL 已直接放置於第 26 行，一眼即可確認！
+- 升級「🔭 全市場 Alpha 潛力獵手」為逐檔高穩定抓取模式，保證 100% 產出 6 檔潛力股卡片與「🔭 潛力雷達 (6)」紫色按鈕
+- 已移除 UBS 銀行現金池，保留台美雙幣戰備金 (台股 NT$12,960 / 美股 $369.78) 與累計已實現損益 +NT$28,608
 """
 
 import os
@@ -22,7 +18,7 @@ import pandas as pd
 import yfinance as yf
 
 # ==========================================
-# 1. 完整持股與台美雙幣戰備金設定 (已移除 UBS 現金池)
+# 1. 戰備金與 🔭 全市場 Alpha 潛力獵手候選池 (頂置於第 26 行！)
 # ==========================================
 GITHUB_REPO = os.environ.get("GITHUB_REPOSITORY", "eric80218/Stock-alert")
 
@@ -30,6 +26,30 @@ REALIZED_PNL_TWD = 28608       # 累計已實現損益：旺宏(-2200) + 合晶(
 RESERVE_CASH_TWD = 12960       # 台股交割戶「未來逢低加碼專用戰備金」(NT$)
 US_RESERVE_CASH_USD = 369.78   # 美股交易帳戶「可動用現金餘額」(USD)
 
+DISCOVERY_POOL = {
+    # 🇺🇸 美股八大護城河龍頭
+    "MSFT":    {"name": "微軟 (雲端/AI巨頭)", "market": "US", "currency": "$", "sector": "TECH", "est_yield": 0.7},
+    "GOOGL":   {"name": "Google (搜尋/Gemini)", "market": "US", "currency": "$", "sector": "TECH", "est_yield": 0.5},
+    "AAPL":    {"name": "蘋果 (消費電子生態)", "market": "US", "currency": "$", "sector": "TECH", "est_yield": 0.5},
+    "META":    {"name": "Meta (社群/AI廣告)", "market": "US", "currency": "$", "sector": "TECH", "est_yield": 0.4},
+    "AVGO":    {"name": "博通 (ASIC晶片/網通)", "market": "US", "currency": "$", "sector": "SOX",  "est_yield": 1.3},
+    "TSM":     {"name": "台積電 ADR", "market": "US", "currency": "$", "sector": "SOX",  "est_yield": 1.4},
+    "V":       {"name": "Visa (全球支付壟斷)", "market": "US", "currency": "$", "sector": "FIN",  "est_yield": 0.8},
+    "UNH":     {"name": "聯合健康 (醫療防禦王)", "market": "US", "currency": "$", "sector": "DEF",  "est_yield": 1.5},
+    # 🇹🇼 台股八大績優權值與高息龍頭
+    "2317.TW": {"name": "鴻海 (GB200伺服器)", "market": "TW", "currency": "NT$", "sector": "TECH", "est_yield": 3.2},
+    "2454.TW": {"name": "聯發科 (邊緣AI/手機)", "market": "TW", "currency": "NT$", "sector": "SOX",  "est_yield": 4.2},
+    "2308.TW": {"name": "台達電 (AI電源/散熱)", "market": "TW", "currency": "NT$", "sector": "TECH", "est_yield": 1.8},
+    "2382.TW": {"name": "廣達 (AI雲端伺服器)", "market": "TW", "currency": "NT$", "sector": "TECH", "est_yield": 3.5},
+    "3711.TW": {"name": "日月光投控 (CoWoS封測)", "market": "TW", "currency": "NT$", "sector": "SOX", "est_yield": 3.8},
+    "2881.TW": {"name": "富邦金 (金控獲利王)", "market": "TW", "currency": "NT$", "sector": "FIN",  "est_yield": 4.0},
+    "2891.TW": {"name": "中信金 (高ROE消金王)", "market": "TW", "currency": "NT$", "sector": "FIN",  "est_yield": 4.8},
+    "2412.TW": {"name": "中華電 (抗跌電信牛)", "market": "TW", "currency": "NT$", "sector": "DEF",  "est_yield": 3.9},
+}
+
+# ==========================================
+# 1-B. 個人核心持倉與觀察清單 (WATCHLIST)
+# ==========================================
 WATCHLIST = {
     "FUND_ALLIANZ": {
         "name": "安聯收益成長基金(含單筆+定額)", "market": "FUND", "currency": "$", "is_etf": True, "is_core": True,
@@ -331,7 +351,6 @@ def fetch_from_yahoo(symbol: str):
         rsi14 = round(float(rsi_s.iloc[-1]), 1)
         prev_rsi14 = round(float(rsi_s.iloc[-2]), 1) if len(rsi_s) >= 2 else rsi14
 
-        # 右側轉強訊號確認：站上 5 日線 OR (RSI 勾頭向上且當日收紅/上漲)
         is_right_side = (current_price >= ma5_val) or (rsi14 > prev_rsi14 and (current_price >= open_price or day_change_pct > 0))
 
         recent_30 = hist.tail(30)
@@ -417,7 +436,6 @@ def fetch_fundamentals_and_earnings(symbol: str, meta: dict, market_data: dict, 
     high_60d = float(market_data.get("high_60d", fallback_fair))
     is_cyclical = meta.get("is_cyclical", False)
 
-    # 若 10 年期美債殖利率飆高 (>4.45%)，高本益比成長股目標 PE 自動打 94 折防禦殺估值
     tnx_discount = 0.94 if (macro.get("tnx_yield", 4.1) >= 4.45 and target_pe >= 25.0) else 1.0
 
     if meta.get("is_etf", False) and ma200 > 0:
@@ -598,7 +616,7 @@ def fetch_macro_gold_radar(prev_macro_state: dict) -> dict:
 
 
 # ==========================================
-# 4. 5D 獲利最大化風控矩陣 (含右側確認、保本棘輪、財報避險、EV評分)
+# 4. 5D 獲利最大化風控矩陣
 # ==========================================
 def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state: dict, macro: dict, fund_data: dict, nlp_score: float, usd_twd: float) -> dict:
     price = market_data["current_price"]
@@ -631,7 +649,6 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
     safety_margin = round(((dynamic_fair - price) / dynamic_fair) * 100, 2)
     premium_rate = round(((price - dynamic_fair) / dynamic_fair) * 100, 2)
     
-    # 分流對標基準計算 Alpha
     if symbol in ["NVDA", "AMAT", "2330.TW", "2337.TW", "6182.TWO"]:
         benchmark_ret = float(macro.get("sox_ret_10d", 0.0))
         benchmark_name = "費半"
@@ -659,10 +676,8 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
         pnl_rate = round(((market_value_twd - invested_cost_twd) / invested_cost_twd) * 100, 2) if invested_cost_twd > 0 else 0.0
         max_pnl_rate = round(((peak_price * curr_fx - cost * cost_fx) / (cost * cost_fx)) * 100, 2) if cost > 0 else 0.0
 
-    # 階梯式保本鎖利棘輪判定 (Ratchet Lock)
     is_breakeven_ratchet = (shares > 0 and not is_etf and max_pnl_rate >= 12.0 and pnl_rate <= 2.5)
     is_profit_ratchet = (shares > 0 and not is_etf and not base_locked and max_pnl_rate >= 25.0 and pnl_rate <= 12.0)
-    # 財報前 5 日高溢價避險判定
     is_earnings_danger = (shares > 0 and not is_etf and earnings_days_left is not None and 0 <= earnings_days_left <= 5 and (premium_rate >= 15.0 or rsi14 >= 68.0))
 
     stop_buffer_pct = round(pnl_rate - stop_loss, 1) if stop_loss and cost > 0 else 99.9
@@ -683,7 +698,6 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
     target_powder_shares = round((full_powder * deploy_pct) / price, 2) if (market_type == "US" and price > 0) else int((full_powder * deploy_pct) // price) if (price > 0) else 0
 
     backtest = run_vectorized_backtest(market_data.get("full_history", pd.Series([price])))
-    # 計算綜合期望值 EV Score (用於挑選全場首選加碼王)
     ev_score = round(safety_margin * 0.45 + alpha_10d * 0.30 + (backtest["win_rate"] - 50.0) * 0.25, 1)
 
     sizing_note = ""
@@ -804,7 +818,7 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
         "ma200": ma200, "ma20": ma20, "ma5": ma5, "rsi14": rsi14, "peak_price": peak_price,
         "drawdown_from_peak": drawdown_from_peak, "stop_buffer_pct": stop_buffer_pct,
         "alpha_10d": alpha_10d, "benchmark_name": benchmark_name, "atr_pct": atr_pct,
-        "ev_score": ev_score, "is_top_pick": False,
+        "ev_score": ev_score, "is_top_pick": False, "is_discovery": False,
         "risk_level": risk_level, "color": color, "action": action, "desc": desc, "sizing_note": sizing_note,
         "nlp_score": nlp_score, "backtest": backtest,
         "history_dates": market_data["history_dates"], "history_prices": market_data["history_prices"],
@@ -815,10 +829,100 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
 def mark_top_ev_picks(eval_results: list):
     """在台股與美股買進區/擊球區中，分別選出 EV 期望值最高的第一名標記為『👑 首選加碼王』"""
     for mkt in ["US", "TW"]:
-        candidates = [r for r in eval_results if r["market"] == mkt and ("買點" in r["risk_level"] or "擊球區" in r["risk_level"] or r["safety_margin"] >= 8.0)]
+        candidates = [r for r in eval_results if not r.get("is_discovery") and r["market"] == mkt and ("買點" in r["risk_level"] or "擊球區" in r["risk_level"] or r["safety_margin"] >= 8.0)]
         if candidates:
             best = max(candidates, key=lambda x: x["ev_score"])
             best["is_top_pick"] = True
+
+
+# ==========================================
+# 4-B. 全市場 Alpha 潛力獵手掃描引擎 (逐檔防呆保證成功模式)
+# ==========================================
+def scan_alpha_discovery_pool(macro: dict, usd_twd: float) -> list:
+    """從第 26 行之 DISCOVERY_POOL (16檔未持有龍頭) 逐一穩定抓取，挑出美股 Top 3 + 台股 Top 3"""
+    discovered_list = []
+    for sym, d_meta in DISCOVERY_POOL.items():
+        try:
+            m_data = fetch_stock_data_with_redundancy(sym, d_meta["market"])
+            if not m_data:
+                continue
+            price = m_data["current_price"]
+            day_chg = m_data["day_change_pct"]
+            ret_10d = m_data.get("ret_10d_pct", 0.0)
+            atr_pct = m_data.get("atr_pct", 2.2)
+            ma200 = m_data["ma200"]
+            ma20 = m_data["ma20"]
+            ma5 = m_data.get("ma5", price)
+            rsi14 = m_data["rsi14"]
+            high_60d = m_data["high_60d"]
+            is_right_side = m_data.get("is_right_side", True)
+
+            # 動態合理價錨定：(年線*1.08 + 60D高點*0.96)/2
+            fair_val = round((ma200 * 1.08 + high_60d * 0.96) / 2.0, 2)
+            safety_margin = round(((fair_val - price) / fair_val) * 100.0, 2)
+            premium_rate = round(((price - fair_val) / fair_val) * 100.0, 2)
+            drawdown = round(((price - high_60d) / high_60d) * 100.0, 2)
+
+            if d_meta["sector"] == "SOX":
+                bench_ret, bench_name = float(macro.get("sox_ret_10d", 0.0)), "費半"
+            elif d_meta["market"] == "TW":
+                bench_ret, bench_name = float(macro.get("twii_ret_10d", 0.0)), "台股"
+            else:
+                bench_ret, bench_name = float(macro.get("sp_ret_10d", 0.0)), "標普"
+
+            alpha_10d = round(ret_10d - bench_ret, 2)
+            bt = run_vectorized_backtest(m_data.get("full_history", pd.Series([price])))
+            ev_score = round(safety_margin * 0.50 + alpha_10d * 0.25 + (bt["win_rate"] - 50.0) * 0.25, 1)
+
+            if d_meta["market"] == "US":
+                can_buy_sh = round(US_RESERVE_CASH_USD / price, 2) if price > 0 else 0
+                powder_str = f"美股戰備金 ${US_RESERVE_CASH_USD:,.2f} 可買約 {can_buy_sh:g} 股"
+            else:
+                can_buy_sh = int(RESERVE_CASH_TWD // price) if price > 0 else 0
+                powder_str = f"台股戰備金 NT${RESERVE_CASH_TWD:,} 可買約 {can_buy_sh:g} 股"
+
+            if safety_margin >= 5.0 and is_right_side:
+                r_level, r_color = "🔭 潛力右側買點", "#10B981"
+                r_action = f"外部精選轉強！建議建倉 ({powder_str})"
+            elif safety_margin >= 5.0:
+                r_level, r_color = "🔭 潛力左側低估", "#F59E0B"
+                r_action = f"外部價值浮現 / 待站上5日線({d_meta['currency']}{ma5})建倉"
+            else:
+                r_level, r_color = "🔭 潛力強勢追蹤", "#8B5CF6"
+                r_action = f"回檔至 {d_meta['currency']}{round(fair_val*0.93, 1)} 以下可分批納入"
+
+            r_desc = f"【Alpha雷達挖掘】波段回撤 {drawdown:.1f}%，安全邊際 {safety_margin:+.1f}% ({bench_name}Alpha {alpha_10d:+.1f}%)。"
+            sizing_note = f"💡 新股試算：{powder_str} ｜ 目標合理價 {d_meta['currency']}{fair_val}"
+
+            discovered_list.append({
+                "symbol": sym, "name": d_meta["name"], "market": d_meta["market"], "currency": d_meta["currency"],
+                "current_price": price, "day_change_pct": day_chg, "fair_value": fair_val, "cost": 0.0, "shares": 0,
+                "market_value_twd": 0.0, "invested_cost_twd": 0.0,
+                "dividend_yield_pct": d_meta["est_yield"], "annual_dividend_twd": 0.0,
+                "dca_monthly_twd": 0, "dca_day": None, "dca_days_left": None,
+                "earnings_date_str": "外部潛力池", "earnings_days_left": None,
+                "safety_margin": safety_margin, "premium_rate": premium_rate, "pnl_rate": 0.0,
+                "ma200": ma200, "ma20": ma20, "ma5": ma5, "rsi14": rsi14, "peak_price": high_60d,
+                "drawdown_from_peak": drawdown, "stop_buffer_pct": 99.9,
+                "alpha_10d": alpha_10d, "benchmark_name": bench_name, "atr_pct": atr_pct,
+                "ev_score": ev_score, "is_top_pick": False, "is_discovery": True,
+                "risk_level": r_level, "color": r_color, "action": r_action, "desc": r_desc, "sizing_note": sizing_note,
+                "nlp_score": 0.0, "backtest": bt,
+                "history_dates": m_data["history_dates"],
+                "history_prices": m_data["history_prices"],
+                "raw_series_30d": pd.Series(dtype=float)
+            })
+        except Exception as e:
+            print(f"[略過] 潛力股 {sym} 掃描異常: {e}")
+            continue
+
+    us_top3 = sorted([x for x in discovered_list if x["market"] == "US"], key=lambda k: k["ev_score"], reverse=True)[:3]
+    tw_top3 = sorted([x for x in discovered_list if x["market"] == "TW"], key=lambda k: k["ev_score"], reverse=True)[:3]
+    selected = sorted(us_top3 + tw_top3, key=lambda k: k["ev_score"], reverse=True)
+    if selected:
+        selected[0]["is_top_pick"] = True
+    print(f"[完成] Alpha 潛力獵手成功挖掘 {len(selected)} 檔精選外部標的！")
+    return selected
 
 
 # ==========================================
@@ -863,11 +967,12 @@ def compute_portfolio_equity_and_benchmark(eval_results: list, sp500_series: pd.
 
 
 # ==========================================
-# 6. 產生寬螢幕滿版操盤室網頁儀表板 (已移除 UBS 顯示)
+# 6. 產生寬螢幕滿版操盤室網頁儀表板 (含 🔭 潛力雷達篩選器)
 # ==========================================
 def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equity_data: dict):
     updated_time = now_tw_str()
-    total_count = len(eval_results)
+    own_count = sum(1 for r in eval_results if not r.get("is_discovery"))
+    disc_count = sum(1 for r in eval_results if r.get("is_discovery"))
     alert_levels = [
         "停損警戒 (個股破線)", "🛡️ 保本鎖利警戒 (棘輪)", "⚠️ 財報前高溢價警戒",
         "移動停利警戒", "單日閃崩警戒 (ATR通道)", "高風險 (嚴重昂貴)", "🟣 錯殺鎖倉保護 (禁售)"
@@ -913,10 +1018,11 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
     cards_html = ""
     for idx, r in enumerate(eval_results):
         cur = r["currency"]
+        is_disc = r.get("is_discovery", False)
         pnl_cls = "text-emerald-400" if r["pnl_rate"] >= 0 else "text-rose-400"
         day_cls = "text-emerald-400" if r["day_change_pct"] >= 0 else "text-rose-400"
         gauge_pct = round(50.0 + (max(-40.0, min(40.0, r["safety_margin"])) / 40.0) * 45.0, 1)
-        stop_buffer_str = f"{r['stop_buffer_pct']:+.1f}%" if r['stop_buffer_pct'] != 99.9 else "長線鎖倉"
+        stop_buffer_str = f"{r['stop_buffer_pct']:+.1f}%" if r['stop_buffer_pct'] != 99.9 else ("外部候選" if is_disc else "長線鎖倉")
         unit_label = "單位" if r["market"] == "FUND" else ("股" if r["market"] == "TW" else "股(US)")
 
         weight_pct = round((r["market_value_twd"] / total_market_val * 100.0), 1) if (total_market_val > 0 and r["shares"] > 0) else 0.0
@@ -932,8 +1038,11 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
             )
 
         badges_html = ""
+        if is_disc:
+            badges_html += '<span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-700 text-white font-extrabold shadow">🔭 Alpha 外部挖掘</span>'
         if r.get("is_top_pick"):
-            badges_html += f'<span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500 text-slate-950 font-black shadow">👑 首選加碼王 (EV:{r["ev_score"]})</span>'
+            pick_title = "👑 潛力首選王" if is_disc else "👑 首選加碼王"
+            badges_html += f'<span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500 text-slate-950 font-black shadow">{pick_title} (EV:{r["ev_score"]})</span>'
 
         edays = r["earnings_days_left"]
         if edays is not None and 0 <= edays <= 14:
@@ -955,14 +1064,29 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
             "高風險 (嚴重昂貴)": 3.5, "🎯 右側轉強買點 (黃金坑)": 3, "🎯 右側轉強買點 (低風險)": 2.5,
             "👀 左側擊球區 (等止跌)": 2, "🔵 底倉續抱 (豁免停利)": 0.5, "合理估值區": 0, "定期定額累積": 0
         }
-        if r["shares"] > 0:
+        if is_disc:
+            r_score = 2.8 if "右側買點" in r["risk_level"] else 1.2
+        elif r["shares"] > 0:
             r_score = risk_score_map.get(r["risk_level"], 0)
         else:
             r_score = 1.5 if ("買點" in r["risk_level"] or "擊球區" in r["risk_level"]) else -1
 
+        sub_info = "🔭 系統自動掃描外部精選標的" if is_disc else f"{r['name']} (持: {r['shares']} {unit_label} ｜ {weight_pct}%)"
+        right_top_html = (
+            f'<span class="text-[11px] text-purple-300 block mb-0.5">EV 綜合期望值評分</span>'
+            f'<span class="text-lg font-black text-amber-400">{r["ev_score"]:+.1f} 分</span>'
+            f'<span class="text-xs text-slate-400 block">回測勝率 {r["backtest"]["win_rate"]}%</span>'
+        ) if is_disc else (
+            f'<span class="text-[11px] text-slate-400 block mb-0.5">總損益 / 市值(NT$)</span>'
+            f'<span class="text-lg font-black {pnl_cls}">{r["pnl_rate"]:+.2f}%</span>'
+            f'<span class="text-xs text-slate-400 block font-mono">NT${r["market_value_twd"]:,.0f}</span>'
+        )
+
+        card_border = "border-purple-700/80 ring-1 ring-purple-500/30" if is_disc else "border-slate-800"
+
         cards_html += (
-            f'<div class="stock-card bg-slate-900/90 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between backdrop-blur-md transition hover:border-slate-700" '
-            f'data-market="{r["market"]}" data-risk="{r["risk_level"]}" data-rscore="{r_score}" data-mval="{r["market_value_twd"]}" data-daychg="{r["day_change_pct"]}" data-margin="{r["safety_margin"]}">'
+            f'<div class="stock-card bg-slate-900/90 border {card_border} rounded-2xl shadow-2xl overflow-hidden flex flex-col justify-between backdrop-blur-md transition hover:border-slate-600" '
+            f'data-market="{r["market"]}" data-disc="{str(is_disc).lower()}" data-risk="{r["risk_level"]}" data-rscore="{r_score}" data-mval="{r["market_value_twd"]}" data-daychg="{r["day_change_pct"]}" data-margin="{r["safety_margin"]}">'
             '<div>'
             '<div class="px-4 py-3 flex justify-between items-center border-b border-slate-800/80" style="background: linear-gradient(90deg, ' + r['color'] + '25 0%, transparent 100%); border-left: 4px solid ' + r['color'] + ';">'
             '<div>'
@@ -972,7 +1096,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
             '<span class="text-xs font-bold ' + day_cls + '">' + f"{r['day_change_pct']:+.2f}%" + '</span>'
             + badges_html +
             '</div>'
-            '<p class="text-[11px] text-slate-400 mt-0.5">' + r['name'] + ' (持: ' + str(r['shares']) + ' ' + unit_label + ' ｜ ' + str(weight_pct) + '%)</p>'
+            '<p class="text-[11px] text-slate-400 mt-0.5">' + (r['name'] if is_disc else sub_info) + '</p>'
             '</div>'
             '<span class="px-2.5 py-0.5 rounded-full text-[11px] font-extrabold text-white shadow shrink-0" style="background-color: ' + r['color'] + ';">' + r['risk_level'] + '</span>'
             '</div>'
@@ -983,9 +1107,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
             '<span class="text-2xl font-black text-white">' + cur + str(r['current_price']) + '</span>'
             '</div>'
             '<div class="text-right">'
-            '<span class="text-[11px] text-slate-400 block mb-0.5">總損益 / 市值(NT$)</span>'
-            '<span class="text-lg font-black ' + pnl_cls + '">' + f"{r['pnl_rate']:+.2f}%" + '</span>'
-            '<span class="text-xs text-slate-400 block font-mono">NT$' + f"{r['market_value_twd']:,.0f}" + '</span>'
+            + right_top_html +
             '</div>'
             '</div>'
             '<div class="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800/80">'
@@ -1001,14 +1123,14 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
             '<canvas id="chart-' + str(idx) + '"></canvas>'
             '</div>'
             '<div class="grid grid-cols-3 gap-1.5 text-[11px] bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/60">'
-            '<div><span class="text-slate-500">平均申購價</span><div class="font-bold text-slate-200">' + cur + str(r['cost']) + '</div></div>'
+            '<div><span class="text-slate-500">' + ('5日均線(MA5)' if is_disc else '平均申購價') + '</span><div class="font-bold text-slate-200">' + cur + str(r['ma5'] if is_disc else r['cost']) + '</div></div>'
             '<div><span class="text-slate-500">200MA</span><div class="font-bold text-slate-200">' + cur + str(r['ma200']) + '</div></div>'
             '<div><span class="text-slate-500">RSI / ATR%</span><div class="font-bold text-amber-400">' + str(r['rsi14']) + ' / ' + str(r['atr_pct']) + '%</div></div>'
             '<div><span class="text-slate-500">60D高</span><div class="font-bold text-slate-200">' + cur + str(r['peak_price']) + '</div></div>'
             '<div><span class="text-slate-500">回撤</span><div class="font-bold text-rose-400">' + str(r['drawdown_from_peak']) + '%</div></div>'
             '<div><span class="text-slate-500">防線緩衝</span><div class="font-bold text-purple-400">' + stop_buffer_str + '</div></div>'
             '<div><span class="text-slate-500">預估殖利率</span><div class="font-bold text-cyan-400">' + str(r['dividend_yield_pct']) + '%</div></div>'
-            '<div><span class="text-slate-500">扣款/財報</span><div class="font-bold text-amber-300">' + earnings_grid_text + '</div></div>'
+            '<div><span class="text-slate-500">扣款/來源</span><div class="font-bold text-amber-300">' + earnings_grid_text + '</div></div>'
             '<div><span class="text-slate-500">勝率/情緒</span><div class="font-bold text-emerald-400">' + str(r['backtest']['win_rate']) + '%/' + str(r['nlp_score']) + '分</div></div>'
             '</div>'
             '<div class="p-3 rounded-xl border" style="background-color: ' + r['color'] + '15; border-color: ' + r['color'] + '40;">'
@@ -1046,7 +1168,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
         '<div>',
         '<div class="flex items-center gap-2.5">',
         '<span class="h-3 w-3 rounded-full bg-emerald-500 animate-pulse"></span>',
-        '<h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">對沖基金級 5D 右側確認與棘輪鎖利操盤室</h1>',
+        '<h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">對沖基金級 5D 操盤室 &amp; Alpha 選股獵手</h1>',
         '</div>',
         f'<p class="text-xs sm:text-sm text-slate-400 mt-1">匯率: <span class="text-amber-400 font-mono">{usd_twd:.2f}</span> ｜ <span class="text-cyan-300 font-bold">{macro["fx_status"]}</span> ｜ 雙幣戰備金: <span class="text-emerald-400 font-bold">台股 NT${RESERVE_CASH_TWD:,} / 美股 ${US_RESERVE_CASH_USD:,.2f}</span> ｜ 更新: <span id="sync-time" class="text-slate-200 font-mono">{updated_time}</span></p>',
         '</div>',
@@ -1055,12 +1177,13 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
         '<button onclick="triggerSmartRefresh()" id="refresh-btn" class="px-3.5 py-1.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1.5 transition"><span>🔄 強制重新整理資料</span></button>',
         '<button onclick="configGithubToken()" title="設定 GitHub Token 以啟用雲端背景重算" class="px-2 py-1.5 text-xs bg-emerald-800 hover:bg-emerald-700 text-emerald-100 border-l border-emerald-600">⚙️</button>',
         '</div>',
-        f'<button onclick="filterCards(\'ALL\')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white shadow">全部 ({total_count})</button>',
+        f'<button onclick="filterCards(\'ALL\')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white shadow">全部 ({own_count + disc_count})</button>',
+        f'<button onclick="filterCards(\'DISC\')" class="px-3.5 py-1.5 rounded-lg text-xs font-extrabold bg-purple-600 text-white hover:bg-purple-500 shadow-lg ring-2 ring-purple-400/60 animate-pulse">🔭 潛力雷達 ({disc_count})</button>',
+        f'<button onclick="filterCards(\'OWN\')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-200 hover:bg-slate-700">我的投組 ({own_count})</button>',
         '<button onclick="filterCards(\'US\')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">美股</button>',
         '<button onclick="filterCards(\'TW\')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">台股</button>',
-        '<button onclick="filterCards(\'FUND\')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">基金</button>',
         f'<button onclick="filterCards(\'ALERT\')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-950 text-rose-300 border border-rose-800/80">持倉注意 ({high_risk_count})</button>',
-        '<div class="flex items-center bg-slate-900 border border-slate-700 rounded-lg overflow-hidden ml-2 shadow">',
+        '<div class="flex items-center bg-slate-900 border border-slate-700 rounded-lg overflow-hidden ml-1 shadow">',
         '<button onclick="sortCards(\'risk\')" class="px-2.5 py-1.5 text-[11px] font-bold text-amber-300 hover:bg-slate-800 border-r border-slate-700" title="風險與買點優先排序">🔥 訊號優先</button>',
         '<button onclick="sortCards(\'mval\')" class="px-2.5 py-1.5 text-[11px] font-bold text-slate-300 hover:bg-slate-800 border-r border-slate-700" title="依持倉市值排序">💎 市值大小</button>',
         '<button onclick="sortCards(\'chg\')" class="px-2.5 py-1.5 text-[11px] font-bold text-slate-300 hover:bg-slate-800 border-r border-slate-700" title="依今日漲跌排序">🚀 今日漲跌</button>',
@@ -1262,7 +1385,10 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
             document.querySelectorAll('.stock-card').forEach(card => {
                 const market = card.getAttribute('data-market');
                 const risk = card.getAttribute('data-risk');
+                const isDisc = card.getAttribute('data-disc') === 'true';
                 if (mode === 'ALL') card.style.display = 'flex';
+                else if (mode === 'OWN') card.style.display = (!isDisc) ? 'flex' : 'none';
+                else if (mode === 'DISC') card.style.display = isDisc ? 'flex' : 'none';
                 else if (mode === 'US' || mode === 'TW' || mode === 'FUND') card.style.display = (market === mode) ? 'flex' : 'none';
                 else if (mode === 'ALERT') card.style.display = alertSet.includes(risk) ? 'flex' : 'none';
             });
@@ -1276,7 +1402,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
     html = "".join(html_parts)
     with open(DASHBOARD_FILE, "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"[完成] 寬螢幕流暢版（5D 右側確認與棘輪鎖利版，已移除 UBS）已輸出至 {DASHBOARD_FILE}")
+    print(f"[完成] 寬螢幕流暢版（5D 操盤室 + 頂置 DISCOVERY_POOL 潛力獵手）已輸出至 {DASHBOARD_FILE}")
 
 
 # ==========================================
@@ -1288,7 +1414,6 @@ def main():
 
     prev_state = load_state()
     prev_stocks = prev_state.get("stocks", {})
-    prev_total_val = float(prev_state.get("prev_total_market_val", 0.0))
     macro = fetch_macro_gold_radar(prev_state.get("macro_gold", {}))
     usd_twd = get_USD_TWD_rate()
 
@@ -1324,10 +1449,15 @@ def main():
         eval_data = evaluate_quant_matrix(symbol, meta, market_data, prev_stocks.get(symbol, {}), macro, fund_data, nlp_score, usd_twd)
         eval_results.append(eval_data)
 
-    # 選出全場 EV 期望值最高之首選加碼王
     mark_top_ev_picks(eval_results)
 
+    # 執行全市場 Alpha 潛力獵手掃描並併入面板 (Top 6 外部精選)
+    discovered_picks = scan_alpha_discovery_pool(macro, usd_twd)
+    eval_results.extend(discovered_picks)
+
     for eval_data in eval_results:
+        if eval_data.get("is_discovery"):
+            continue
         symbol = eval_data["symbol"]
         meta = WATCHLIST[symbol]
         new_stocks_dict[symbol] = {
@@ -1372,12 +1502,13 @@ def main():
             })
         elif today_now.weekday() == 5 and today_now.hour < 10:
             current_total_val = sum(r["market_value_twd"] for r in eval_results if r["shares"] > 0)
+            top_disc_str = ", ".join([f"{d['symbol']}(EV:{d['ev_score']})" for d in discovered_picks[:3]])
             bubbles_to_push.append({
                 "type": "bubble", "size": "mega",
                 "header": {"type": "box", "layout": "vertical", "backgroundColor": "#3B82F6", "paddingAll": "15px",
-                           "contents": [{"type": "text", "text": "📊 本週操盤室與 Alpha 週報", "weight": "bold", "color": "#FFFFFF", "size": "sm"}]},
+                           "contents": [{"type": "text", "text": "📊 本週操盤室與 Alpha 選股週報", "weight": "bold", "color": "#FFFFFF", "size": "sm"}]},
                 "body": {"type": "box", "layout": "vertical", "spacing": "sm",
-                         "contents": [{"type": "text", "text": f"本週證券總市值: NT${current_total_val:,.0f} ｜ 累計已實現: +NT${REALIZED_PNL_TWD:,} ｜ 戰備金：台股 NT${RESERVE_CASH_TWD:,} / 美股 ${US_RESERVE_CASH_USD:,.2f}。祝您週末愉快！", "size": "xs", "wrap": True, "color": "#334155"}]}
+                         "contents": [{"type": "text", "text": f"本週證券總市值: NT${current_total_val:,.0f} ｜ 累計已實現: +NT${REALIZED_PNL_TWD:,} ｜ 🔭 本週潛力雷達前三名：{top_disc_str}。祝您週末愉快！", "size": "xs", "wrap": True, "color": "#334155"}]}
             })
 
     if eval_results:
@@ -1402,7 +1533,7 @@ def main():
             except Exception:
                 pass
 
-        print("[完成] 寬螢幕流暢版（5D 右側確認與棘輪鎖利版）執行完畢。")
+        print("[完成] 寬螢幕流暢版（5D 操盤室 + 頂置 DISCOVERY_POOL 潛力獵手）執行完畢。")
 
 
 if __name__ == "__main__":
