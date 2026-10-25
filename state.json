@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-25 19:19:38",
+  "updated_at": "2026-10-25 19:28:11",
   "macro_gold": {
     "bubble_level": "高度警報：殖利率/避險升溫",
     "color": "#EF4444",
@@ -16,110 +16,110 @@
     "usd_twd_now": 32.56999969482422,
     "fx_status": "💱 美元匯率偏高 (暫緩換匯)",
     "premium_shift": -10.0,
-    "must_push": true
+    "must_push": false
   },
   "stocks": {
     "FUND_ALLIANZ": {
       "risk_level": "定期定額累積",
       "current_price": 141.45,
       "peak_price": 143.5,
-      "updated_at": "2026-10-25 19:19:38"
+      "updated_at": "2026-10-25 19:28:11"
     },
     "0050.TW": {
       "risk_level": "定期定額累積",
       "current_price": 106.9,
       "peak_price": 116.6,
-      "updated_at": "2026-10-25 19:19:38"
+      "updated_at": "2026-10-25 19:28:11"
     },
     "009816.TW": {
       "risk_level": "定期定額累積",
       "current_price": 15.93,
       "peak_price": 17.09,
-      "updated_at": "2026-10-25 19:19:38"
+      "updated_at": "2026-10-25 19:28:11"
     },
     "2330.TW": {
       "risk_level": "👀 左側擊球區 (等止跌)",
       "current_price": 2385.0,
       "peak_price": 2590.0,
-      "updated_at": "2026-10-25 19:19:38"
+      "updated_at": "2026-10-25 19:28:11"
     },
     "AMZN": {
       "risk_level": "👀 左側擊球區 (等止跌)",
       "current_price": 248.0,
       "peak_price": 287.2,
-      "updated_at": "2026-10-25 19:19:38"
+      "updated_at": "2026-10-25 19:28:11"
     },
     "NVDA": {
       "risk_level": "👀 左側擊球區 (等止跌)",
       "current_price": 210.96,
       "peak_price": 243.37,
-      "updated_at": "2026-10-25 19:19:38"
+      "updated_at": "2026-10-25 19:28:11"
     },
     "AMAT": {
       "risk_level": "🎯 右側轉強買點 (黃金坑)",
       "current_price": 377.24,
       "peak_price": 563.16,
-      "updated_at": "2026-10-25 19:19:38"
+      "updated_at": "2026-10-25 19:28:11"
     },
     "BRK-B": {
       "risk_level": "🎯 右側轉強買點 (黃金坑)",
       "current_price": 542.19,
       "peak_price": 549.96,
-      "updated_at": "2026-10-25 19:19:38"
+      "updated_at": "2026-10-25 19:28:11"
     },
     "COST": {
       "risk_level": "合理估值區",
       "current_price": 1003.32,
       "peak_price": 1021.45,
-      "updated_at": "2026-10-25 19:19:38"
+      "updated_at": "2026-10-25 19:28:11"
     },
     "LLY": {
       "risk_level": "👀 左側擊球區 (等止跌)",
       "current_price": 1273.46,
       "peak_price": 1321.21,
-      "updated_at": "2026-10-25 19:19:38"
+      "updated_at": "2026-10-25 19:28:11"
     },
     "1232.TW": {
       "risk_level": "合理估值區",
       "current_price": 154.0,
       "peak_price": 159.5,
-      "updated_at": "2026-10-25 19:19:38"
+      "updated_at": "2026-10-25 19:28:11"
     },
     "2002.TW": {
       "risk_level": "👀 左側擊球區 (等止跌)",
       "current_price": 19.55,
       "peak_price": 19.9,
-      "updated_at": "2026-10-25 19:19:38"
+      "updated_at": "2026-10-25 19:28:11"
     },
     "1904.TW": {
       "risk_level": "🎯 右側轉強買點 (低風險)",
       "current_price": 24.6,
       "peak_price": 26.45,
-      "updated_at": "2026-10-25 19:19:38"
+      "updated_at": "2026-10-25 19:28:11"
     },
     "2616.TW": {
       "risk_level": "🟣 錯殺鎖倉保護 (禁售)",
       "current_price": 13.05,
       "peak_price": 13.6,
-      "updated_at": "2026-10-25 19:19:38"
+      "updated_at": "2026-10-25 19:28:11"
     },
     "2337.TW": {
       "risk_level": "👀 左側擊球區 (等止跌)",
       "current_price": 99.5,
       "peak_price": 144.5,
-      "updated_at": "2026-10-25 19:19:38"
+      "updated_at": "2026-10-25 19:28:11"
     },
     "6182.TWO": {
       "risk_level": "合理估值區",
       "current_price": 104.5,
       "peak_price": 140.0,
-      "updated_at": "2026-10-25 19:19:38"
+      "updated_at": "2026-10-25 19:28:11"
     },
     "GLD": {
       "risk_level": "👀 左側擊球區 (等止跌)",
       "current_price": 366.61,
       "peak_price": 429.42,
-      "updated_at": "2026-10-25 19:19:38"
+      "updated_at": "2026-10-25 19:28:11"
     }
   },
   "results": [
