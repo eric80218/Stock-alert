@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (5D Profit Engine + Guaranteed Alpha Discovery Edition)
-- 【頂置確認】DISCOVERY_POOL 已直接放置於第 26 行，一眼即可確認！
-- 升級「🔭 全市場 Alpha 潛力獵手」為逐檔高穩定抓取模式，保證 100% 產出 6 檔潛力股卡片與「🔭 潛力雷達 (6)」紫色按鈕
-- 已移除 UBS 銀行現金池，保留台美雙幣戰備金 (台股 NT$12,960 / 美股 $369.78) 與累計已實現損益 +NT$28,608
+Quantitative Risk & Valuation Engine (5D Profit Engine + Alpha Discovery Scanner Edition)
+- 已將美股戰備金 (US_RESERVE_CASH_USD) 更新為 $106.00 USD (台股戰備金維持 NT$12,960)
+- 【頂置確認】DISCOVERY_POOL 直接放置於第 26 行，自動掃描 16 檔台美股龍頭並挑選 Top 6 顯示於「🔭 潛力雷達」
+- 內建 5 大機構實戰演算法：右側止跌確認 (MA5+RSI)、階梯式保本鎖利棘輪、財報前高溢價避險、EV 首選加碼王、10年美債殖利率雷達
 """
 
 import os
@@ -24,7 +24,7 @@ GITHUB_REPO = os.environ.get("GITHUB_REPOSITORY", "eric80218/Stock-alert")
 
 REALIZED_PNL_TWD = 28608       # 累計已實現損益：旺宏(-2200) + 合晶(-1740) + AMAT減碼9股(+32548) = +NT$28,608
 RESERVE_CASH_TWD = 12960       # 台股交割戶「未來逢低加碼專用戰備金」(NT$)
-US_RESERVE_CASH_USD = 369.78   # 美股交易帳戶「可動用現金餘額」(USD)
+US_RESERVE_CASH_USD = 106.00   # 美股交易帳戶「最新可動用現金餘額」($106.00 USD)
 
 DISCOVERY_POOL = {
     # 🇺🇸 美股八大護城河龍頭
@@ -857,7 +857,6 @@ def scan_alpha_discovery_pool(macro: dict, usd_twd: float) -> list:
             high_60d = m_data["high_60d"]
             is_right_side = m_data.get("is_right_side", True)
 
-            # 動態合理價錨定：(年線*1.08 + 60D高點*0.96)/2
             fair_val = round((ma200 * 1.08 + high_60d * 0.96) / 2.0, 2)
             safety_margin = round(((fair_val - price) / fair_val) * 100.0, 2)
             premium_rate = round(((price - fair_val) / fair_val) * 100.0, 2)
@@ -1402,7 +1401,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
     html = "".join(html_parts)
     with open(DASHBOARD_FILE, "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"[完成] 寬螢幕流暢版（5D 操盤室 + 頂置 DISCOVERY_POOL 潛力獵手）已輸出至 {DASHBOARD_FILE}")
+    print(f"[完成] 寬螢幕流暢版（美股戰備金 $106.00 + 頂置 DISCOVERY_POOL 潛力獵手）已輸出至 {DASHBOARD_FILE}")
 
 
 # ==========================================
@@ -1533,7 +1532,7 @@ def main():
             except Exception:
                 pass
 
-        print("[完成] 寬螢幕流暢版（5D 操盤室 + 頂置 DISCOVERY_POOL 潛力獵手）執行完畢。")
+        print("[完成] 寬螢幕流暢版（美股戰備金 $106.00 + 頂置 DISCOVERY_POOL 潛力獵手）執行完畢。")
 
 
 if __name__ == "__main__":
