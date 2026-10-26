@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-10-27 06:25:30",
+  "updated_at": "2026-10-27 07:01:45",
   "macro_gold": {
     "bubble_level": "高度警報：殖利率/避險升溫",
     "color": "#EF4444",
@@ -13,7 +13,7 @@
     "sp_ret_10d": -1.67,
     "sox_ret_10d": -9.43,
     "twii_ret_10d": -7.56,
-    "usd_twd_now": 32.569000244140625,
+    "usd_twd_now": 32.54499816894531,
     "fx_status": "💱 美元匯率偏高 (宜內循環換股)",
     "premium_shift": -10.0,
     "must_push": false
@@ -23,115 +23,115 @@
       "risk_level": "定期定額累積",
       "current_price": 141.45,
       "peak_price": 143.5,
-      "updated_at": "2026-10-27 06:25:30"
+      "updated_at": "2026-10-27 07:01:45"
     },
     "0050.TW": {
       "risk_level": "定期定額累積",
       "current_price": 106.9,
       "peak_price": 116.6,
-      "updated_at": "2026-10-27 06:25:30"
+      "updated_at": "2026-10-27 07:01:45"
     },
     "009816.TW": {
       "risk_level": "定期定額累積",
       "current_price": 15.93,
       "peak_price": 17.09,
-      "updated_at": "2026-10-27 06:25:30"
+      "updated_at": "2026-10-27 07:01:45"
     },
     "2330.TW": {
       "risk_level": "👀 左側擊球區 (等止跌)",
       "current_price": 2385.0,
       "peak_price": 2590.0,
-      "updated_at": "2026-10-27 06:25:30"
+      "updated_at": "2026-10-27 07:01:45"
     },
     "NVDA": {
       "risk_level": "🎯 右側轉強買點 (黃金坑)",
       "current_price": 216.0,
       "peak_price": 243.37,
-      "updated_at": "2026-10-27 06:25:30"
+      "updated_at": "2026-10-27 07:01:45"
     },
     "COST": {
       "risk_level": "合理估值區",
       "current_price": 1005.16,
       "peak_price": 1021.45,
-      "updated_at": "2026-10-27 06:25:30"
+      "updated_at": "2026-10-27 07:01:45"
     },
     "BRK-B": {
       "risk_level": "🎯 右側轉強買點 (黃金坑)",
       "current_price": 548.56,
       "peak_price": 549.96,
-      "updated_at": "2026-10-27 06:25:30"
+      "updated_at": "2026-10-27 07:01:45"
     },
     "LLY": {
       "risk_level": "🎯 右側轉強買點 (黃金坑)",
       "current_price": 1279.14,
       "peak_price": 1321.21,
-      "updated_at": "2026-10-27 06:25:30"
+      "updated_at": "2026-10-27 07:01:45"
     },
     "AMZN": {
       "risk_level": "🎯 右側轉強買點 (黃金坑)",
       "current_price": 249.09,
       "peak_price": 287.2,
-      "updated_at": "2026-10-27 06:25:30"
+      "updated_at": "2026-10-27 07:01:45"
     },
     "NVO": {
       "risk_level": "🎯 右側轉強買點 (黃金坑)",
       "current_price": 39.13,
       "peak_price": 48.66,
-      "updated_at": "2026-10-27 06:25:30"
+      "updated_at": "2026-10-27 07:01:45"
     },
     "AMAT": {
       "risk_level": "🎯 右側轉強買點 (黃金坑)",
       "current_price": 387.59,
       "peak_price": 563.16,
-      "updated_at": "2026-10-27 06:25:30"
+      "updated_at": "2026-10-27 07:01:45"
     },
     "91282CJZ5": {
       "risk_level": "美國公債收息",
       "current_price": 0.94712,
       "peak_price": 1.0,
-      "updated_at": "2026-10-27 06:25:30"
+      "updated_at": "2026-10-27 07:01:45"
     },
     "1232.TW": {
       "risk_level": "合理估值區",
       "current_price": 154.0,
       "peak_price": 159.5,
-      "updated_at": "2026-10-27 06:25:30"
+      "updated_at": "2026-10-27 07:01:45"
     },
     "2002.TW": {
       "risk_level": "👀 左側擊球區 (等止跌)",
       "current_price": 19.55,
       "peak_price": 19.9,
-      "updated_at": "2026-10-27 06:25:30"
+      "updated_at": "2026-10-27 07:01:45"
     },
     "1904.TW": {
       "risk_level": "🎯 右側轉強買點 (低風險)",
       "current_price": 24.6,
       "peak_price": 26.45,
-      "updated_at": "2026-10-27 06:25:30"
+      "updated_at": "2026-10-27 07:01:45"
     },
     "2616.TW": {
       "risk_level": "🟣 錯殺鎖倉保護 (禁售)",
       "current_price": 13.05,
       "peak_price": 13.6,
-      "updated_at": "2026-10-27 06:25:30"
+      "updated_at": "2026-10-27 07:01:45"
     },
     "2337.TW": {
       "risk_level": "👀 左側擊球區 (等止跌)",
       "current_price": 99.5,
       "peak_price": 144.5,
-      "updated_at": "2026-10-27 06:25:30"
+      "updated_at": "2026-10-27 07:01:45"
     },
     "6182.TWO": {
       "risk_level": "合理估值區",
       "current_price": 104.5,
       "peak_price": 140.0,
-      "updated_at": "2026-10-27 06:25:30"
+      "updated_at": "2026-10-27 07:01:45"
     },
     "GLD": {
       "risk_level": "🎯 右側轉強買點 (低風險)",
       "current_price": 367.82,
       "peak_price": 429.42,
-      "updated_at": "2026-10-27 06:25:30"
+      "updated_at": "2026-10-27 07:01:45"
     }
   },
   "results": [
@@ -526,7 +526,7 @@
       "sizing_note": "⏳ 試算：等待見紅K或站上 2403.0 再動用現金或換股銀彈",
       "nlp_score": 0.0,
       "backtest": {
-        "return_pct": 22.5,
+        "return_pct": 19.6,
         "max_drawdown": -17.8,
         "win_rate": 54.5
       },
@@ -607,8 +607,8 @@
       "shares": 22.0136,
       "min_core_shares": 16.0,
       "base_locked": false,
-      "market_value_twd": 154868.32,
-      "invested_cost_twd": 157592.85,
+      "market_value_twd": 154725.67,
+      "invested_cost_twd": 157447.7,
       "native_pnl_amt": -83.65,
       "dividend_yield_pct": 0.03,
       "annual_dividend_twd": 46.0,
@@ -722,11 +722,11 @@
       "shares": 8.00876,
       "min_core_shares": 6.0,
       "base_locked": false,
-      "market_value_twd": 262191.28,
-      "invested_cost_twd": 272465.97,
+      "market_value_twd": 261949.77,
+      "invested_cost_twd": 272215.01,
       "native_pnl_amt": -315.47,
       "dividend_yield_pct": 0.59,
-      "annual_dividend_twd": 1547.0,
+      "annual_dividend_twd": 1546.0,
       "dca_monthly_twd": 0,
       "dca_day": null,
       "dca_days_left": null,
@@ -753,7 +753,7 @@
       "color": "#3B82F6",
       "action": "底倉續抱 (超額可輪動 2.0088 股)",
       "desc": "單日 +0.18% (標普Alpha +6.4%)，處於合理估值防禦帶內。",
-      "sizing_note": "👉 試算：續抱現有 8.00876 股 (EV:2.4分) ｜ 預估年息 NT$1,547",
+      "sizing_note": "👉 試算：續抱現有 8.00876 股 (EV:2.4分) ｜ 預估年息 NT$1,546",
       "nlp_score": 5.0,
       "backtest": {
         "return_pct": -5.1,
@@ -837,8 +837,8 @@
       "shares": 5.0,
       "min_core_shares": 5.0,
       "base_locked": false,
-      "market_value_twd": 89333.0,
-      "invested_cost_twd": 80127.09,
+      "market_value_twd": 89250.71,
+      "invested_cost_twd": 80053.28,
       "native_pnl_amt": 282.65,
       "dividend_yield_pct": 0.0,
       "annual_dividend_twd": 0.0,
@@ -952,11 +952,11 @@
       "shares": 2.00322,
       "min_core_shares": 2.00322,
       "base_locked": false,
-      "market_value_twd": 83457.33,
-      "invested_cost_twd": 75672.31,
+      "market_value_twd": 83380.46,
+      "invested_cost_twd": 75602.61,
       "native_pnl_amt": 239.02,
       "dividend_yield_pct": 0.54,
-      "annual_dividend_twd": 451.0,
+      "annual_dividend_twd": 450.0,
       "dca_monthly_twd": 0,
       "dca_day": null,
       "dca_days_left": null,
@@ -1067,8 +1067,8 @@
       "shares": 3.0,
       "min_core_shares": 3.0,
       "base_locked": false,
-      "market_value_twd": 24338.58,
-      "invested_cost_twd": 24872.08,
+      "market_value_twd": 24316.17,
+      "invested_cost_twd": 24849.17,
       "native_pnl_amt": -16.38,
       "dividend_yield_pct": 0.0,
       "annual_dividend_twd": 0.0,
@@ -1177,13 +1177,13 @@
       "currency": "$",
       "current_price": 39.13,
       "day_change_pct": 0.2,
-      "fair_value": 71.14,
+      "fair_value": 71.63,
       "cost": 39.1,
       "shares": 2.0,
       "min_core_shares": 2.0,
       "base_locked": false,
-      "market_value_twd": 2548.93,
-      "invested_cost_twd": 2546.97,
+      "market_value_twd": 2546.58,
+      "invested_cost_twd": 2544.63,
       "native_pnl_amt": 0.06,
       "dividend_yield_pct": 4.6,
       "annual_dividend_twd": 117.0,
@@ -1192,8 +1192,8 @@
       "dca_days_left": null,
       "earnings_date_str": "11/04",
       "earnings_days_left": 8,
-      "safety_margin": 45.0,
-      "premium_rate": -45.0,
+      "safety_margin": 45.37,
+      "premium_rate": -45.37,
       "pnl_rate": 0.08,
       "ma200": 43.72,
       "ma20": 38.42,
@@ -1204,16 +1204,16 @@
       "stop_buffer_pct": 15.1,
       "alpha_10d": 3.1,
       "benchmark_name": "標普",
-      "atr_pct": 1.91,
-      "ev_score": 13.4,
+      "atr_pct": 1.9,
+      "ev_score": 13.6,
       "is_top_pick": false,
       "is_discovery": false,
       "afford_tag": "",
       "risk_level": "🎯 右側轉強買點 (黃金坑)",
       "color": "#10B981",
       "action": "止跌確認！動用重拳出擊 (100% 現金)或換股加碼",
-      "desc": "核心折價 45.0% 且站回5日線/RSI勾頭，右側底部確認，精準擊球！",
-      "sizing_note": "🎯 試算：純現金可買 0.73 股 (EV期望值 13.4分)",
+      "desc": "核心折價 45.4% 且站回5日線/RSI勾頭，右側底部確認，精準擊球！",
+      "sizing_note": "🎯 試算：純現金可買 0.73 股 (EV期望值 13.6分)",
       "nlp_score": 4.0,
       "backtest": {
         "return_pct": -14.3,
@@ -1297,11 +1297,11 @@
       "shares": 10.0,
       "min_core_shares": 10.0,
       "base_locked": true,
-      "market_value_twd": 126238.06,
-      "invested_cost_twd": 103035.2,
+      "market_value_twd": 126121.79,
+      "invested_cost_twd": 102940.29,
       "native_pnl_amt": 712.4,
       "dividend_yield_pct": 0.56,
-      "annual_dividend_twd": 707.0,
+      "annual_dividend_twd": 706.0,
       "dca_monthly_twd": 0,
       "dca_day": null,
       "dca_days_left": null,
@@ -1412,11 +1412,11 @@
       "shares": 1000.0,
       "min_core_shares": 1000.0,
       "base_locked": false,
-      "market_value_twd": 30847.7,
-      "invested_cost_twd": 34524.2,
+      "market_value_twd": 30819.28,
+      "invested_cost_twd": 34492.4,
       "native_pnl_amt": -112.88,
       "dividend_yield_pct": 4.2,
-      "annual_dividend_twd": 1296.0,
+      "annual_dividend_twd": 1294.0,
       "dca_monthly_twd": 0,
       "dca_day": null,
       "dca_days_left": null,
@@ -1443,7 +1443,7 @@
       "color": "#3B82F6",
       "action": "持有到期領息 / 防禦配置",
       "desc": "帳面原幣損益 $-112.88 (-10.65%)，屬無違約風險之美國國庫券。",
-      "sizing_note": "👉 試算：現值約 $947.12 USD (折合 NT$30,848)",
+      "sizing_note": "👉 試算：現值約 $947.12 USD (折合 NT$30,819)",
       "nlp_score": 0.0,
       "backtest": {
         "return_pct": 0.0,
@@ -2999,7 +2999,7 @@
       ]
     }
   ],
-  "prev_total_market_val": 1006088.0399999999,
+  "prev_total_market_val": 1005375.27,
   "dca_execution_log": {
     "0050.TW_2026-10": {
       "date": "2026-10-22 01:48:04",
