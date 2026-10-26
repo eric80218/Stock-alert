@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (5D Profit Engine + Cash-Flow Affordability Discovery Edition)
-- 升級「🔭 自由現金流購買力選股引擎 (Cash-Flow Affordability Filter)」：
-  * 針對台股戰備金 (NT$12,960) 與美股戰備金 ($106.00 USD) 量身打造候選池與加減分權重
-  * 自動淘汰單價過高、買不到幾股的高價股；優先推薦「$106 美金可買滿 1 整股以上」與「NT$12,960 可買 100~500 股以上」之績優龍頭
-- 【頂置確認】DISCOVERY_POOL 位於第 26 行，保證產出 6 檔最符合手頭現金流之高期望值潛力股
+Quantitative Risk & Valuation Engine (6D Audited Live-Trading Edition)
+- 已完成 4 大實盤量化盲點修正（不含股息池累加，股息獨立轉入其他帳戶）：
+  1. 統一估值標準：DISCOVERY_POOL 全面接入三層動態估值引擎 (分析師目標價 + Forward EPS)，並對跌破 200MA 年線之空頭股施加 -5 分懲罰
+  2. 神聖底倉紅線 (min_core_shares)：嚴格保護台積電(2股)、AMAT(10股)、LLY(2股)、AMZN(3股)、NVO(2股)、BRK-B(5股) 不被換股雷達動用；NVDA 與 COST 僅允許超額部位參與輪動
+  3. 摩擦成本門檻與板塊上限：換股 EV 淨差額門檻拉高至 >= +7.5 分；當半導體曝險 > 40% 時，自動抑制非半導體換入半導體之集中風險
+  4. 真實右側價值回測：回測引擎改為檢驗「拉回後右側重新站上 5 日線 (MA5) 持有 10 日」之真實波段勝率
 """
 
 import os
@@ -19,138 +20,144 @@ import pandas as pd
 import yfinance as yf
 
 # ==========================================
-# 1. 戰備金與 🔭 自由現金流親民潛力獵手池 (頂置於第 26 行！)
+# 1. 戰備金與 🔭 全市場 Alpha 換股輪動候選池 (頂置於第 26 行！)
 # ==========================================
 GITHUB_REPO = os.environ.get("GITHUB_REPOSITORY", "eric80218/Stock-alert")
 
 REALIZED_PNL_TWD = 28608       # 累計已實現損益：旺宏(-2200) + 合晶(-1740) + AMAT減碼9股(+32548) = +NT$28,608
-RESERVE_CASH_TWD = 12960       # 台股交割戶「未來逢低加碼專用戰備金」(NT$12,960)
-US_RESERVE_CASH_USD = 106.00   # 美股交易帳戶「最新可動用現金餘額」($106.00 USD)
+RESERVE_CASH_TWD = 12960       # 台股交割戶「可動用現金」(NT$12,960)
+US_RESERVE_CASH_USD = 28.46    # 美股交易帳戶「買入NVO 2股後最新可動用現金」($28.46 USD)
 
 DISCOVERY_POOL = {
-    # 🇺🇸 美股親民護城河與成長龍頭 (針對 $106 USD 戰備金優化：優先挑選可買 0.6 股 ~ 3 整股以上之標的)
-    "PLTR":    {"name": "Palantir (AI國防大數據王)", "market": "US", "currency": "$", "sector": "TECH", "est_yield": 0.0},
-    "SCHD":    {"name": "Schwab美國紅利ETF (高息成長)", "market": "US", "currency": "$", "sector": "DEF",  "est_yield": 3.4},
-    "KO":      {"name": "可口可樂 (巴菲特消費防禦王)", "market": "US", "currency": "$", "sector": "DEF",  "est_yield": 3.0},
-    "CSCO":    {"name": "思科 (AI網通基建/高息龍頭)", "market": "US", "currency": "$", "sector": "TECH", "est_yield": 2.8},
-    "NVO":     {"name": "諾和諾德 (減肥藥雙雄/親民價)", "market": "US", "currency": "$", "sector": "DEF",  "est_yield": 1.2},
-    "AMD":     {"name": "超微 (MI300 AI晶片二哥)", "market": "US", "currency": "$", "sector": "SOX",  "est_yield": 0.0},
-    "GOOGL":   {"name": "Google (搜尋/Gemini巨頭)", "market": "US", "currency": "$", "sector": "TECH", "est_yield": 0.5},
-    "TSM":     {"name": "台積電 ADR", "market": "US", "currency": "$", "sector": "SOX",  "est_yield": 1.4},
-    # 🇹🇼 台股高購買力績優龍頭 (針對 NT$12,960 戰備金優化：單價 20~200 元，一次可買 60~500 股好進出)
-    "2891.TW": {"name": "中信金 (高ROE消金獲利王)", "market": "TW", "currency": "NT$", "sector": "FIN",  "est_yield": 4.8},
-    "2303.TW": {"name": "聯電 (成熟製程/高息晶圓代工)", "market": "TW", "currency": "NT$", "sector": "SOX",  "est_yield": 5.8},
-    "00878.TW":{"name": "國泰永續高股息 (季配抗跌王)", "market": "TW", "currency": "NT$", "sector": "DEF",  "est_yield": 6.2},
-    "2886.TW": {"name": "兆豐金 (官股金控龍頭)", "market": "TW", "currency": "NT$", "sector": "FIN",  "est_yield": 4.5},
-    "2881.TW": {"name": "富邦金 (金控獲利王)", "market": "TW", "currency": "NT$", "sector": "FIN",  "est_yield": 4.0},
-    "2412.TW": {"name": "中華電 (抗跌電信牛)", "market": "TW", "currency": "NT$", "sector": "DEF",  "est_yield": 3.9},
-    "3711.TW": {"name": "日月光投控 (CoWoS先進封測)", "market": "TW", "currency": "NT$", "sector": "SOX", "est_yield": 3.8},
-    "2317.TW": {"name": "鴻海 (GB200 AI伺服器)", "market": "TW", "currency": "NT$", "sector": "TECH", "est_yield": 3.2},
+    # 🇺🇸 美股換股輪動池 (已補齊 target_pe 與 fallback_fair_value，統一接入三層基本面估值引擎)
+    "PLTR":    {"name": "Palantir (AI國防大數據王)", "market": "US", "currency": "$", "sector": "TECH", "est_yield": 0.0, "target_pe": 45.0, "fallback_fair_value": 42.0},
+    "SOFI":    {"name": "SoFi (高成長數位金融科技)", "market": "US", "currency": "$", "sector": "FIN",  "est_yield": 0.0, "target_pe": 25.0, "fallback_fair_value": 14.5},
+    "SCHD":    {"name": "Schwab美國紅利ETF (高息成長)", "market": "US", "currency": "$", "sector": "DEF",  "est_yield": 3.4, "target_pe": 20.0, "fallback_fair_value": 30.0, "is_etf": True},
+    "CSCO":    {"name": "思科 (AI網通基建/高息龍頭)", "market": "US", "currency": "$", "sector": "TECH", "est_yield": 2.8, "target_pe": 18.0, "fallback_fair_value": 58.0},
+    "KO":      {"name": "可口可樂 (巴菲特消費防禦王)", "market": "US", "currency": "$", "sector": "DEF",  "est_yield": 3.0, "target_pe": 24.0, "fallback_fair_value": 72.0},
+    "MRVL":    {"name": "Marvell (AI ASIC與光通訊晶片)", "market": "US", "currency": "$", "sector": "SOX",  "est_yield": 0.3, "target_pe": 32.0, "fallback_fair_value": 92.0},
+    "AMD":     {"name": "超微 (MI300 AI晶片二哥)", "market": "US", "currency": "$", "sector": "SOX",  "est_yield": 0.0, "target_pe": 32.0, "fallback_fair_value": 175.0},
+    "GOOGL":   {"name": "Google (搜尋/Gemini巨頭)", "market": "US", "currency": "$", "sector": "TECH", "est_yield": 0.5, "target_pe": 24.0, "fallback_fair_value": 195.0},
+    # 🇹🇼 台股換股輪動與高購買力龍頭池
+    "2891.TW": {"name": "中信金 (高ROE消金獲利王)", "market": "TW", "currency": "NT$", "sector": "FIN",  "est_yield": 4.8, "target_pe": 12.5, "fallback_fair_value": 40.0},
+    "2303.TW": {"name": "聯電 (成熟製程/高息晶圓代工)", "market": "TW", "currency": "NT$", "sector": "SOX",  "est_yield": 5.8, "target_pe": 13.5, "fallback_fair_value": 56.0},
+    "00878.TW":{"name": "國泰永續高股息 (季配抗跌王)", "market": "TW", "currency": "NT$", "sector": "DEF",  "est_yield": 6.2, "target_pe": 20.0, "fallback_fair_value": 24.0, "is_etf": True},
+    "2886.TW": {"name": "兆豐金 (官股金控龍頭)", "market": "TW", "currency": "NT$", "sector": "FIN",  "est_yield": 4.5, "target_pe": 14.0, "fallback_fair_value": 42.0},
+    "2881.TW": {"name": "富邦金 (金控獲利王)", "market": "TW", "currency": "NT$", "sector": "FIN",  "est_yield": 4.0, "target_pe": 12.5, "fallback_fair_value": 95.0},
+    "2412.TW": {"name": "中華電 (抗跌電信牛)", "market": "TW", "currency": "NT$", "sector": "DEF",  "est_yield": 3.9, "target_pe": 26.0, "fallback_fair_value": 128.0},
+    "3711.TW": {"name": "日月光投控 (CoWoS先進封測)", "market": "TW", "currency": "NT$", "sector": "SOX", "est_yield": 3.8, "target_pe": 17.0, "fallback_fair_value": 175.0},
+    "2317.TW": {"name": "鴻海 (GB200 AI伺服器)", "market": "TW", "currency": "NT$", "sector": "TECH", "est_yield": 3.2, "target_pe": 16.0, "fallback_fair_value": 225.0},
 }
 
 # ==========================================
-# 1-B. 個人核心持倉與觀察清單 (WATCHLIST)
+# 1-B. 個人核心持倉與觀察清單 (新增 min_core_shares 神聖底倉保護紅線)
 # ==========================================
 WATCHLIST = {
     "FUND_ALLIANZ": {
         "name": "安聯收益成長基金(含單筆+定額)", "market": "FUND", "currency": "$", "is_etf": True, "is_core": True,
-        "shares": 34.73, "target_pe": 20.0, "fallback_fair_value": 141.45,
+        "shares": 34.73, "min_core_shares": 34.73, "target_pe": 20.0, "fallback_fair_value": 141.45,
         "cost": 95.12, "cost_fx": 31.75, "est_yield": 8.0, "stop_loss_pct": None, "trailing_stop_pct": -20.0, "flash_pct": 3.0,
         "dca_monthly_twd": 3000, "dca_day": 28,
     },
     "0050.TW": {
         "name": "元大台灣50", "market": "TW", "currency": "NT$", "is_etf": True, "is_core": True,
-        "shares": 150, "target_pe": 20.0, "fallback_fair_value": 195.0,
+        "shares": 150, "min_core_shares": 150, "target_pe": 20.0, "fallback_fair_value": 195.0,
         "cost": 84.17, "est_yield": 3.2, "stop_loss_pct": None, "trailing_stop_pct": -20.0, "flash_pct": 2.5,
         "dca_monthly_twd": 5000, "dca_day": 22,
     },
     "009816.TW": {
         "name": "凱基台灣TOP50", "market": "TW", "currency": "NT$", "is_etf": True, "is_core": True,
-        "shares": 959, "target_pe": 20.0, "fallback_fair_value": 16.5,
+        "shares": 959, "min_core_shares": 959, "target_pe": 20.0, "fallback_fair_value": 16.5,
         "cost": 15.75, "est_yield": 4.2, "stop_loss_pct": None, "trailing_stop_pct": -20.0, "flash_pct": 2.5,
         "dca_monthly_twd": 5000, "dca_day": 22,
     },
     "2330.TW": {
         "name": "台積電", "market": "TW", "currency": "NT$", "is_etf": False, "is_core": True,
-        "shares": 2, "target_pe": 24.0, "fallback_fair_value": 2750.0,
+        "shares": 2, "min_core_shares": 2, "target_pe": 24.0, "fallback_fair_value": 2750.0,
         "cost": 2405.0, "est_yield": 1.5, "stop_loss_pct": -15.0, "trailing_stop_pct": -18.0, "flash_pct": 3.5,
+        "dca_monthly_twd": 0, "dca_day": None,
+    },
+    "NVO": {
+        "name": "諾和諾德 (新建倉2股/均價$39.1)", "market": "US", "currency": "$", "is_etf": False, "is_core": True,
+        "shares": 2.0, "min_core_shares": 2.0, "target_pe": 26.0, "fallback_fair_value": 52.0,
+        "cost": 39.10, "cost_fx": 32.39, "est_yield": 1.5, "stop_loss_pct": -15.0, "trailing_stop_pct": -18.0, "flash_pct": 4.0,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "AMZN": {
         "name": "亞馬遜 (3股/均價$254.55)", "market": "US", "currency": "$", "is_etf": False, "is_core": True,
-        "shares": 3.0, "target_pe": 32.0, "fallback_fair_value": 275.0,
+        "shares": 3.0, "min_core_shares": 3.0, "target_pe": 32.0, "fallback_fair_value": 275.0,
         "cost": 254.55, "cost_fx": 31.8, "est_yield": 0.0, "stop_loss_pct": -15.0, "trailing_stop_pct": -18.0, "flash_pct": 4.0,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "NVDA": {
-        "name": "輝達", "market": "US", "currency": "$", "is_etf": False, "is_core": True,
-        "shares": 22.01, "target_pe": 35.0, "fallback_fair_value": 250.0,
+        "name": "輝達 (底倉鎖定16股)", "market": "US", "currency": "$", "is_etf": False, "is_core": True,
+        "shares": 22.01, "min_core_shares": 16.0, "target_pe": 35.0, "fallback_fair_value": 250.0,
         "cost": 219.80, "cost_fx": 31.8, "est_yield": 0.03, "stop_loss_pct": -15.0, "trailing_stop_pct": -20.0, "flash_pct": 4.5,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "AMAT": {
-        "name": "應用材料 (已於$426.1減碼9股)", "market": "US", "currency": "$", "is_etf": False, "is_core": True, "base_locked": True,
-        "shares": 10.0, "target_pe": 22.0, "fallback_fair_value": 410.0,
+        "name": "應用材料 (已於$426.1減碼9股/底倉10股)", "market": "US", "currency": "$", "is_etf": False, "is_core": True, "base_locked": True,
+        "shares": 10.0, "min_core_shares": 10.0, "target_pe": 22.0, "fallback_fair_value": 410.0,
         "cost": 316.35, "cost_fx": 31.8, "est_yield": 0.8, "stop_loss_pct": -15.0, "trailing_stop_pct": -25.0, "flash_pct": 4.0,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "BRK-B": {
         "name": "波克夏 B", "market": "US", "currency": "$", "is_etf": False, "is_core": True,
-        "shares": 5.0, "target_pe": 21.0, "fallback_fair_value": 550.0,
+        "shares": 5.0, "min_core_shares": 5.0, "target_pe": 21.0, "fallback_fair_value": 550.0,
         "cost": 492.03, "cost_fx": 31.8, "est_yield": 0.0, "stop_loss_pct": -15.0, "trailing_stop_pct": -15.0, "flash_pct": 3.0,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "COST": {
-        "name": "好市多", "market": "US", "currency": "$", "is_etf": False, "is_core": True,
-        "shares": 8.0, "target_pe": 42.0, "fallback_fair_value": 1050.0,
+        "name": "好市多 (底倉鎖定6股)", "market": "US", "currency": "$", "is_etf": False, "is_core": True,
+        "shares": 8.0, "min_core_shares": 6.0, "target_pe": 42.0, "fallback_fair_value": 1050.0,
         "cost": 1044.55, "cost_fx": 31.8, "est_yield": 0.5, "stop_loss_pct": -15.0, "trailing_stop_pct": -15.0, "flash_pct": 3.0,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "LLY": {
         "name": "禮來製藥", "market": "US", "currency": "$", "is_etf": False, "is_core": True,
-        "shares": 2.0, "target_pe": 42.0, "fallback_fair_value": 1200.0,
+        "shares": 2.0, "min_core_shares": 2.0, "target_pe": 42.0, "fallback_fair_value": 1200.0,
         "cost": 1159.82, "cost_fx": 31.8, "est_yield": 0.6, "stop_loss_pct": -15.0, "trailing_stop_pct": -18.0, "flash_pct": 4.0,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "1232.TW": {
         "name": "大統益", "market": "TW", "currency": "NT$", "is_etf": False, "is_core": True,
-        "shares": 50, "target_pe": 18.0, "fallback_fair_value": 155.0,
+        "shares": 50, "min_core_shares": 50, "target_pe": 18.0, "fallback_fair_value": 155.0,
         "cost": 144.0, "est_yield": 4.5, "stop_loss_pct": -12.0, "trailing_stop_pct": -15.0, "flash_pct": 2.5,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "2002.TW": {
         "name": "中鋼", "market": "TW", "currency": "NT$", "is_etf": False, "is_core": False, "is_cyclical": True,
-        "shares": 1000, "target_pe": 16.0, "fallback_fair_value": 22.5,
+        "shares": 1000, "min_core_shares": 0, "target_pe": 16.0, "fallback_fair_value": 22.5,
         "cost": 21.05, "est_yield": 3.5, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 2.5,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "1904.TW": {
         "name": "正隆", "market": "TW", "currency": "NT$", "is_etf": False, "is_core": False, "is_cyclical": True,
-        "shares": 1, "target_pe": 15.0, "fallback_fair_value": 26.5,
+        "shares": 1, "min_core_shares": 1, "target_pe": 15.0, "fallback_fair_value": 26.5,
         "cost": 25.0, "est_yield": 3.8, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 2.5,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "2616.TW": {
         "name": "山隆", "market": "TW", "currency": "NT$", "is_etf": False, "is_core": False, "is_cyclical": True,
-        "shares": 1, "target_pe": 15.0, "fallback_fair_value": 24.5,
+        "shares": 1, "min_core_shares": 1, "target_pe": 15.0, "fallback_fair_value": 24.5,
         "cost": 22.0, "est_yield": 4.0, "stop_loss_pct": -10.0, "trailing_stop_pct": -15.0, "flash_pct": 2.5,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "2337.TW": {
         "name": "旺宏 (已於$101出清/監控)", "market": "TW", "currency": "NT$", "is_etf": False, "is_core": False, "is_cyclical": True,
-        "shares": 0, "target_pe": 18.0, "fallback_fair_value": 92.0,
+        "shares": 0, "min_core_shares": 0, "target_pe": 18.0, "fallback_fair_value": 92.0,
         "cost": 0.0, "est_yield": 2.5, "stop_loss_pct": None, "trailing_stop_pct": -15.0, "flash_pct": 3.5,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "6182.TWO": {
         "name": "合晶 (已於$106出清/監控)", "market": "TW", "currency": "NT$", "is_etf": False, "is_core": False, "is_cyclical": True,
-        "shares": 0, "target_pe": 18.0, "fallback_fair_value": 96.0,
+        "shares": 0, "min_core_shares": 0, "target_pe": 18.0, "fallback_fair_value": 96.0,
         "cost": 0.0, "est_yield": 2.8, "stop_loss_pct": None, "trailing_stop_pct": -15.0, "flash_pct": 3.5,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "GLD": {
         "name": "SPDR黃金ETF (僅監控)", "market": "US", "currency": "$", "is_etf": True, "is_core": True,
-        "shares": 0, "target_pe": 20.0, "fallback_fair_value": 265.0,
+        "shares": 0, "min_core_shares": 0, "target_pe": 20.0, "fallback_fair_value": 265.0,
         "cost": 0.0, "est_yield": 0.0, "stop_loss_pct": None, "trailing_stop_pct": -20.0, "flash_pct": 2.5,
         "dca_monthly_twd": 0, "dca_day": None,
     },
@@ -426,7 +433,7 @@ def fetch_from_finnhub(symbol: str):
 
 
 def fetch_fundamentals_and_earnings(symbol: str, meta: dict, market_data: dict, macro: dict) -> dict:
-    """三層動態目標價引擎 + 10年期美債殖利率 (^TNX) 估值折扣保護"""
+    """盲點修正 1：統一三層動態目標價引擎 (供持倉與外部潛力池共同調用)"""
     if symbol == "FUND_ALLIANZ":
         return {"fair_value": 141.45, "dividend_yield_pct": 8.0, "earnings_date_str": "月扣3千+單筆", "earnings_days_left": None}
 
@@ -477,7 +484,8 @@ def fetch_fundamentals_and_earnings(symbol: str, meta: dict, market_data: dict, 
                     if calc_fair >= fallback_fair * 0.70:
                         fair_val = calc_fair
                 else:
-                    fair_val = max(calc_fair, round(ma200 * 1.05, 2))
+                    # 避免分析師目標價過於落後或極端，與年線趨勢進行合理性錨定
+                    fair_val = max(calc_fair, round(ma200 * 1.04, 2)) if market_data.get("current_price", 0) >= ma200 else calc_fair
 
         raw_yield = info.get("dividendYield") or info.get("trailingAnnualDividendYield")
         if raw_yield and raw_yield > 0:
@@ -534,22 +542,38 @@ def fetch_finnhub_sentiment_score(symbol: str, market: str) -> float:
 
 
 def run_vectorized_backtest(close_series: pd.Series) -> dict:
+    """
+    盲點修正 4：均值回歸 + 右側站上 5 日線真實回測引擎 (Mean-Reversion + MA5 Right-Side Backtest)
+    檢驗當股價處於月線附近或拉回整理 (Close <= MA20 * 1.02) 且重新站上 5 日均線 (Close >= MA5) 時持有之真實勝率
+    """
     try:
         if len(close_series) < 60:
-            return {"return_pct": 0.0, "max_drawdown": 0.0, "win_rate": 50.0}
+            return {"return_pct": 0.0, "max_drawdown": 0.0, "win_rate": 55.0}
         df = pd.DataFrame({"Close": close_series})
+        df["MA5"] = df["Close"].rolling(5).mean()
         df["MA20"] = df["Close"].rolling(20).mean()
         df["Return"] = df["Close"].pct_change()
-        df["Strategy_Return"] = df["Return"] * (df["Close"] > df["MA20"]).shift(1).fillna(False)
+
+        # 右側轉強持倉訊號：站上 5 日線，且具備波段支撐
+        signal = (df["Close"] >= df["MA5"]).shift(1).fillna(False)
+        df["Strategy_Return"] = df["Return"] * signal
+
+        # 同時統計「拉回後剛站上 MA5 買進持有 10 日」之事件勝率
+        cross_up = (df["Close"] >= df["MA5"]) & (df["Close"].shift(1) < df["MA5"].shift(1)) & (df["Close"] <= df["MA20"] * 1.03)
+        fwd_10d_ret = df["Close"].shift(-10) / df["Close"] - 1.0
+        event_rets = fwd_10d_ret[cross_up].dropna()
+
+        if len(event_rets) >= 3:
+            win_rate = float((event_rets > 0).sum() / len(event_rets) * 100.0)
+        else:
+            winning_days = (df["Strategy_Return"] > 0).sum()
+            total_days = (df["Strategy_Return"] != 0).sum()
+            win_rate = (winning_days / total_days * 100.0) if total_days > 0 else 55.0
 
         cum_ret = (1 + df["Strategy_Return"].dropna()).prod() - 1
         rolling_max = (1 + df["Strategy_Return"].dropna()).cumprod().cummax()
         drawdown = ((1 + df["Strategy_Return"].dropna()).cumprod() - rolling_max) / rolling_max
         max_dd = drawdown.min()
-
-        winning_days = (df["Strategy_Return"] > 0).sum()
-        total_days = (df["Strategy_Return"] != 0).sum()
-        win_rate = (winning_days / total_days * 100) if total_days > 0 else 50.0
 
         return {
             "return_pct": round(float(cum_ret * 100), 1),
@@ -591,12 +615,12 @@ def fetch_macro_gold_radar(prev_macro_state: dict) -> dict:
 
         usd_twd_now = float(usdtwd_hist["Close"].iloc[-1]) if not usdtwd_hist.empty else 32.39
         usd_twd_ma200 = float(usdtwd_hist["Close"].rolling(window=200).mean().iloc[-1]) if len(usdtwd_hist) >= 200 else usd_twd_now
-        fx_status = "💱 美元匯率偏高 (暫緩換匯)" if usd_twd_now >= usd_twd_ma200 else "💵 美元相對低檔 (宜換匯佈局)"
+        fx_status = "💱 美元匯率偏高 (宜內循環換股)" if usd_twd_now >= usd_twd_ma200 else "💵 美元相對低檔 (宜換匯佈局)"
 
         is_smart_money_hedging = spxu_vol_ratio >= 1.50 or vix_val >= 20.0 or tnx_yield >= 4.50
         bubble_level = "高度警報：殖利率/避險升溫" if is_smart_money_hedging else "資金安穩：市場多頭運行"
         color = "#EF4444" if is_smart_money_hedging else "#10B981"
-        action = "🚨 避險或美債殖利率偏高，已啟動「右側止跌確認」與「保本鎖利棘輪」！" if is_smart_money_hedging else "✅ 華爾街資金留駐股市，維持右側順勢與金字塔估值運作。"
+        action = "🚨 避險升溫，已啟動「神聖底倉紅線」與「保本鎖利棘輪」！" if is_smart_money_hedging else "✅ 資金留駐股市，維持「神聖底倉保護＋超額部位輪動」運作。"
         desc = f"10年美債: {tnx_yield}%, VIX: {vix_val}, 標普10日: {sp_ret_10d:+.1f}%, {fx_status}。"
 
         prev_level = prev_macro_state.get("bubble_level", "")
@@ -617,7 +641,7 @@ def fetch_macro_gold_radar(prev_macro_state: dict) -> dict:
 
 
 # ==========================================
-# 4. 5D 獲利最大化風控矩陣
+# 4. 6D 獲利最大化與神聖底倉保護風控矩陣
 # ==========================================
 def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state: dict, macro: dict, fund_data: dict, nlp_score: float, usd_twd: float) -> dict:
     price = market_data["current_price"]
@@ -629,6 +653,7 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
     rsi14 = market_data["rsi14"]
     is_right_side = market_data.get("is_right_side", True)
     cost, shares = float(meta["cost"]), float(meta.get("shares", 0))
+    min_core_sh = float(meta.get("min_core_shares", shares if meta.get("is_core") else 0))
     stop_loss = meta.get("stop_loss_pct", None)
     trailing_stop = meta.get("trailing_stop_pct", None)
     is_etf = meta.get("is_etf", False)
@@ -690,16 +715,17 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
 
     full_powder = US_RESERVE_CASH_USD if market_type == "US" else RESERVE_CASH_TWD
     if safety_margin >= 22.0 or is_oversold:
-        deploy_pct, deploy_name = 1.0, "重拳出擊 (100% 戰備金)"
+        deploy_pct, deploy_name = 1.0, "重拳出擊 (100% 現金)"
     elif safety_margin >= 15.0:
-        deploy_pct, deploy_name = 0.5, "中度加碼 (50% 戰備金)"
+        deploy_pct, deploy_name = 0.5, "中度加碼 (50% 現金)"
     else:
-        deploy_pct, deploy_name = 0.3, "試水溫 (30% 戰備金)"
+        deploy_pct, deploy_name = 0.3, "試水溫 (30% 現金)"
 
     target_powder_shares = round((full_powder * deploy_pct) / price, 2) if (market_type == "US" and price > 0) else int((full_powder * deploy_pct) // price) if (price > 0) else 0
 
     backtest = run_vectorized_backtest(market_data.get("full_history", pd.Series([price])))
-    ev_score = round(safety_margin * 0.45 + alpha_10d * 0.30 + (backtest["win_rate"] - 50.0) * 0.25, 1)
+    trend_penalty = -5.0 if price < ma200 else 0.0
+    ev_score = round(safety_margin * 0.45 + alpha_10d * 0.30 + (backtest["win_rate"] - 50.0) * 0.25 + trend_penalty, 1)
 
     sizing_note = ""
     if symbol == "FUND_ALLIANZ":
@@ -711,48 +737,48 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
         risk_level, color, action = "⚠️ 財報前高溢價警戒", "#F59E0B", "會前避險：先減碼 1/5 鎖利防跳空"
         desc = f"財報倒數 {earnings_days_left} 天且溢價達 {premium_rate:.1f}% (RSI {rsi14})，防範利多出盡隔夜重挫。"
         sell_sh = round(shares * 0.2, 1) if market_type == "US" else max(1, int(round(shares * 0.2)))
-        sizing_note = f"👉 試算：建議會前先落袋 {sell_sh:g} 股，保留現金待財報後低接"
+        sizing_note = f"👉 試算：建議會前先落袋 {sell_sh:g} 股，釋放資金轉入低估潛力股"
 
     elif is_core and shares > 0 and safety_margin >= 12.0 and day_change_pct > -dynamic_flash_pct:
         if is_right_side:
-            risk_level, color, action = "🎯 右側轉強買點 (黃金坑)", "#10B981", f"止跌確認！動用{deploy_name}"
+            risk_level, color, action = "🎯 右側轉強買點 (黃金坑)", "#10B981", f"止跌確認！動用{deploy_name}或換股加碼"
             desc = f"核心折價 {safety_margin:.1f}% 且站回5日線/RSI勾頭，右側底部確認，精準擊球！"
-            sizing_note = f"🎯 試算：動用 {deploy_name} 可買約 {target_powder_shares:g} 股 (EV期望值 {ev_score}分)"
+            sizing_note = f"🎯 試算：純現金可買 {target_powder_shares:g} 股 (EV期望值 {ev_score}分)"
         else:
             risk_level, color, action = "👀 左側擊球區 (等止跌)", "#F59E0B", f"已入價值區 / 靜待站上5日線({ma5})"
             desc = f"安全邊際達 {safety_margin:.1f}%，但仍在5日線下探底中，嚴禁左側急接飛刀！"
-            sizing_note = f"⏳ 試算：子彈上膛預備 ({deploy_name}約 {target_powder_shares:g} 股)，見紅K或站上 {ma5} 即買進"
+            sizing_note = f"⏳ 試算：等待見紅K或站上 {ma5} 再動用現金或換股銀彈"
 
     elif is_breakeven_ratchet or is_profit_ratchet:
         lock_type = "保本防線(+2.5%)" if is_breakeven_ratchet else "獲利棘輪(+12%)"
-        risk_level, color, action = "🛡️ 保本鎖利警戒 (棘輪)", "#F97316", "拒絕紙上富貴：減碼 1/3 鎖住勝果"
-        desc = f"本波最高曾賺 +{max_pnl_rate:.1f}%，現回吐至 +{pnl_rate:.1f}% 觸及【{lock_type}】，強制鎖利！"
+        risk_level, color, action = "🛡️ 保本鎖利警戒 (棘輪)", "#F97316", "拒絕紙上富貴：調節超額部位鎖住勝果"
+        desc = f"本波最高曾賺 +{max_pnl_rate:.1f}%，現回吐至 +{pnl_rate:.1f}% 觸及【{lock_type}】，啟動鎖利！"
         sell_sh = round(shares / 3.0, 1) if market_type == "US" else max(1, int(round(shares / 3.0)))
         sizing_note = f"👉 試算：建議減碼 {sell_sh:g} 股落袋，確保此筆交易立於不敗之地"
 
     elif not is_etf and stop_loss is not None and cost > 0 and shares > 0 and pnl_rate <= stop_loss:
         if is_oversold or is_core or is_systemic_drop:
             reason_tag = f"RSI超賣({rsi14})" if is_oversold else f"跟隨{benchmark_name}修正(Alpha {alpha_10d:+.1f}%)"
-            risk_level, color, action = "🟣 錯殺鎖倉保護 (禁售)", "#8B5CF6", "啟動防洗盤鎖倉：保留底倉待反彈"
+            risk_level, color, action = "🟣 錯殺鎖倉保護 (禁售)", "#8B5CF6", "啟動防洗盤鎖倉：保留神聖底倉待反彈"
             desc = f"雖觸及防線，但系統偵測為【{reason_tag}】，嚴禁砍在阿呆谷！"
             sizing_note = f"🛡️ 保護機制：鎖定 {shares:g} 股底倉不賣，等待 RSI 回溫"
         else:
-            risk_level, color, action = "停損警戒 (個股破線)", "#EF4444", "基本面轉弱：減碼 1/2 或換股"
-            desc = f"帳面 {pnl_rate:.1f}% 且弱於{benchmark_name} (Alpha {alpha_10d:+.1f}%)，屬個股獨立轉弱。"
+            risk_level, color, action = "停損警戒 (汰弱換強)", "#EF4444", "基本面轉弱：減碼 1/2 換入潛力股"
+            desc = f"帳面 {pnl_rate:.1f}% 且弱於{benchmark_name} (Alpha {alpha_10d:+.1f}%)，建議汰弱留強。"
             trim_sh = round(shares * 0.5, 1) if market_type == "US" else max(1, int(round(shares * 0.5)))
-            sizing_note = f"👉 試算：建議減碼 {trim_sh:g} 股控制風險"
+            sizing_note = f"👉 試算：減碼 {trim_sh:g} 股收回資金，直接輪動至『🔄 換股雷達』首選股"
 
     elif shares > 0 and not is_etf and trailing_stop is not None and pnl_rate > 12.0 and drawdown_from_peak <= trailing_stop:
-        if base_locked and price >= ma200:
-            risk_level, color, action = "🔵 底倉續抱 (豁免停利)", "#3B82F6", "已高檔落袋過 / 剩餘底倉長抱"
-            desc = f"雖回撤 {drawdown_from_peak:.1f}%，但您已於高檔減碼且守穩年線(${ma200})之上！"
-            sizing_note = f"🛡️ 底倉保護：安心續抱剩餘 {shares:g} 股核心底倉"
+        if (base_locked or shares <= min_core_sh) and price >= ma200:
+            risk_level, color, action = "🔵 底倉續抱 (神聖底倉豁免)", "#3B82F6", "已達底倉保護線 / 安心長抱"
+            desc = f"雖回撤 {drawdown_from_peak:.1f}%，但目前 {shares:g} 股屬神聖底倉且守穩年線(${ma200})之上！"
+            sizing_note = f"🛡️ 底倉保護：嚴格守住 {shares:g} 股核心底倉，不因波段洗盤下車"
         else:
-            risk_level, color, action = "移動停利警戒", "#F97316", "優雅調節：獲利了結 1/4 鎖住勝果"
-            desc = f"自高點回撤達 {drawdown_from_peak:.1f}% (門檻 {trailing_stop}%)，小幅調節保護獲利。"
+            risk_level, color, action = "移動停利警戒", "#F97316", "優雅調節：獲利了結超額部位 1/4"
+            desc = f"自高點回撤達 {drawdown_from_peak:.1f}% (門檻 {trailing_stop}%)，小幅調節超額部位保護獲利。"
             sell_sh = round(shares * 0.25, 1) if market_type in ["US", "FUND"] else max(1, int(round(shares * 0.25)))
             sell_val = round(sell_sh * price * curr_fx, 0)
-            sizing_note = f"👉 試算：微調 1/4 ({sell_sh:g} 股，約落袋 NT${sell_val:,.0f})"
+            sizing_note = f"👉 試算：微調 1/4 ({sell_sh:g} 股，約落袋 NT${sell_val:,.0f}) 轉入低估潛力股"
 
     elif day_change_pct <= -dynamic_flash_pct:
         if shares > 0:
@@ -766,11 +792,11 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
 
     elif not is_etf and premium_rate > high_risk_threshold:
         if shares > 0:
-            risk_level, color, action = "高風險 (嚴重昂貴)", "#EF4444", "分批落袋：逢高調節 1/4 持倉"
-            desc = f"溢價率達 {premium_rate:.1f}%，超過動態風險門檻 ({high_risk_threshold:.1f}%)。"
+            risk_level, color, action = "高風險 (逢高換股源)", "#EF4444", "分批落袋：逢高調節 1/4 轉進低估股"
+            desc = f"溢價率達 {premium_rate:.1f}%，超過動態門檻 ({high_risk_threshold:.1f}%)，適合收割超額獲利。"
             sell_sh = round(shares * 0.25, 1) if market_type in ["US", "FUND"] else max(1, int(round(shares * 0.25)))
             sell_val = round(sell_sh * price * curr_fx, 0)
-            sizing_note = f"👉 試算：逢高分批調節 {sell_sh:g} 股 (約收回 NT${sell_val:,.0f})"
+            sizing_note = f"👉 試算：逢高調節 {sell_sh:g} 股 (收回約 NT${sell_val:,.0f}) 作為換股銀彈"
         else:
             risk_level, color, action = "空手觀望 (偏貴)", "#64748B", "估值偏高：維持空手觀望"
             desc = f"溢價率達 {premium_rate:.1f}%，距離合理買點尚遠。"
@@ -780,11 +806,11 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
         if is_right_side:
             risk_level, color, action = "🎯 右側轉強買點 (低風險)", "#10B981", f"止跌轉強：動用{deploy_name}"
             desc = f"安全邊際達 {safety_margin:.1f}% 且站回5日線/RSI勾頭，具右側買進優勢。"
-            sizing_note = f"🎯 試算：動用 {deploy_name} 可買約 {target_powder_shares:g} 股 (EV期望值 {ev_score}分)"
+            sizing_note = f"🎯 試算：純現金可買 {target_powder_shares:g} 股 (EV期望值 {ev_score}分)"
         else:
             risk_level, color, action = "👀 左側擊球區 (等止跌)", "#F59E0B", f"折價達標 / 靜待站上5日線({ma5})"
             desc = f"安全邊際達 {safety_margin:.1f}%，惟短線尚未止跌，等待站回 5 日線再出手！"
-            sizing_note = f"⏳ 試算：預備動用 {deploy_name} (約 {target_powder_shares:g} 股)，見止跌紅K即買進"
+            sizing_note = f"⏳ 試算：預備動用 {deploy_name}，見止跌紅K即買進"
 
     else:
         if dca_monthly_twd > 0 and dca_day:
@@ -798,9 +824,11 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
             desc = f"單日漲跌 {day_change_pct:+.2f}%，尚未跌入低風險安全邊際區。"
             sizing_note = f"👉 試算：目前空手，目標買進價 {round(dynamic_fair*0.9, 1)}"
         else:
-            risk_level, color, action = "合理估值區", "#3B82F6", "核心底倉續抱 / 定期定額"
+            swappable_sh = round(max(0.0, shares - min_core_sh), 2)
+            lock_tag = f"神聖底倉鎖定 {min_core_sh:g} 股" if swappable_sh == 0 else f"超額可輪動 {swappable_sh:g} 股"
+            risk_level, color, action = "合理估值區", "#3B82F6", f"底倉續抱 ({lock_tag})"
             desc = f"單日 {day_change_pct:+.2f}% ({benchmark_name}Alpha {alpha_10d:+.1f}%)，處於合理估值防禦帶內。"
-            sizing_note = f"👉 試算：安心續抱現有 {shares:g} 股部位，預估年息 NT${annual_dividend_twd:,.0f}"
+            sizing_note = f"👉 試算：續抱現有 {shares:g} 股 (EV:{ev_score}分) ｜ 預估年息 NT${annual_dividend_twd:,.0f}"
 
     clean_hist_30 = strip_tz_series(market_data.get("full_history", pd.Series([price])).tail(35))
     if symbol == "FUND_ALLIANZ":
@@ -811,6 +839,7 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
     return {
         "symbol": symbol, "name": meta["name"], "market": market_type, "currency": meta["currency"],
         "current_price": price, "day_change_pct": day_change_pct, "fair_value": dynamic_fair, "cost": round(cost, 2), "shares": shares,
+        "min_core_shares": min_core_sh, "base_locked": base_locked,
         "market_value_twd": market_value_twd, "invested_cost_twd": invested_cost_twd,
         "dividend_yield_pct": div_yield_pct, "annual_dividend_twd": annual_dividend_twd,
         "dca_monthly_twd": dca_monthly_twd, "dca_day": dca_day, "dca_days_left": dca_days_left,
@@ -837,10 +866,73 @@ def mark_top_ev_picks(eval_results: list):
 
 
 # ==========================================
-# 4-B. 自由現金流購買力導向 Alpha 選股引擎 (Cash-Flow Affordability Scanner)
+# 4-B. 盲點全面修正版：神聖底倉保護 + 三層估值 + 摩擦成本門檻 (+7.5分) 換股引擎
 # ==========================================
-def scan_alpha_discovery_pool(macro: dict, usd_twd: float) -> list:
-    """根據台股 NT$12,960 與美股 $106.00 自由現金流進行購買力過濾與加權，挑出最適合現有資金入手之 Top 6 標的"""
+def extract_rotation_funding_sources(own_results: list) -> dict:
+    """
+    盲點修正 2：嚴格遵守神聖底倉紅線 (min_core_shares) 與 base_locked！
+    只允許動用 `shares > min_core_shares` 的「超額部位 (Swappable Shares)」作為換股銀彈，
+    絕不叫您賣掉僅有的 2 股台積電、2 股 LLY、3 股 AMZN 或已鎖倉的 10 股 AMAT！
+    """
+    sources = {}
+    for mkt in ["US", "TW"]:
+        swappable_holdings = []
+        for r in own_results:
+            if r["market"] != mkt or r["shares"] <= 0 or r["dca_monthly_twd"] > 0 or r.get("base_locked", False):
+                continue
+            excess_sh = round(r["shares"] - r.get("min_core_shares", 0.0), 2)
+            if excess_sh > 0:
+                r_copy = dict(r)
+                r_copy["swappable_shares"] = excess_sh
+                swappable_holdings.append(r_copy)
+
+        if not swappable_holdings:
+            sources[mkt] = None
+            continue
+
+        # 優先尋找溢價偏高或獲利豐厚可鎖利之超額部位
+        harvest_candidates = [r for r in swappable_holdings if r["premium_rate"] > 2.0 or r["pnl_rate"] >= 15.0 or r["rsi14"] >= 62.0]
+        if harvest_candidates:
+            src = max(harvest_candidates, key=lambda x: (x["premium_rate"] + x["pnl_rate"] * 0.3))
+            trim_ratio = 0.50  # 僅調節「超額可輪動部位」的一半，完全不動神聖底倉
+            reason = f"逢高調節超額 {src['symbol']}"
+        else:
+            src = min(swappable_holdings, key=lambda x: x["ev_score"])
+            trim_ratio = 0.50
+            reason = f"汰弱轉換 {src['symbol']}"
+
+        avail_sh = src["swappable_shares"]
+        if mkt == "US":
+            trim_sh = min(avail_sh, max(0.5, round(avail_sh * trim_ratio, 1)))
+        else:
+            trim_sh = min(int(avail_sh), max(1, int(round(avail_sh * trim_ratio))))
+
+        freed_cash = round(trim_sh * src["current_price"], 2)
+        is_src_sox = src["symbol"] in ["NVDA", "AMAT", "2330.TW", "2337.TW", "6182.TWO"]
+        sources[mkt] = {
+            "symbol": src["symbol"],
+            "name": src["name"],
+            "ev_score": src["ev_score"],
+            "trim_shares": trim_sh,
+            "freed_cash": freed_cash,
+            "reason": reason,
+            "is_sox": is_src_sox
+        }
+    return sources
+
+
+def scan_alpha_discovery_pool(macro: dict, usd_twd: float, own_results: list) -> list:
+    """
+    盲點修正 1 & 3：
+    - 潛力池全面呼叫 fetch_fundamentals_and_earnings 三層估值引擎 + 跌破 200MA 空頭扣 5 分
+    - 換股門檻拉高至 EV 差額 >= +7.5 分 (覆蓋摩擦成本)
+    - 當投組半導體曝險 > 40% 且換股源非半導體時，外部半導體股自動扣減 -6.0 分集中度懲罰
+    """
+    rotation_sources = extract_rotation_funding_sources(own_results)
+    total_mval = sum(r["market_value_twd"] for r in own_results if r["shares"] > 0)
+    tech_mval = sum(r["market_value_twd"] for r in own_results if r["symbol"] in ["NVDA", "AMAT", "2330.TW"] and r["shares"] > 0)
+    current_sox_exposure = (tech_mval / total_mval * 100.0) if total_mval > 0 else 0.0
+
     discovered_list = []
     for sym, d_meta in DISCOVERY_POOL.items():
         try:
@@ -860,7 +952,11 @@ def scan_alpha_discovery_pool(macro: dict, usd_twd: float) -> list:
             high_60d = m_data["high_60d"]
             is_right_side = m_data.get("is_right_side", True)
 
-            fair_val = round((ma200 * 1.08 + high_60d * 0.96) / 2.0, 2)
+            # 修正 1：統一使用三層基本面估值引擎計算合理價與殖利率
+            fund_info = fetch_fundamentals_and_earnings(sym, d_meta, m_data, macro)
+            fair_val = fund_info["fair_value"]
+            div_yield = fund_info["dividend_yield_pct"]
+
             safety_margin = round(((fair_val - price) / fair_val) * 100.0, 2)
             premium_rate = round(((price - fair_val) / fair_val) * 100.0, 2)
             drawdown = round(((price - high_60d) / high_60d) * 100.0, 2)
@@ -875,54 +971,69 @@ def scan_alpha_discovery_pool(macro: dict, usd_twd: float) -> list:
             alpha_10d = round(ret_10d - bench_ret, 2)
             bt = run_vectorized_backtest(m_data.get("full_history", pd.Series([price])))
 
-            # ----------------------------------------------------
-            # 關鍵升級：自由現金流購買力親民度加分 (Affordability Bonus)
-            # ----------------------------------------------------
-            if d_meta["market"] == "US":
-                can_buy_sh = round(US_RESERVE_CASH_USD / price, 2)
-                if can_buy_sh >= 1.0:
-                    afford_bonus = 4.0
-                    afford_tag = f"✨ ${US_RESERVE_CASH_USD:.0f} 夠買 {can_buy_sh:g} 整股"
-                elif can_buy_sh >= 0.5:
-                    afford_bonus = 1.5
-                    afford_tag = f"💰 ${US_RESERVE_CASH_USD:.0f} 可買 {can_buy_sh:g} 股"
-                else:
-                    afford_bonus = -4.0
-                    afford_tag = f"單價較高(可買 {can_buy_sh:g} 股)"
-                powder_str = f"美股現金 ${US_RESERVE_CASH_USD:,.0f} 可買 {can_buy_sh:g} 股"
+            mkt = d_meta["market"]
+            rot_src = rotation_sources.get(mkt)
+            base_cash = US_RESERVE_CASH_USD if mkt == "US" else RESERVE_CASH_TWD
+            cur_sym = "$" if mkt == "US" else "NT$"
+
+            cash_only_sh = round(base_cash / price, 2) if mkt == "US" else int(base_cash // price)
+            if rot_src:
+                total_recycled_cash = round(base_cash + rot_src["freed_cash"], 2)
+                combo_sh = round(total_recycled_cash / price, 2) if mkt == "US" else int(total_recycled_cash // price)
             else:
-                can_buy_sh = int(RESERVE_CASH_TWD // price)
-                if can_buy_sh >= 200:
-                    afford_bonus = 4.0
-                    afford_tag = f"✨ NT${RESERVE_CASH_TWD:,} 可買 {can_buy_sh} 股(極好進出)"
-                elif can_buy_sh >= 80:
-                    afford_bonus = 2.0
-                    afford_tag = f"💰 NT${RESERVE_CASH_TWD:,} 可買 {can_buy_sh} 股(親民)"
-                else:
-                    afford_bonus = -3.0
-                    afford_tag = f"可買 {can_buy_sh} 零股"
-                powder_str = f"台股現金 NT${RESERVE_CASH_TWD:,} 可買 {can_buy_sh} 股"
+                total_recycled_cash = base_cash
+                combo_sh = cash_only_sh
 
-            ev_score = round(safety_margin * 0.45 + alpha_10d * 0.25 + (bt["win_rate"] - 50.0) * 0.20 + afford_bonus, 1)
+            # 修正 1 & 3：空頭年線懲罰 (-5分) 與 半導體集中度過高懲罰 (-6分)
+            trend_penalty = -5.0 if price < ma200 else 0.0
+            sox_cap_penalty = -6.0 if (d_meta["sector"] == "SOX" and current_sox_exposure > 40.0 and (not rot_src or not rot_src["is_sox"])) else 0.0
 
-            if safety_margin >= 4.0 and is_right_side:
-                r_level, r_color = "🔭 現金流首選買點", "#10B981"
-                r_action = f"右側轉強＋購買力契合！({powder_str})"
-            elif safety_margin >= 4.0:
-                r_level, r_color = "🔭 親民價值低估", "#F59E0B"
-                r_action = f"價格親民已低估 / 站上5日線({d_meta['currency']}{ma5})即買"
+            if mkt == "US":
+                afford_bonus = 3.0 if cash_only_sh >= 0.7 else (2.0 if combo_sh >= 3.0 else 0.0)
             else:
-                r_level, r_color = "🔭 親民強勢追蹤", "#8B5CF6"
-                r_action = f"回檔至 {d_meta['currency']}{round(fair_val*0.94, 1)} 以下可分批買進"
+                afford_bonus = 3.0 if cash_only_sh >= 150 else (1.5 if combo_sh >= 200 else 0.0)
 
-            r_desc = f"【現金流嚴選】{afford_tag}，安全邊際 {safety_margin:+.1f}% ({bench_name}Alpha {alpha_10d:+.1f}%)。"
-            sizing_note = f"💡 量身試算：{powder_str} ｜ 預估殖利率 {d_meta['est_yield']}%"
+            raw_ev = safety_margin * 0.45 + alpha_10d * 0.25 + (bt["win_rate"] - 50.0) * 0.25 + trend_penalty + sox_cap_penalty
+            ev_score = round(raw_ev + afford_bonus, 1)
+            ev_spread = round(raw_ev - rot_src["ev_score"], 1) if rot_src else 0.0
+
+            # 修正 3：必須跨越 +7.5 分摩擦成本門檻，且站上年線與 5 日線，才觸發「🔄 換股輪動首選」
+            if rot_src and ev_spread >= 7.5 and safety_margin >= 5.0 and is_right_side and price >= ma200:
+                r_level, r_color = "🔄 換股輪動首選", "#10B981"
+                afford_tag = f"🔄 跨越門檻！EV淨增 {ev_spread:+.1f}分"
+                r_action = f"{rot_src['reason']}{rot_src['trim_shares']:g}股 + 現金 ➔ 轉買 {combo_sh:g} 股"
+                r_desc = (
+                    f"【跨越+7.5摩擦門檻】調節超額 {rot_src['symbol']}(EV:{rot_src['ev_score']}) 轉入 {sym}(EV:{ev_score})，"
+                    f"安全邊際 {safety_margin:+.1f}% 且右側站上5日線！"
+                )
+                sizing_note = (
+                    f"💡 實戰配對：純現金({cur_sym}{base_cash:,.0f})買 {cash_only_sh:g} 股 ｜ "
+                    f"加計{rot_src['reason']}釋放 {cur_sym}{rot_src['freed_cash']:,.0f} 共可買 {combo_sh:g} 股！"
+                )
+            elif safety_margin >= 5.0 and is_right_side and price >= ma200:
+                r_level, r_color = "🔭 現金流右側買點", "#10B981"
+                afford_tag = f"✨ 現金可買 {cash_only_sh:g} 股"
+                r_action = f"右側轉強！動用現有現金買入 {cash_only_sh:g} 股 (不換股)"
+                r_desc = f"【右側買點】安全邊際 {safety_margin:+.1f}%，惟換股EV差額({ev_spread:+.1f}分)未達+7.5門檻，建議僅用現金建倉。"
+                sizing_note = f"💡 試算：保留現有神聖底倉不換股，單純以現金買入 {cash_only_sh:g} 股"
+            elif safety_margin >= 5.0:
+                r_level, r_color = "🔭 輪動觀察區(等止跌)", "#F59E0B"
+                afford_tag = f"⏳ 等站上5日線({cur_sym}{ma5})"
+                r_action = f"折價達標 / 待站回 {cur_sym}{ma5} 且EV差額>7.5再輪動"
+                r_desc = f"安全邊際 {safety_margin:+.1f}% ({'年線下空頭降權' if price < ma200 else '拉回整理'})，靜待右側止跌訊號。"
+                sizing_note = f"💡 預備方案：目前 EV 差額 {ev_spread:+.1f} 分 (門檻 +7.5 分)，先觀望不妄動"
+            else:
+                r_level, r_color = "🔭 強勢輪動追蹤", "#8B5CF6"
+                afford_tag = f"EV差額 {ev_spread:+.1f}分(未達7.5)"
+                r_action = f"回檔至 {cur_sym}{round(fair_val*0.92, 1)} 以下再評估轉換"
+                r_desc = f"目前溢價 {premium_rate:+.1f}% ({bench_name}Alpha {alpha_10d:+.1f}%)，未達換股安全邊際。"
+                sizing_note = f"💡 參考購買力：純現金可買 {cash_only_sh:g} 股 ｜ 搭配超額銀彈可買 {combo_sh:g} 股"
 
             discovered_list.append({
-                "symbol": sym, "name": d_meta["name"], "market": d_meta["market"], "currency": d_meta["currency"],
+                "symbol": sym, "name": d_meta["name"], "market": mkt, "currency": cur_sym,
                 "current_price": price, "day_change_pct": day_chg, "fair_value": fair_val, "cost": 0.0, "shares": 0,
                 "market_value_twd": 0.0, "invested_cost_twd": 0.0,
-                "dividend_yield_pct": d_meta["est_yield"], "annual_dividend_twd": 0.0,
+                "dividend_yield_pct": div_yield, "annual_dividend_twd": 0.0,
                 "dca_monthly_twd": 0, "dca_day": None, "dca_days_left": None,
                 "earnings_date_str": afford_tag, "earnings_days_left": None,
                 "safety_margin": safety_margin, "premium_rate": premium_rate, "pnl_rate": 0.0,
@@ -945,7 +1056,7 @@ def scan_alpha_discovery_pool(macro: dict, usd_twd: float) -> list:
     selected = sorted(us_top3 + tw_top3, key=lambda k: k["ev_score"], reverse=True)
     if selected:
         selected[0]["is_top_pick"] = True
-    print(f"[完成] 自由現金流潛力獵手成功挖掘 {len(selected)} 檔親民精選標的！")
+    print(f"[完成] 6D 審計版換股引擎成功挖掘 {len(selected)} 檔精選標的！")
     return selected
 
 
@@ -991,15 +1102,15 @@ def compute_portfolio_equity_and_benchmark(eval_results: list, sp500_series: pd.
 
 
 # ==========================================
-# 6. 產生寬螢幕滿版操盤室網頁儀表板 (含 🔭 潛力雷達篩選器)
+# 6. 產生寬螢幕滿版操盤室網頁儀表板
 # ==========================================
 def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equity_data: dict):
     updated_time = now_tw_str()
     own_count = sum(1 for r in eval_results if not r.get("is_discovery"))
     disc_count = sum(1 for r in eval_results if r.get("is_discovery"))
     alert_levels = [
-        "停損警戒 (個股破線)", "🛡️ 保本鎖利警戒 (棘輪)", "⚠️ 財報前高溢價警戒",
-        "移動停利警戒", "單日閃崩警戒 (ATR通道)", "高風險 (嚴重昂貴)", "🟣 錯殺鎖倉保護 (禁售)"
+        "停損警戒 (汰弱換強)", "🛡️ 保本鎖利警戒 (棘輪)", "⚠️ 財報前高溢價警戒",
+        "移動停利警戒", "單日閃崩警戒 (ATR通道)", "高風險 (逢高換股源)", "🟣 錯殺鎖倉保護 (禁售)"
     ]
     high_risk_count = sum(1 for r in eval_results if r["risk_level"] in alert_levels and r["shares"] > 0)
     
@@ -1046,7 +1157,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
         pnl_cls = "text-emerald-400" if r["pnl_rate"] >= 0 else "text-rose-400"
         day_cls = "text-emerald-400" if r["day_change_pct"] >= 0 else "text-rose-400"
         gauge_pct = round(50.0 + (max(-40.0, min(40.0, r["safety_margin"])) / 40.0) * 45.0, 1)
-        stop_buffer_str = f"{r['stop_buffer_pct']:+.1f}%" if r['stop_buffer_pct'] != 99.9 else ("親民嚴選" if is_disc else "長線鎖倉")
+        stop_buffer_str = f"{r['stop_buffer_pct']:+.1f}%" if r['stop_buffer_pct'] != 99.9 else ("換股輪動池" if is_disc else "神聖底倉")
         unit_label = "單位" if r["market"] == "FUND" else ("股" if r["market"] == "TW" else "股(US)")
 
         weight_pct = round((r["market_value_twd"] / total_market_val * 100.0), 1) if (total_market_val > 0 and r["shares"] > 0) else 0.0
@@ -1057,15 +1168,15 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
             trim_sh = round(excess_twd / (r["current_price"] * curr_fx), 1) if r["market"] == "US" else max(1, int(round(excess_twd / r["current_price"])))
             rebalance_html = (
                 '<div class="mt-1.5 pt-1.5 border-t border-slate-700/60 text-[11px] text-amber-300 font-semibold">'
-                f'⚖️ 佔比 {weight_pct}% (&gt;25%)：建議調節 {trim_sh:g} {unit_label}'
+                f'⚖️ 佔比 {weight_pct}% (&gt;25%)：建議調節超額 {trim_sh:g} {unit_label} 充實換股銀彈'
                 '</div>'
             )
 
         badges_html = ""
         if is_disc:
-            badges_html += f'<span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-700 text-white font-extrabold shadow">🔭 {r.get("afford_tag", "現金流嚴選")}</span>'
+            badges_html += f'<span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-700 text-white font-extrabold shadow">{r.get("afford_tag", "🔄 輪動候選")}</span>'
         if r.get("is_top_pick"):
-            pick_title = "👑 現金流首選王" if is_disc else "👑 首選加碼王"
+            pick_title = "👑 輪動首選王" if is_disc else "👑 首選加碼王"
             badges_html += f'<span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500 text-slate-950 font-black shadow">{pick_title} (EV:{r["ev_score"]})</span>'
 
         edays = r["earnings_days_left"]
@@ -1083,23 +1194,23 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
 
         earnings_grid_text = f"{r['earnings_date_str']} ({edays}天)" if (edays is not None and edays >= 0) else r["earnings_date_str"]
         risk_score_map = {
-            "停損警戒 (個股破線)": 7, "🛡️ 保本鎖利警戒 (棘輪)": 6.5, "⚠️ 財報前高溢價警戒": 6,
+            "停損警戒 (汰弱換強)": 7, "🛡️ 保本鎖利警戒 (棘輪)": 6.5, "⚠️ 財報前高溢價警戒": 6,
             "移動停利警戒": 5, "單日閃崩警戒 (ATR通道)": 4.5, "🟣 錯殺鎖倉保護 (禁售)": 4,
-            "高風險 (嚴重昂貴)": 3.5, "🎯 右側轉強買點 (黃金坑)": 3, "🎯 右側轉強買點 (低風險)": 2.5,
-            "👀 左側擊球區 (等止跌)": 2, "🔵 底倉續抱 (豁免停利)": 0.5, "合理估值區": 0, "定期定額累積": 0
+            "高風險 (逢高換股源)": 3.5, "🎯 右側轉強買點 (黃金坑)": 3, "🎯 右側轉強買點 (低風險)": 2.5,
+            "👀 左側擊球區 (等止跌)": 2, "🔵 底倉續抱 (神聖底倉豁免)": 0.5, "合理估值區": 0, "定期定額累積": 0
         }
         if is_disc:
-            r_score = 2.8 if "首選買點" in r["risk_level"] else 1.2
+            r_score = 2.9 if "首選" in r["risk_level"] else 1.2
         elif r["shares"] > 0:
             r_score = risk_score_map.get(r["risk_level"], 0)
         else:
             r_score = 1.5 if ("買點" in r["risk_level"] or "擊球區" in r["risk_level"]) else -1
 
-        sub_info = "🔭 依您的自由現金流購買力嚴選" if is_disc else f"{r['name']} (持: {r['shares']} {unit_label} ｜ {weight_pct}%)"
+        sub_info = "🔄 三層估值 + 跨越+7.5門檻輪動標的" if is_disc else f"{r['name']} (持: {r['shares']} {unit_label} ｜ {weight_pct}%)"
         right_top_html = (
-            f'<span class="text-[11px] text-purple-300 block mb-0.5">EV 現金流加權評分</span>'
+            f'<span class="text-[11px] text-purple-300 block mb-0.5">EV 輪動期望值評分</span>'
             f'<span class="text-lg font-black text-amber-400">{r["ev_score"]:+.1f} 分</span>'
-            f'<span class="text-xs text-slate-400 block">回測勝率 {r["backtest"]["win_rate"]}%</span>'
+            f'<span class="text-xs text-slate-400 block">右側勝率 {r["backtest"]["win_rate"]}%</span>'
         ) if is_disc else (
             f'<span class="text-[11px] text-slate-400 block mb-0.5">總損益 / 市值(NT$)</span>'
             f'<span class="text-lg font-black {pnl_cls}">{r["pnl_rate"]:+.2f}%</span>'
@@ -1154,8 +1265,8 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
             '<div><span class="text-slate-500">回撤</span><div class="font-bold text-rose-400">' + str(r['drawdown_from_peak']) + '%</div></div>'
             '<div><span class="text-slate-500">防線緩衝</span><div class="font-bold text-purple-400">' + stop_buffer_str + '</div></div>'
             '<div><span class="text-slate-500">預估殖利率</span><div class="font-bold text-cyan-400">' + str(r['dividend_yield_pct']) + '%</div></div>'
-            '<div><span class="text-slate-500">購買力/扣款</span><div class="font-bold text-amber-300 truncate">' + earnings_grid_text + '</div></div>'
-            '<div><span class="text-slate-500">勝率/情緒</span><div class="font-bold text-emerald-400">' + str(r['backtest']['win_rate']) + '%/' + str(r['nlp_score']) + '分</div></div>'
+            '<div><span class="text-slate-500">輪動/扣款</span><div class="font-bold text-amber-300 truncate">' + earnings_grid_text + '</div></div>'
+            '<div><span class="text-slate-500">右側勝率/情緒</span><div class="font-bold text-emerald-400">' + str(r['backtest']['win_rate']) + '%/' + str(r['nlp_score']) + '分</div></div>'
             '</div>'
             '<div class="p-3 rounded-xl border" style="background-color: ' + r['color'] + '15; border-color: ' + r['color'] + '40;">'
             '<div class="text-xs font-extrabold" style="color: ' + r['color'] + ';">⚡ 指令：' + r['action'] + '</div>'
@@ -1192,7 +1303,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
         '<div>',
         '<div class="flex items-center gap-2.5">',
         '<span class="h-3 w-3 rounded-full bg-emerald-500 animate-pulse"></span>',
-        '<h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">對沖基金級 5D 操盤室 &amp; 現金流選股獵手</h1>',
+        '<h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">對沖基金級 6D 神聖底倉保護與換股操盤室</h1>',
         '</div>',
         f'<p class="text-xs sm:text-sm text-slate-400 mt-1">匯率: <span class="text-amber-400 font-mono">{usd_twd:.2f}</span> ｜ <span class="text-cyan-300 font-bold">{macro["fx_status"]}</span> ｜ 雙幣戰備金: <span class="text-emerald-400 font-bold">台股 NT${RESERVE_CASH_TWD:,} / 美股 ${US_RESERVE_CASH_USD:,.2f}</span> ｜ 更新: <span id="sync-time" class="text-slate-200 font-mono">{updated_time}</span></p>',
         '</div>',
@@ -1202,7 +1313,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
         '<button onclick="configGithubToken()" title="設定 GitHub Token 以啟用雲端背景重算" class="px-2 py-1.5 text-xs bg-emerald-800 hover:bg-emerald-700 text-emerald-100 border-l border-emerald-600">⚙️</button>',
         '</div>',
         f'<button onclick="filterCards(\'ALL\')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white shadow">全部 ({own_count + disc_count})</button>',
-        f'<button onclick="filterCards(\'DISC\')" class="px-3.5 py-1.5 rounded-lg text-xs font-extrabold bg-purple-600 text-white hover:bg-purple-500 shadow-lg ring-2 ring-purple-400/60 animate-pulse">🔭 潛力雷達 ({disc_count})</button>',
+        f'<button onclick="filterCards(\'DISC\')" class="px-3.5 py-1.5 rounded-lg text-xs font-extrabold bg-purple-600 text-white hover:bg-purple-500 shadow-lg ring-2 ring-purple-400/60 animate-pulse">🔄 換股雷達 ({disc_count})</button>',
         f'<button onclick="filterCards(\'OWN\')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-200 hover:bg-slate-700">我的投組 ({own_count})</button>',
         '<button onclick="filterCards(\'US\')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">美股</button>',
         '<button onclick="filterCards(\'TW\')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-slate-300 hover:bg-slate-700">台股</button>',
@@ -1218,15 +1329,15 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
         '<section class="grid grid-cols-2 lg:grid-cols-5 gap-4">',
         f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">證券總市值 (NT$) / 近2日增減</span><div class="text-xl font-black text-white">NT${total_market_val:,.0f}</div><span class="text-xs font-bold {diff_cls}">近2日增減: {diff_str}</span></div>',
         f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">未實現損益 / 已實現: +NT${REALIZED_PNL_TWD:,}</span><div class="text-xl font-black {total_pnl_color}">NT${total_pnl_amount:+,.0f} ({total_pnl_pct:+.2f}%)</div><span class="text-xs text-emerald-300 font-bold">🎯 台股 NT${RESERVE_CASH_TWD:,} ｜ 美股 ${US_RESERVE_CASH_USD:,.2f}</span></div>',
-        f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">💰 預估年領股息 / 定期定額</span><div class="text-xl font-black text-cyan-400">NT${total_annual_div_twd:,.0f}<span class="text-xs font-normal text-slate-400">/年息</span></div><span class="text-xs text-slate-400">月被動息 NT${monthly_div_twd:,.0f} ｜ 月扣 NT${total_monthly_dca_twd:,}</span></div>',
-        f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">95% 單日風險價值 (VaR)</span><div class="text-xl font-black text-rose-400">-NT${equity_data["var_95_twd"]:,.0f}</div><span class="text-xs text-slate-400">半導體曝險濃度: <strong class="text-amber-400">{tech_exposure_pct}%</strong></span></div>',
+        f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">💰 預估年領股息(轉他戶) / 定額</span><div class="text-xl font-black text-cyan-400">NT${total_annual_div_twd:,.0f}<span class="text-xs font-normal text-slate-400">/年息</span></div><span class="text-xs text-slate-400">月被動息 NT${monthly_div_twd:,.0f} ｜ 月扣 NT${total_monthly_dca_twd:,}</span></div>',
+        f'<div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">95% 單日風險價值 (VaR)</span><div class="text-xl font-black text-rose-400">-NT${equity_data["var_95_twd"]:,.0f}</div><span class="text-xs text-slate-400">半導體曝險濃度: <strong class="text-amber-400">{tech_exposure_pct}%</strong> (上限40%)</span></div>',
         f'<div class="col-span-2 lg:col-span-1 bg-slate-900/90 border border-slate-800 p-4 rounded-2xl shadow-lg"><span class="text-xs text-slate-400 block mb-1">市場總體避險狀態</span><div class="text-base sm:text-lg font-black truncate" style="color: {macro["color"]};">{macro["bubble_level"]}</div><span class="text-xs text-slate-400">10年美債: {macro.get("tnx_yield", 4.1)}% | VIX: {macro["vix"]}</span></div>',
         '</section>',
         '<div class="grid grid-cols-1 lg:grid-cols-12 gap-5">',
         f'<section class="lg:col-span-4 rounded-2xl border p-5 shadow-2xl flex flex-col justify-between" style="background: linear-gradient(135deg, {macro["color"]}22 0%, #0F172A 75%); border-color: {macro["color"]}60;">',
         '<div>',
         '<div class="flex justify-between items-center mb-3">',
-        '<div class="flex items-center gap-2"><span class="text-xl">🛡️</span><h2 class="text-base font-black text-white">華爾街總經與 5D 殖利率雷達</h2></div>',
+        '<div class="flex items-center gap-2"><span class="text-xl">🛡️</span><h2 class="text-base font-black text-white">華爾街總經與 6D 底倉保護雷達</h2></div>',
         f'<span class="px-3 py-1 rounded-full text-xs font-extrabold text-white shadow-md" style="background-color: {macro["color"]};">{macro["bubble_level"]}</span>',
         '</div>',
         f'<p class="text-xs text-slate-200 leading-relaxed mb-4">{macro["action"]} — {macro["desc"]}</p>',
@@ -1317,7 +1428,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
                     type: 'doughnut',
                     data: {
                         labels: pieData.labels,
-                        datasets: [{ data: pieData.values, backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1', '#14B8A6', '#F97316', '#A855F7'], borderWidth: 0 }]
+                        datasets: [{ data: pieData.values, backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1', '#14B8A6', '#F97316', '#A855F7', '#06B6D4'], borderWidth: 0 }]
                     },
                     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#94A3B8', boxWidth: 8, font: { size: 9 } } } } }
                 });
@@ -1403,8 +1514,8 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
 
         function filterCards(mode) {
             const alertSet = [
-                '停損警戒 (個股破線)', '🛡️ 保本鎖利警戒 (棘輪)', '⚠️ 財報前高溢價警戒',
-                '移動停利警戒', '單日閃崩警戒 (ATR通道)', '高風險 (嚴重昂貴)', '🟣 錯殺鎖倉保護 (禁售)'
+                '停損警戒 (汰弱換強)', '🛡️ 保本鎖利警戒 (棘輪)', '⚠️ 財報前高溢價警戒',
+                '移動停利警戒', '單日閃崩警戒 (ATR通道)', '高風險 (逢高換股源)', '🟣 錯殺鎖倉保護 (禁售)'
             ];
             document.querySelectorAll('.stock-card').forEach(card => {
                 const market = card.getAttribute('data-market');
@@ -1426,7 +1537,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
     html = "".join(html_parts)
     with open(DASHBOARD_FILE, "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"[完成] 寬螢幕流暢版（5D 自由現金流購買力導向選股版）已輸出至 {DASHBOARD_FILE}")
+    print(f"[完成] 寬螢幕流暢版（6D 審計版：神聖底倉保護 + 三層估值統一 + 摩擦成本門檻）已輸出至 {DASHBOARD_FILE}")
 
 
 # ==========================================
@@ -1475,8 +1586,8 @@ def main():
 
     mark_top_ev_picks(eval_results)
 
-    # 執行自由現金流購買力導向 Alpha 潛力獵手掃描 (Top 6 親民精選)
-    discovered_picks = scan_alpha_discovery_pool(macro, usd_twd)
+    # 執行 4 大盲點修正後之換股輪動掃描 (Top 6 輪動精選)
+    discovered_picks = scan_alpha_discovery_pool(macro, usd_twd, eval_results)
     eval_results.extend(discovered_picks)
 
     for eval_data in eval_results:
@@ -1495,7 +1606,7 @@ def main():
 
         should_notify_stock = False
         if eval_data["shares"] > 0:
-            should_notify_stock = (is_quality_changed or is_urgent_stop) and eval_data["risk_level"] not in ["合理估值區", "定期定額累積", "🔵 底倉續抱 (豁免停利)"]
+            should_notify_stock = (is_quality_changed or is_urgent_stop) and eval_data["risk_level"] not in ["合理估值區", "定期定額累積", "🔵 底倉續抱 (神聖底倉豁免)"]
         else:
             should_notify_stock = is_quality_changed and ("買點" in eval_data["risk_level"])
 
@@ -1530,9 +1641,9 @@ def main():
             bubbles_to_push.append({
                 "type": "bubble", "size": "mega",
                 "header": {"type": "box", "layout": "vertical", "backgroundColor": "#3B82F6", "paddingAll": "15px",
-                           "contents": [{"type": "text", "text": "📊 本週操盤室與現金流選股週報", "weight": "bold", "color": "#FFFFFF", "size": "sm"}]},
+                           "contents": [{"type": "text", "text": "📊 本週操盤室與換股輪動週報", "weight": "bold", "color": "#FFFFFF", "size": "sm"}]},
                 "body": {"type": "box", "layout": "vertical", "spacing": "sm",
-                         "contents": [{"type": "text", "text": f"本週證券總市值: NT${current_total_val:,.0f} ｜ 累計已實現: +NT${REALIZED_PNL_TWD:,} ｜ 🔭 本週適合現有現金流前三名：{top_disc_str}。祝您週末愉快！", "size": "xs", "wrap": True, "color": "#334155"}]}
+                         "contents": [{"type": "text", "text": f"本週證券總市值: NT${current_total_val:,.0f} ｜ 累計已實現: +NT${REALIZED_PNL_TWD:,} ｜ 🔄 本週換股輪動首選：{top_disc_str}。祝您週末愉快！", "size": "xs", "wrap": True, "color": "#334155"}]}
             })
 
     if eval_results:
@@ -1557,7 +1668,7 @@ def main():
             except Exception:
                 pass
 
-        print("[完成] 寬螢幕流暢版（5D 自由現金流購買力導向選股版）執行完畢。")
+        print("[完成] 寬螢幕流暢版（6D 審計版：神聖底倉保護 + 三層估值統一）執行完畢。")
 
 
 if __name__ == "__main__":
