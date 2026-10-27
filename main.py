@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (6D Broker-Exact PnL Alignment Edition)
-- 【關鍵修正】將個股總漲跌幅 (pnl_rate) 改為「100% 原幣價格直接對比 (Native Currency PnL)」，徹底排除匯率波動干擾，與券商 App 顯示之漲跌幅與美元損益完全一致！
-- 【精確對帳】同步券商 App 最新精確碎股數：
-  * COST: 8.00876 股 ($1,044.55) | LLY: 2.00322 股 ($1,159.82) | NVDA: 22.0136 股 ($219.80)
-  * AMZN: 3.0 股 ($254.55) | BRK-B: 5.0 股 ($492.03) | NVO: 2.0 股 ($39.10)
-  * 納入美國國庫券 91282CJZ5 (1,000 股, 成本 $1.06, 總損益 -$112.88 / -10.68%)
-- 卡片右上角新增顯示「原幣損益金額 (如 -$80.73 USD)」，一眼即可與券商 App 畫面逐筆核對！
+Quantitative Risk & Valuation Engine (6D Broker-Exact PnL + Hon Hai 2317.TW Added Edition)
+- 新增台股核心持倉：2317.TW 鴻海 60 股，成交均價 NT$245.50 (神聖底倉鎖定 60 股)
+- 台股戰備金 (RESERVE_CASH_TWD) 已全數投入鴻海建倉，更新為 NT$0 (後續以中鋼 2002.TW 汰弱換強作為台股自給自足銀彈源)
+- 美股戰備金維持 $28.46 USD，且個股總漲跌幅 100% 採用原幣對比，與券商 App 畫面完全一致
 """
 
 import os
@@ -26,7 +23,7 @@ import yfinance as yf
 GITHUB_REPO = os.environ.get("GITHUB_REPOSITORY", "eric80218/Stock-alert")
 
 REALIZED_PNL_TWD = 28608       # 累計已實現損益：旺宏(-2200) + 合晶(-1740) + AMAT減碼9股(+32548) = +NT$28,608
-RESERVE_CASH_TWD = 12960       # 台股交割戶「可動用現金」(NT$12,960)
+RESERVE_CASH_TWD = 0           # 台股交割戶「買入鴻海60股(NT$14,730)後，戰備金已全數投入」(NT$0)
 US_RESERVE_CASH_USD = 28.46    # 美股交易帳戶「最新購買力餘額」($28.46 USD)
 
 DISCOVERY_POOL = {
@@ -39,19 +36,19 @@ DISCOVERY_POOL = {
     "MRVL":    {"name": "Marvell (AI ASIC與光通訊晶片)", "market": "US", "currency": "$", "sector": "SOX",  "est_yield": 0.3, "target_pe": 32.0, "fallback_fair_value": 92.0},
     "AMD":     {"name": "超微 (MI300 AI晶片二哥)", "market": "US", "currency": "$", "sector": "SOX",  "est_yield": 0.0, "target_pe": 32.0, "fallback_fair_value": 175.0},
     "GOOGL":   {"name": "Google (搜尋/Gemini巨頭)", "market": "US", "currency": "$", "sector": "TECH", "est_yield": 0.5, "target_pe": 24.0, "fallback_fair_value": 195.0},
-    # 🇹🇼 台股換股輪動與高購買力龍頭池
+    # 🇹🇼 台股換股輪動池 (鴻海 2317.TW 已晉升正式持倉，新增第一金 2892.TW 官股金控與廣達 2382.TW)
     "2891.TW": {"name": "中信金 (高ROE消金獲利王)", "market": "TW", "currency": "NT$", "sector": "FIN",  "est_yield": 4.8, "target_pe": 12.5, "fallback_fair_value": 40.0},
     "2303.TW": {"name": "聯電 (成熟製程/高息晶圓代工)", "market": "TW", "currency": "NT$", "sector": "SOX",  "est_yield": 5.8, "target_pe": 13.5, "fallback_fair_value": 56.0},
     "00878.TW":{"name": "國泰永續高股息 (季配抗跌王)", "market": "TW", "currency": "NT$", "sector": "DEF",  "est_yield": 6.2, "target_pe": 20.0, "fallback_fair_value": 24.0, "is_etf": True},
     "2886.TW": {"name": "兆豐金 (官股金控龍頭)", "market": "TW", "currency": "NT$", "sector": "FIN",  "est_yield": 4.5, "target_pe": 14.0, "fallback_fair_value": 42.0},
+    "2892.TW": {"name": "第一金 (官股配息穩健王)", "market": "TW", "currency": "NT$", "sector": "FIN",  "est_yield": 4.6, "target_pe": 14.0, "fallback_fair_value": 30.0},
     "2881.TW": {"name": "富邦金 (金控獲利王)", "market": "TW", "currency": "NT$", "sector": "FIN",  "est_yield": 4.0, "target_pe": 12.5, "fallback_fair_value": 95.0},
     "2412.TW": {"name": "中華電 (抗跌電信牛)", "market": "TW", "currency": "NT$", "sector": "DEF",  "est_yield": 3.9, "target_pe": 26.0, "fallback_fair_value": 128.0},
     "3711.TW": {"name": "日月光投控 (CoWoS先進封測)", "market": "TW", "currency": "NT$", "sector": "SOX", "est_yield": 3.8, "target_pe": 17.0, "fallback_fair_value": 175.0},
-    "2317.TW": {"name": "鴻海 (GB200 AI伺服器)", "market": "TW", "currency": "NT$", "sector": "TECH", "est_yield": 3.2, "target_pe": 16.0, "fallback_fair_value": 225.0},
 }
 
 # ==========================================
-# 1-B. 個人核心持倉與觀察清單 (100% 對齊券商 App 精確碎股數與單位成本)
+# 1-B. 個人核心持倉與觀察清單 (已納入 2317.TW 鴻海 60 股 @ NT$245.5)
 # ==========================================
 WATCHLIST = {
     "FUND_ALLIANZ": {
@@ -76,6 +73,12 @@ WATCHLIST = {
         "name": "台積電", "market": "TW", "currency": "NT$", "is_etf": False, "is_core": True,
         "shares": 2, "min_core_shares": 2, "target_pe": 24.0, "fallback_fair_value": 2750.0,
         "cost": 2405.0, "est_yield": 1.5, "stop_loss_pct": -15.0, "trailing_stop_pct": -18.0, "flash_pct": 3.5,
+        "dca_monthly_twd": 0, "dca_day": None,
+    },
+    "2317.TW": {
+        "name": "鴻海 (新建倉60股/GB200伺服器龍頭)", "market": "TW", "currency": "NT$", "is_etf": False, "is_core": True,
+        "shares": 60, "min_core_shares": 60, "target_pe": 18.0, "fallback_fair_value": 295.0,
+        "cost": 245.50, "est_yield": 3.0, "stop_loss_pct": -15.0, "trailing_stop_pct": -18.0, "flash_pct": 3.5,
         "dca_monthly_twd": 0, "dca_day": None,
     },
     "NVDA": {
@@ -320,7 +323,6 @@ def fetch_stock_data_with_redundancy(symbol: str, market: str):
             "full_history": series
         }
     if symbol == "91282CJZ5":
-        # 美國國庫券 CUSIP (1,000股, 成本 $1.06, 總損益 -$112.88 / -10.68% -> 現價 $0.94712)
         latest_bond_p = 0.94712
         b_list = [round(0.955 - 0.00025 * i, 4) for i in range(30)]
         b_list[-1] = latest_bond_p
@@ -659,7 +661,7 @@ def fetch_macro_gold_radar(prev_macro_state: dict) -> dict:
 
 
 # ==========================================
-# 4. 6D 風控矩陣 (改採 100% 原幣直接對比，與券商 App 漲跌幅完全一致)
+# 4. 6D 風控矩陣 (100% 原幣直接對比，與券商 App 漲跌幅完全一致)
 # ==========================================
 def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state: dict, macro: dict, fund_data: dict, nlp_score: float, usd_twd: float) -> dict:
     price = market_data["current_price"]
@@ -707,9 +709,6 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
     is_oversold = (rsi14 < 32.0)
     is_systemic_drop = (macro.get("vix", 18.0) >= 20.0) or (benchmark_ret <= -3.5) or (alpha_10d > -6.0)
 
-    # ----------------------------------------------------
-    # 【核心修正】100% 原幣價格計算個股總漲跌幅與原幣損益金額，與券商 App 完全一致！
-    # ----------------------------------------------------
     curr_fx = usd_twd if market_type == "US" else 1.0
     if symbol == "FUND_ALLIANZ":
         market_value_twd = 158869.0
@@ -768,13 +767,13 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
 
     elif is_core and shares > 0 and safety_margin >= 12.0 and day_change_pct > -dynamic_flash_pct:
         if is_right_side:
-            risk_level, color, action = "🎯 右側轉強買點 (黃金坑)", "#10B981", f"止跌確認！動用{deploy_name}或換股加碼"
+            risk_level, color, action = "🎯 右側轉強買點 (黃金坑)", "#10B981", f"止跌確認！核心底倉抱緊或換股加碼"
             desc = f"核心折價 {safety_margin:.1f}% 且站回5日線/RSI勾頭，右側底部確認，精準擊球！"
-            sizing_note = f"🎯 試算：純現金可買 {target_powder_shares:g} 股 (EV期望值 {ev_score}分)"
+            sizing_note = f"🎯 試算：現持 {shares:g} 股神聖底倉 (EV期望值 {ev_score}分，預估年息 NT${annual_dividend_twd:,.0f})"
         else:
             risk_level, color, action = "👀 左側擊球區 (等止跌)", "#F59E0B", f"已入價值區 / 靜待站上5日線({ma5})"
-            desc = f"安全邊際達 {safety_margin:.1f}%，但仍在5日線下探底中，嚴禁左側急接飛刀！"
-            sizing_note = f"⏳ 試算：等待見紅K或站上 {ma5} 再動用現金或換股銀彈"
+            desc = f"安全邊際達 {safety_margin:.1f}%，但仍在5日線下探底中，安心守住底倉靜待反彈！"
+            sizing_note = f"⏳ 試算：神聖底倉 {shares:g} 股鎖定不賣，等待見紅K或站上 {ma5}"
 
     elif is_breakeven_ratchet or is_profit_ratchet:
         lock_type = "保本防線(+2.5%)" if is_breakeven_ratchet else "獲利棘輪(+12%)"
@@ -1024,11 +1023,11 @@ def scan_alpha_discovery_pool(macro: dict, usd_twd: float, own_results: list) ->
                     f"加計{rot_src['reason']}釋放 {cur_sym}{rot_src['freed_cash']:,.0f} 共可買 {combo_sh:g} 股！"
                 )
             elif safety_margin >= 5.0 and is_right_side and price >= ma200:
-                r_level, r_color = "🔭 現金流右側買點", "#10B981"
-                afford_tag = f"✨ 現金可買 {cash_only_sh:g} 股"
-                r_action = f"右側轉強！動用現有現金買入 {cash_only_sh:g} 股 (不換股)"
-                r_desc = f"【右側買點】安全邊際 {safety_margin:+.1f}%，惟換股EV差額({ev_spread:+.1f}分)未達+7.5門檻，建議僅用現金建倉。"
-                sizing_note = f"💡 試算：保留現有神聖底倉不換股，單純以現金買入 {cash_only_sh:g} 股"
+                r_level, r_color = "🔭 右側轉強買點", "#10B981"
+                afford_tag = f"✨ 輪動可買 {combo_sh:g} 股"
+                r_action = f"右側轉強！若調節{rot_src['symbol'] if rot_src else ''}可轉買 {combo_sh:g} 股"
+                r_desc = f"【右側買點】安全邊際 {safety_margin:+.1f}%，惟換股EV差額({ev_spread:+.1f}分)未達+7.5門檻，可待差額擴大。"
+                sizing_note = f"💡 試算：純現金可買 {cash_only_sh:g} 股 ｜ 若搭配{rot_src['reason'] if rot_src else ''}共可買 {combo_sh:g} 股"
             elif safety_margin >= 5.0:
                 r_level, r_color = "🔭 輪動觀察區(等止跌)", "#F59E0B"
                 afford_tag = f"⏳ 等站上5日線({cur_sym}{ma5})"
@@ -1445,7 +1444,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
                     type: 'doughnut',
                     data: {
                         labels: pieData.labels,
-                        datasets: [{ data: pieData.values, backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1', '#14B8A6', '#F97316', '#A855F7', '#06B6D4', '#84CC16'], borderWidth: 0 }]
+                        datasets: [{ data: pieData.values, backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1', '#14B8A6', '#F97316', '#A855F7', '#06B6D4', '#84CC16', '#EAB308'], borderWidth: 0 }]
                     },
                     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#94A3B8', boxWidth: 8, font: { size: 9 } } } } }
                 });
@@ -1554,7 +1553,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
     html = "".join(html_parts)
     with open(DASHBOARD_FILE, "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"[完成] 寬螢幕流暢版（6D 原幣損益 100% 對齊券商 App 版）已輸出至 {DASHBOARD_FILE}")
+    print(f"[完成] 寬螢幕流暢版（鴻海 2317.TW 60股入列 + 原幣損益對齊版）已輸出至 {DASHBOARD_FILE}")
 
 
 # ==========================================
@@ -1684,7 +1683,7 @@ def main():
             except Exception:
                 pass
 
-        print("[完成] 寬螢幕流暢版（6D 原幣損益 100% 對齊券商 App 版）執行完畢。")
+        print("[完成] 寬螢幕流暢版（鴻海 2317.TW 60股入列 + 原幣損益對齊版）執行完畢。")
 
 
 if __name__ == "__main__":
