@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Quantitative Risk & Valuation Engine (6D Terminal + TW Auto-Trading Bot Edition)
-- 專注台股自動化量化交易 (美股維持原幣對帳與看盤監控，不執行自動下單)：
-  1. 內建「🤖 台股 AI 自動量化模擬交割帳本 (Paper Trading)」與「📱 國泰證券 App 盤中零股/條件單參數導航」
-  2. 內建「⚡ 永豐金 Shioaji API 極速自動下單模組」，支援一鍵切換模擬/實盤 (TW_AUTO_BROKER_MODE)
-  3. 搭載 5 道防呆保險絲：神聖底倉硬鎖死 (台積電2股/鴻海60股/0050/009816禁售)、單筆 NT$15,000 上限、純限價單、當日防重複鎖
+Quantitative Risk & Valuation Engine (6D Terminal + TW Auto-Bot + Early-Warning Macro Radar)
+- 【完整無截斷終極版】包含所有模組與結尾 main() 入口：
+  1. 升級「三級制美股系統性下修領先雷達」：偵測標普/費半 3 日急殺、20MA/50MA 月季線失守、VIX 單日跳升 >=12%
+  2. 內建「🤖 台股 AI 自動量化模擬交割帳本 (Paper Trading)」與「📱 國泰證券 App 盤中零股/條件單參數導航」
+  3. 內建「⚡ 永豐金 Shioaji API 極速自動下單模組」，支援一鍵切換模擬/實盤 (TW_AUTO_BROKER_MODE)
+  4. 100% 原幣價格直接對比計算總漲跌幅，並已納入鴻海 (2317.TW) 60 股、諾和諾德 (NVO) 2 股與精確碎股數
 """
 
 import os
@@ -20,12 +21,11 @@ import pandas as pd
 import yfinance as yf
 
 # ==========================================
-# 1. 台股自動化交易引擎開關與戰備金設定
+# 1. 台股自動化交易引擎開關與戰備金設定 (頂置於第 26 行！)
 # ==========================================
 GITHUB_REPO = os.environ.get("GITHUB_REPOSITORY", "eric80218/Stock-alert")
 
-# 【台股自動下單模式切換】
-# "CATHAY_PAPER" = AI 雲端自動模擬交割記帳 + 產生國泰證券 App 盤中零股/智慧條件單小抄 (目前預設，免API立即可用)
+# "CATHAY_PAPER" = AI 雲端自動模擬交割記帳 + 產生國泰證券 App 盤中零股/智慧條件單小抄 (預設免API)
 # "SINOPAC_LIVE" = 連線永豐金 Shioaji API 執行真實雲端極速自動下單 (需於 GitHub Secrets 設定 SINOPAC_API_KEY)
 TW_AUTO_BROKER_MODE = os.environ.get("TW_AUTO_BROKER_MODE", "CATHAY_PAPER")
 MAX_TW_ORDER_TWD = 15000       # 防呆保險絲：台股單筆自動下單最高金額上限 (NT$15,000)
@@ -614,23 +614,42 @@ def run_vectorized_backtest(close_series: pd.Series) -> dict:
 
 
 # ==========================================
-# 3. 總經、分流對標、美債殖利率 (^TNX) 與匯率雷達
+# 3. 總經、分流對標、美債殖利率 (^TNX) 與「三級制美股系統性下修領先雷達」
 # ==========================================
 def fetch_macro_gold_radar(prev_macro_state: dict) -> dict:
     try:
         spxu_hist = yf.Ticker("SPXU").history(period="3mo").dropna(subset=["Close", "Volume"])
-        vix_hist = yf.Ticker("^VIX").history(period="1mo").dropna(subset=["Close"])
+        vix_hist = yf.Ticker("^VIX").history(period="3mo").dropna(subset=["Close"])
         tnx_hist = yf.Ticker("^TNX").history(period="3mo").dropna(subset=["Close"])
-        sp500_hist = yf.Ticker("^GSPC").history(period="3mo").dropna(subset=["Close"])
-        sox_hist = yf.Ticker("^SOX").history(period="3mo").dropna(subset=["Close"])
-        twii_hist = yf.Ticker("^TWII").history(period="3mo").dropna(subset=["Close"])
+        sp500_hist = yf.Ticker("^GSPC").history(period="6mo").dropna(subset=["Close"])
+        sox_hist = yf.Ticker("^SOX").history(period="6mo").dropna(subset=["Close"])
+        twii_hist = yf.Ticker("^TWII").history(period="6mo").dropna(subset=["Close"])
         usdtwd_hist = yf.Ticker("USDTWD=X").history(period="1y").dropna(subset=["Close"])
 
         spxu_vol_ratio = round(float(spxu_hist["Volume"].iloc[-1]) / float(spxu_hist["Volume"].tail(20).mean()), 2) if not spxu_hist.empty else 1.0
+
+        # 1. VIX 絕對值與「VIX 單日/月線急升動能」偵測 (不必等破20就能抓到恐慌起漲)
         vix_val = round(float(vix_hist["Close"].iloc[-1]), 2) if not vix_hist.empty else 18.0
+        vix_prev = float(vix_hist["Close"].iloc[-2]) if len(vix_hist) >= 2 else vix_val
+        vix_ma20 = float(vix_hist["Close"].tail(20).mean()) if len(vix_hist) >= 20 else vix_val
+        vix_day_jump = round(((vix_val - vix_prev) / vix_prev) * 100.0, 1) if vix_prev > 0 else 0.0
+        is_vix_spiking = (vix_val >= 19.5) or (vix_day_jump >= 12.0 and vix_val >= 16.0) or (vix_val > vix_ma20 * 1.15)
+
         tnx_yield = round(float(tnx_hist["Close"].iloc[-1]), 2) if not tnx_hist.empty else 4.10
+
+        # 2. 標普 (^GSPC) 與費半 (^SOX) 均線破線與 3 日急殺偵測 (解決 10 日累計太慢的盲點)
+        sp_curr = float(sp500_hist["Close"].iloc[-1]) if not sp500_hist.empty else 0.0
+        sp_ma20 = float(sp500_hist["Close"].tail(20).mean()) if len(sp500_hist) >= 20 else sp_curr
+        sp_ma50 = float(sp500_hist["Close"].tail(50).mean()) if len(sp500_hist) >= 50 else sp_curr
+        sp_ret_3d = round(((sp_curr - float(sp500_hist["Close"].iloc[-4])) / float(sp500_hist["Close"].iloc[-4])) * 100.0, 2) if len(sp500_hist) >= 4 else 0.0
+
         sox_price = round(float(sox_hist["Close"].iloc[-1]), 1) if not sox_hist.empty else 0.0
-        is_sox_bear = sox_price < float(sox_hist["Close"].rolling(200).mean().iloc[-1]) if len(sox_hist) >= 200 else False
+        sox_ma20 = float(sox_hist["Close"].tail(20).mean()) if len(sox_hist) >= 20 else sox_price
+        sox_ma200 = float(sox_hist["Close"].rolling(200).mean().iloc[-1]) if len(sox_hist) >= 200 else sox_price
+        sox_ret_3d = round(((sox_price - float(sox_hist["Close"].iloc[-4])) / float(sox_hist["Close"].iloc[-4])) * 100.0, 2) if len(sox_hist) >= 4 else 0.0
+
+        is_sox_bear = (sox_price < sox_ma200) or (sox_price < sox_ma20 and sox_ret_3d <= -3.0)
+        is_us_broad_pullback = (sp_curr < sp_ma20 and sox_price < sox_ma20) or (sp_ret_3d <= -2.2) or (sox_ret_3d <= -4.0)
 
         def get_ret10(hist):
             if hist is None or len(hist) < 11: return 0.0
@@ -646,27 +665,44 @@ def fetch_macro_gold_radar(prev_macro_state: dict) -> dict:
         usd_twd_ma200 = float(usdtwd_hist["Close"].rolling(window=200).mean().iloc[-1]) if len(usdtwd_hist) >= 200 else usd_twd_now
         fx_status = "💱 美元匯率偏高 (宜台股內循環)" if usd_twd_now >= usd_twd_ma200 else "💵 美元相對低檔 (宜換匯佈局)"
 
-        is_smart_money_hedging = spxu_vol_ratio >= 1.50 or vix_val >= 20.0 or tnx_yield >= 4.50
-        bubble_level = "高度警報：殖利率/避險升溫" if is_smart_money_hedging else "資金安穩：市場多頭運行"
-        color = "#EF4444" if is_smart_money_hedging else "#10B981"
-        action = "🚨 避險升溫，已啟動「台股神聖底倉紅線」與「保本鎖利棘輪」！" if is_smart_money_hedging else "✅ 資金留駐股市，台股 AI 自動量化輪動機器人全時監控中。"
-        desc = f"10年美債: {tnx_yield}%, VIX: {vix_val}, 台股10日: {twii_ret_10d:+.1f}%, {fx_status}。"
+        # 3. 三級制系統性下修判定
+        if spxu_vol_ratio >= 1.50 or is_vix_spiking or tnx_yield >= 4.50 or sp_curr < sp_ma50:
+            bubble_level = "🔴 高度警報：美股系統性下修"
+            color = "#EF4444"
+            premium_shift = -12.0
+            action = f"🚨 捕捉到美股整體下修 (標普3日 {sp_ret_3d:+.1f}% / 費半3日 {sox_ret_3d:+.1f}% / VIX單日 {vix_day_jump:+.1f}%)！已啟動底倉保護與暫停左側接刀！"
+            is_alert = True
+        elif is_us_broad_pullback:
+            bubble_level = "🟠 中度預警：美股跌破月線轉弱"
+            color = "#F59E0B"
+            premium_shift = -7.0
+            action = f"⚠️ 標普與費半同步失守 20MA 月線 (費半3日 {sox_ret_3d:+.1f}%)，機構短線調節中，買進嚴守右側確認！"
+            is_alert = True
+        else:
+            bubble_level = "🟢 資金安穩：市場多頭運行"
+            color = "#10B981"
+            premium_shift = 0.0
+            action = "✅ 標普與費半守穩月線之上，華爾街資金留駐股市，台股 AI 自動量化機器人全時監控中。"
+            is_alert = False
+
+        desc = f"標普3日:{sp_ret_3d:+.1f}%(10日:{sp_ret_10d:+.1f}%), 費半3日:{sox_ret_3d:+.1f}%, VIX:{vix_val}({vix_day_jump:+.1f}%), 美債:{tnx_yield}%。"
 
         prev_level = prev_macro_state.get("bubble_level", "")
-        macro_quality_changed = (prev_level != bubble_level) and is_smart_money_hedging
+        macro_quality_changed = (prev_level != bubble_level) and is_alert
 
         return {
             "bubble_level": bubble_level, "color": color, "action": action, "desc": desc,
             "vix": vix_val, "tnx_yield": tnx_yield, "spxu_vol_ratio": spxu_vol_ratio,
             "sox_price": sox_price, "is_sox_bear": is_sox_bear,
+            "sp_ret_3d": sp_ret_3d, "sox_ret_3d": sox_ret_3d,
             "sp_ret_10d": sp_ret_10d, "sox_ret_10d": sox_ret_10d, "twii_ret_10d": twii_ret_10d,
             "usd_twd_now": usd_twd_now, "fx_status": fx_status,
-            "premium_shift": -10.0 if is_smart_money_hedging else 0.0,
+            "premium_shift": premium_shift,
             "must_push": macro_quality_changed,
             "sp500_30d": sp500_hist["Close"].tail(35) if not sp500_hist.empty else pd.Series(dtype=float)
         }
     except Exception:
-        return {"bubble_level": "資料連線中", "color": "#64748B", "action": "暫以標準門檻運行", "desc": "連線異常", "vix": 18.0, "tnx_yield": 4.10, "spxu_vol_ratio": 1.0, "sox_price": 0.0, "is_sox_bear": False, "sp_ret_10d": 0.0, "sox_ret_10d": 0.0, "twii_ret_10d": 0.0, "usd_twd_now": 32.39, "fx_status": "匯率平穩", "premium_shift": 0.0, "must_push": False, "sp500_30d": pd.Series(dtype=float)}
+        return {"bubble_level": "資料連線中", "color": "#64748B", "action": "暫以標準門檻運行", "desc": "連線異常", "vix": 18.0, "tnx_yield": 4.10, "spxu_vol_ratio": 1.0, "sox_price": 0.0, "is_sox_bear": False, "sp_ret_3d": 0.0, "sox_ret_3d": 0.0, "sp_ret_10d": 0.0, "sox_ret_10d": 0.0, "twii_ret_10d": 0.0, "usd_twd_now": 32.39, "fx_status": "匯率平穩", "premium_shift": 0.0, "must_push": False, "sp500_30d": pd.Series(dtype=float)}
 
 
 # ==========================================
@@ -716,7 +752,13 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
 
     alpha_10d = round(ret_10d_pct - benchmark_ret, 2)
     is_oversold = (rsi14 < 32.0)
-    is_systemic_drop = (macro.get("vix", 18.0) >= 20.0) or (benchmark_ret <= -3.5) or (alpha_10d > -6.0)
+    is_systemic_drop = (
+        (macro.get("vix", 18.0) >= 19.5)
+        or (macro.get("sp_ret_3d", 0.0) <= -2.2)
+        or (macro.get("sox_ret_3d", 0.0) <= -3.5)
+        or (benchmark_ret <= -3.5)
+        or (alpha_10d > -6.0)
+    )
 
     curr_fx = usd_twd if market_type == "US" else 1.0
     if symbol == "FUND_ALLIANZ":
@@ -732,7 +774,6 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
         market_value_twd = round(price * shares * curr_fx, 2)
         invested_cost_twd = round(cost * shares * curr_fx, 2)
 
-    # 可供自動量化減碼之超額股數 (嚴格保護 min_core_shares 神聖底倉)
     swappable_sh = round(max(0.0, shares - min_core_sh), 4)
 
     is_breakeven_ratchet = (swappable_sh > 0 and not is_etf and max_pnl_rate >= 12.0 and pnl_rate <= 2.5)
@@ -761,7 +802,7 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
     ev_score = round(safety_margin * 0.45 + alpha_10d * 0.30 + (backtest["win_rate"] - 50.0) * 0.25 + trend_penalty, 1)
 
     sizing_note = ""
-    tw_auto_order = None  # 記錄台股自動量化觸發指令
+    tw_auto_order = None
 
     if symbol == "FUND_ALLIANZ":
         risk_level, color, action = "定期定額累積", "#10B981", "基富通月扣 NT$3,000 + 單筆續抱"
@@ -800,7 +841,7 @@ def evaluate_quant_matrix(symbol: str, meta: dict, market_data: dict, prev_state
 
     elif not is_etf and stop_loss is not None and cost > 0 and shares > 0 and pnl_rate <= stop_loss:
         if is_oversold or is_core or is_systemic_drop or swappable_sh <= 0:
-            reason_tag = f"RSI超賣({rsi14})" if is_oversold else (f"神聖底倉鎖定({min_core_sh:g}股)" if is_core else f"跟隨{benchmark_name}修正")
+            reason_tag = f"RSI超賣({rsi14})" if is_oversold else (f"神聖底倉鎖定({min_core_sh:g}股)" if is_core else f"跟隨{benchmark_name}系統性下修")
             risk_level, color, action = "🟣 錯殺鎖倉保護 (禁售)", "#8B5CF6", "啟動防洗盤鎖倉：保留神聖底倉待反彈"
             desc = f"雖觸及防線，但系統偵測為【{reason_tag}】，嚴禁機器人砍在阿呆谷！"
             sizing_note = f"🛡️ 保護機制：硬鎖定 {shares:g} 股底倉不賣，等待 RSI 回溫"
@@ -1114,7 +1155,6 @@ def scan_alpha_discovery_pool(macro: dict, usd_twd: float, own_results: list) ->
 def execute_sinopac_tw_order(symbol: str, side: str, qty: int, limit_price: float) -> str:
     """
     永豐金證券 Shioaji 極速盤中零股下單接口 (當 TW_AUTO_BROKER_MODE == 'SINOPAC_LIVE' 時自動啟動)
-    需於 GitHub Secrets 設定：SINOPAC_API_KEY, SINOPAC_SECRET_KEY, SINOPAC_CA_BASE64, SINOPAC_CA_PASSWD, SINOPAC_PERSON_ID
     """
     api_key = os.environ.get("SINOPAC_API_KEY")
     secret_key = os.environ.get("SINOPAC_SECRET_KEY")
@@ -1156,19 +1196,15 @@ def execute_sinopac_tw_order(symbol: str, side: str, qty: int, limit_price: floa
 
 def run_tw_auto_quant_bot(eval_results: list, prev_state: dict) -> tuple:
     """
-    專注台股 (market == 'TW') 之自動量化交易機器人：
-    1. 嚴格遵守 5 道防呆保險絲 (神聖底倉不賣、單筆上限 NT$15,000、限價單 LMT、當日防重複鎖)
-    2. 自動寫入 tw_bot_ledger 追蹤模擬績效，並產生國泰 App 盤中零股 / 智慧條件單小抄
+    專注台股 (market == 'TW') 之自動量化交易機器人
     """
     today_str = datetime.datetime.now(TW_TZ).strftime("%Y-%m-%d")
     ledger = list(prev_state.get("tw_bot_ledger", []))
     executed_keys = {item.get("order_key") for item in ledger}
     new_bot_bubbles = []
 
-    # 僅篩選台股 (TW) 且有觸發自動量化訊號之標的
     tw_candidates = [r for r in eval_results if r["market"] == "TW" and r.get("tw_auto_order") is not None]
 
-    # 若今日無直接觸發滿 +7.5 分之自動單，自動為台股排名第 1 的潛力股生成「📱 國泰智慧條件單預掛建議」
     for r in tw_candidates:
         ord_info = r["tw_auto_order"]
         sym = r["symbol"]
@@ -1222,7 +1258,6 @@ def run_tw_auto_quant_bot(eval_results: list, prev_state: dict) -> tuple:
                                   {"type": "text", "text": exec_status, "size": "xs", "weight": "bold", "color": "#059669", "wrap": True}]}
         })
 
-    # 即時更新歷史模擬帳本之最新市價與累計損益
     price_map = {r["symbol"]: r["current_price"] for r in eval_results}
     for item in ledger:
         s_code = item.get("symbol")
@@ -1279,7 +1314,7 @@ def compute_portfolio_equity_and_benchmark(eval_results: list, sp500_series: pd.
 
 
 # ==========================================
-# 6. 產生寬螢幕滿版操盤室網頁儀表板 (新增 🤖 台股 AI 自動量化交易戰報面板)
+# 6. 產生寬螢幕滿版操盤室網頁儀表板
 # ==========================================
 def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equity_data: dict, tw_bot_ledger: list):
     updated_time = now_tw_str()
@@ -1324,7 +1359,6 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
     spxu_cls = "text-rose-400" if macro["spxu_vol_ratio"] >= 1.5 else "text-slate-200"
     tnx_cls = "text-rose-400" if macro.get("tnx_yield", 4.1) >= 4.45 else "text-blue-400"
 
-    # 建立台股 AI 自動量化機器人即時智慧條件單與模擬交割面板
     tw_disc_list = [r for r in eval_results if r.get("is_discovery") and r["market"] == "TW"]
     top_tw_pick = tw_disc_list[0] if tw_disc_list else None
     c_steel = next((r for r in eval_results if r["symbol"] == "2002.TW"), None)
@@ -1354,7 +1388,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
     else:
         ledger_rows = (
             '<div class="text-xs text-slate-400 py-1.5">'
-            '🤖 機器人全時監控台股中（目前尚未觸發跨越 +7.5 分門檻或破線之自動交割單，確保不亂耗損手續費，下方已為您備妥國泰條件單預掛參數）。'
+            '🤖 機器人全時監控台股中（目前尚未觸發跨越 +7.5 分門檻或破線之自動交割單，確保不亂耗損手續費，上方已為您備妥國泰條件單預掛參數）。'
             '</div>'
         )
 
@@ -1543,7 +1577,6 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
         '</div>',
         '</div>',
         '</header>',
-        # 新增：台股 AI 自動化量化交易中心與國泰/永豐委託面板
         '<section class="bg-gradient-to-r from-purple-950/70 via-slate-900 to-slate-900 border border-purple-700/60 rounded-2xl p-4 shadow-xl space-y-2">',
         '<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-800 pb-2">',
         '<div class="flex items-center gap-2">',
@@ -1567,7 +1600,7 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
         f'<section class="lg:col-span-4 rounded-2xl border p-5 shadow-2xl flex flex-col justify-between" style="background: linear-gradient(135deg, {macro["color"]}22 0%, #0F172A 75%); border-color: {macro["color"]}60;">',
         '<div>',
         '<div class="flex justify-between items-center mb-3">',
-        '<div class="flex items-center gap-2"><span class="text-xl">🛡️</span><h2 class="text-base font-black text-white">華爾街總經與 6D 底倉保護雷達</h2></div>',
+        '<div class="flex items-center gap-2"><span class="text-xl">🛡️</span><h2 class="text-base font-black text-white">華爾街總經與三級制下修領先雷達</h2></div>',
         f'<span class="px-3 py-1 rounded-full text-xs font-extrabold text-white shadow-md" style="background-color: {macro["color"]};">{macro["bubble_level"]}</span>',
         '</div>',
         f'<p class="text-xs text-slate-200 leading-relaxed mb-4">{macro["action"]} — {macro["desc"]}</p>',
@@ -1767,11 +1800,11 @@ def generate_pro_dashboard(macro: dict, eval_results: list, usd_twd: float, equi
     html = "".join(html_parts)
     with open(DASHBOARD_FILE, "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"[完成] 寬螢幕流暢版（6D 操盤室 + 台股 AI 自動量化交易中心）已輸出至 {DASHBOARD_FILE}")
+    print(f"[完成] 寬螢幕流暢版（6D 操盤室 + 三級制美股下修雷達 + 台股 AI 自動量化中心）已輸出至 {DASHBOARD_FILE}")
 
 
 # ==========================================
-# 7. 主執行入口
+# 7. 主執行入口 (完整結尾)
 # ==========================================
 def main():
     user_id = os.environ.get("LINE_USER_ID")
@@ -1819,7 +1852,7 @@ def main():
     discovered_picks = scan_alpha_discovery_pool(macro, usd_twd, eval_results)
     eval_results.extend(discovered_picks)
 
-    # 執行台股專屬 AI 自動化量化機器人 (寫入模擬帳本 / 國泰委託導航 / 永豐 Shioaji 實盤)
+    # 執行台股專屬 AI 自動化量化機器人
     tw_bot_ledger, bot_bubbles = run_tw_auto_quant_bot(eval_results, prev_state)
     bubbles_to_push.extend(bot_bubbles)
 
@@ -1901,7 +1934,7 @@ def main():
             except Exception:
                 pass
 
-        print("[完成] 寬螢幕流暢版（6D 操盤室 + 台股 AI 自動量化交易中心）執行完畢。")
+        print("[完成] 寬螢幕流暢版（6D 操盤室 + 三級制美股下修雷達 + 台股 AI 自動量化中心）執行完畢。")
 
 
 if __name__ == "__main__":
