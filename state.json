@@ -1,11 +1,11 @@
 {
-  "updated_at": "2026-11-02 17:42:13",
+  "updated_at": "2026-11-02 20:14:02",
   "macro_gold": {
     "bubble_level": "🔴 高度警報：美股系統性下修",
     "color": "#EF4444",
-    "action": "🚨 捕捉到美股整體下修 (標普3日 -1.9% / 費半3日 -6.9% / VIX單日 -2.8%)！已啟動底倉保護與暫停左側接刀！",
-    "desc": "標普3日:-1.9%(10日:-1.0%), 費半3日:-6.9%, VIX:18.88(-2.8%), 美債:4.93%。",
-    "vix": 18.88,
+    "action": "🚨 捕捉到美股整體下修 (標普3日 -1.9% / 費半3日 -6.9% / VIX單日 -1.4%)！已啟動底倉保護與暫停左側接刀！",
+    "desc": "標普3日:-1.9%(10日:-1.0%), 費半3日:-6.9%, VIX:19.14(-1.4%), 美債:4.93%。",
+    "vix": 19.14,
     "tnx_yield": 4.93,
     "spxu_vol_ratio": 1.56,
     "sox_price": 10688.8,
@@ -25,121 +25,121 @@
       "risk_level": "定期定額累積",
       "current_price": 141.45,
       "peak_price": 143.5,
-      "updated_at": "2026-11-02 17:42:13"
+      "updated_at": "2026-11-02 20:14:02"
     },
     "0050.TW": {
       "risk_level": "定期定額累積",
       "current_price": 104.1,
       "peak_price": 116.6,
-      "updated_at": "2026-11-02 17:42:13"
+      "updated_at": "2026-11-02 20:14:02"
     },
     "009816.TW": {
       "risk_level": "定期定額累積",
       "current_price": 15.56,
       "peak_price": 17.09,
-      "updated_at": "2026-11-02 17:42:13"
+      "updated_at": "2026-11-02 20:14:02"
     },
     "2330.TW": {
       "risk_level": "👀 左側擊球區 (等止跌)",
       "current_price": 2330.0,
       "peak_price": 2590.0,
-      "updated_at": "2026-11-02 17:42:13"
+      "updated_at": "2026-11-02 20:14:02"
     },
     "2317.TW": {
       "risk_level": "🎯 右側轉強買點 (黃金坑)",
       "current_price": 251.0,
       "peak_price": 274.5,
-      "updated_at": "2026-11-02 17:42:13"
+      "updated_at": "2026-11-02 20:14:02"
     },
     "NVDA": {
       "risk_level": "👀 左側擊球區 (等止跌)",
       "current_price": 204.64,
       "peak_price": 243.37,
-      "updated_at": "2026-11-02 17:42:13"
+      "updated_at": "2026-11-02 20:14:02"
     },
     "COST": {
       "risk_level": "合理估值區",
       "current_price": 1012.28,
       "peak_price": 1021.31,
-      "updated_at": "2026-11-02 17:42:13"
+      "updated_at": "2026-11-02 20:14:02"
     },
     "BRK-B": {
       "risk_level": "🎯 右側轉強買點 (黃金坑)",
       "current_price": 542.49,
       "peak_price": 550.47,
-      "updated_at": "2026-11-02 17:42:13"
+      "updated_at": "2026-11-02 20:14:02"
     },
     "LLY": {
       "risk_level": "🎯 右側轉強買點 (黃金坑)",
       "current_price": 1417.54,
       "peak_price": 1449.68,
-      "updated_at": "2026-11-02 17:42:13"
+      "updated_at": "2026-11-02 20:14:02"
     },
     "AMZN": {
       "risk_level": "👀 左側擊球區 (等止跌)",
       "current_price": 240.35,
       "peak_price": 280.14,
-      "updated_at": "2026-11-02 17:42:13"
+      "updated_at": "2026-11-02 20:14:02"
     },
     "NVO": {
       "risk_level": "🎯 右側轉強買點 (黃金坑)",
       "current_price": 40.0,
       "peak_price": 48.66,
-      "updated_at": "2026-11-02 17:42:13"
+      "updated_at": "2026-11-02 20:14:02"
     },
     "AMAT": {
       "risk_level": "👀 左側擊球區 (等止跌)",
       "current_price": 390.09,
       "peak_price": 563.16,
-      "updated_at": "2026-11-02 17:42:13"
+      "updated_at": "2026-11-02 20:14:02"
     },
     "91282CJZ5": {
       "risk_level": "美國公債收息",
       "current_price": 0.94712,
       "peak_price": 1.0,
-      "updated_at": "2026-11-02 17:42:13"
+      "updated_at": "2026-11-02 20:14:02"
     },
     "1232.TW": {
       "risk_level": "合理估值區",
       "current_price": 164.0,
       "peak_price": 165.0,
-      "updated_at": "2026-11-02 17:42:13"
+      "updated_at": "2026-11-02 20:14:02"
     },
     "2002.TW": {
       "risk_level": "合理估值區",
       "current_price": 19.4,
       "peak_price": 19.9,
-      "updated_at": "2026-11-02 17:42:13"
+      "updated_at": "2026-11-02 20:14:02"
     },
     "1904.TW": {
       "risk_level": "合理估值區",
       "current_price": 24.65,
       "peak_price": 26.45,
-      "updated_at": "2026-11-02 17:42:13"
+      "updated_at": "2026-11-02 20:14:02"
     },
     "2616.TW": {
       "risk_level": "🟣 錯殺鎖倉保護 (禁售)",
       "current_price": 12.95,
       "peak_price": 13.6,
-      "updated_at": "2026-11-02 17:42:13"
+      "updated_at": "2026-11-02 20:14:02"
     },
     "2337.TW": {
       "risk_level": "合理估值區",
       "current_price": 96.2,
       "peak_price": 144.5,
-      "updated_at": "2026-11-02 17:42:13"
+      "updated_at": "2026-11-02 20:14:02"
     },
     "6182.TWO": {
       "risk_level": "合理估值區",
       "current_price": 94.1,
       "peak_price": 140.0,
-      "updated_at": "2026-11-02 17:42:13"
+      "updated_at": "2026-11-02 20:14:02"
     },
     "GLD": {
       "risk_level": "合理估值區",
       "current_price": 355.78,
       "peak_price": 429.42,
-      "updated_at": "2026-11-02 17:42:13"
+      "updated_at": "2026-11-02 20:14:02"
     }
   },
   "results": [
@@ -884,7 +884,7 @@
       "desc": "單日 +1.78% (標普Alpha +3.5%)，處於合理估值防禦帶內。",
       "sizing_note": "👉 試算：續抱現有 8.00876 股 (EV:2.1分) ｜ 預估年息 NT$1,531",
       "tw_auto_order": null,
-      "nlp_score": 0.0,
+      "nlp_score": -2.0,
       "backtest": {
         "return_pct": -4.2,
         "max_drawdown": -19.0,
@@ -1232,7 +1232,7 @@
       "desc": "安全邊際達 29.3%，但仍在5日線下探底中，安心守住底倉靜待反彈！",
       "sizing_note": "⏳ 試算：神聖底倉 3 股鎖定不賣，等待見紅K或站上 248.19",
       "tw_auto_order": null,
-      "nlp_score": -1.0,
+      "nlp_score": -2.0,
       "backtest": {
         "return_pct": 11.4,
         "max_drawdown": -21.2,
@@ -1310,7 +1310,7 @@
       "currency": "$",
       "current_price": 40.0,
       "day_change_pct": 2.2,
-      "fair_value": 71.22,
+      "fair_value": 71.2,
       "cost": 39.1,
       "shares": 2.0,
       "min_core_shares": 2.0,
@@ -1325,8 +1325,8 @@
       "dca_days_left": null,
       "earnings_date_str": "11/04",
       "earnings_days_left": 2,
-      "safety_margin": 43.84,
-      "premium_rate": -43.84,
+      "safety_margin": 43.82,
+      "premium_rate": -43.82,
       "pnl_rate": 2.3,
       "ma200": 43.37,
       "ma20": 38.67,
@@ -1426,7 +1426,7 @@
       "currency": "$",
       "current_price": 390.09,
       "day_change_pct": -7.49,
-      "fair_value": 517.87,
+      "fair_value": 517.89,
       "cost": 316.35,
       "shares": 10.0,
       "min_core_shares": 10.0,
@@ -1441,8 +1441,8 @@
       "dca_days_left": null,
       "earnings_date_str": "11/13",
       "earnings_days_left": 11,
-      "safety_margin": 24.67,
-      "premium_rate": -24.67,
+      "safety_margin": 24.68,
+      "premium_rate": -24.68,
       "pnl_rate": 23.31,
       "ma200": 443.91,
       "ma20": 442.43,
