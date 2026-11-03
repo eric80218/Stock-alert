@@ -326,7 +326,6 @@ def analyze_stock(ticker: str) -> Optional[dict]:
             prev_price = round(float(close.iloc[-2]), 2)
             low_10d = round(float(low.tail(10).min()), 2)
 
-            # 抓取 info 並探測美股盤前價 (Pre-market Price)
             info = {}
             try:
                 info = stock.info or {}
