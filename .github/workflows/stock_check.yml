@@ -34,6 +34,13 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      # 1. 先設定 Git 身分並在跑 Python 前先 Pull 遠端變更（此時工作目錄乾淨，不會報錯）
+      - name: Git Pull Latest Changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main || git rebase --abort
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -43,6 +50,7 @@ jobs:
         run: |
           pip install requests pandas yfinance
 
+      # 2. 執行 Python 產生最新數據
       - name: Run Quantitative Engine
         env:
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
@@ -54,15 +62,13 @@ jobs:
         run: |
           python main.py
 
+      # 3. 提交並推送更新後的資料檔
       - name: Auto-commit state cache & dashboard data
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git pull --rebase origin main || git rebase --abort
           git add state_cache.json data.json || true
           if git diff --staged --quiet; then
-            echo "無資料變更，跳過 Commit"
+            echo "💡 數據無變更，跳過 Commit。"
           else
-            git commit -m "Auto-update state & dashboard data"
+            git commit -m "Auto-update state & dashboard data [skip ci]"
             git push origin main
           fi
