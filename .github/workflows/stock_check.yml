@@ -1,74 +1,68 @@
-name: Hedge Fund 6D Quant & TW Auto-Bot
+name: Global Stock Alerts
 
 on:
   schedule:
-    # ------------------------------------------------------------------
-    # GitHub Actions 使用 UTC 標準時間 (台灣時間 CST = UTC + 8 小時)
-    # ------------------------------------------------------------------
-    # 1. 台股開盤與盤中密集巡邏 (週一至週五 1-5)
-    - cron: '10 1 * * 1-5'   # 台灣時間 09:10 — 台股開盤定錨與跳空偵測
-    - cron: '30 2 * * 1-5'   # 台灣時間 10:30 — 早盤動能與右側轉強巡邏
-    - cron: '0 4 * * 1-5'    # 台灣時間 12:00 — 午盤估值與換股價差巡邏
-    - cron: '15 5 * * 1-5'   # 台灣時間 13:15 — 🎯 台股收盤前黃金擊球點 (日K定型，執行AI模擬交割/實盤掛單)
-
-    # 2. 美股收盤後三級總經下修雷達結算 (UTC 21:30 = 台灣隔日清晨 05:30)
-    - cron: '30 21 * * 1-5'  # 台灣時間 05:30 (週二至週六清晨) — 掃描美股3日急殺、月線破位與VIX跳空
-
-    # 3. 週末操盤室與換股輪動週報 (UTC 01:00 = 台灣週六早上 09:00)
-    - cron: '0 1 * * 6'      # 台灣時間 週六 09:00 — 推播 LINE 投資組合週報
-
-  # 支援 GitHub 介面手動觸發
+    - cron: '30 0 * * 1-5'
+    - cron: '30 2 * * 1-5'
+    - cron: '0 13 * * 1-5'
+    - cron: '30 15 * * 1-5'
   workflow_dispatch:
-
-  # 支援網頁儀表板右上角「🔄 強制重新整理資料」按鈕遠端喚醒
-  repository_dispatch:
-    types: [trigger-quant-refresh]
+    inputs:
+      run_mode:
+        description: '執行模式 (ALL / TWD / USD)'
+        required: true
+        default: 'ALL'
+        type: choice
+        options:
+          - ALL
+          - TWD
+          - USD
+      force_notify:
+        description: '強制推播 LINE'
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: write
 
 jobs:
-  run-quant-engine:
+  check-stocks:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
 
     steps:
-      - name: 📥 檢出倉庫程式碼 (Checkout Repository)
+      - name: Checkout Repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
 
-      - name: 🐍 設定 Python 3.11 執行環境
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-          cache: 'pip'
+          python-version: '3.10'
 
-      - name: 📦 安裝量化引擎與永豐 Shioaji 相關套件
+      - name: Install Dependencies
         run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          pip install yfinance pandas requests shioaji
+          pip install requests pandas yfinance
 
-      - name: 🚀 執行 6D 量化風控與台股自動交易引擎
+      - name: Run Quantitative Engine
         env:
-          GITHUB_REPOSITORY: ${{ github.repository }}
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
           LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
           FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
-          # 台股自動下單模式：預設 CATHAY_PAPER (免API模擬記帳+國泰條件單導航)；若設為 SINOPAC_LIVE 則啟動永豐實盤
-          TW_AUTO_BROKER_MODE: ${{ secrets.TW_AUTO_BROKER_MODE || 'CATHAY_PAPER' }}
-          SINOPAC_API_KEY: ${{ secrets.SINOPAC_API_KEY }}
-          SINOPAC_SECRET_KEY: ${{ secrets.SINOPAC_SECRET_KEY }}
-          SINOPAC_CA_BASE64: ${{ secrets.SINOPAC_CA_BASE64 }}
-          SINOPAC_CA_PASSWD: ${{ secrets.SINOPAC_CA_PASSWD }}
-          SINOPAC_PERSON_ID: ${{ secrets.SINOPAC_PERSON_ID }}
+          PORTFOLIO_SHEET_URL: ${{ secrets.PORTFOLIO_SHEET_URL }}
+          RUN_MODE: ${{ github.event.inputs.run_mode || 'ALL' }}
+          FORCE_NOTIFY: ${{ github.event.inputs.force_notify || 'false' }}
         run: |
           python main.py
 
-      - name: 💾 自動寫回最新狀態 (state.json) 與儀表板網頁 (index.html)
+      - name: Auto-commit state cache & dashboard data
         run: |
-          git config --global user.name "Quant-Auto-Bot"
-          git config --global user.email "quant-bot@users.noreply.github.com"
-          git add state.json index.html
-          git diff --staged --quiet || (git commit -m "🤖 Auto-sync 6D Quant & TW Bot Ledger [skip ci]" && git push origin HEAD)
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main || git rebase --abort
+          git add state_cache.json data.json || true
+          if git diff --staged --quiet; then
+            echo "無資料變更，跳過 Commit"
+          else
+            git commit -m "Auto-update state & dashboard data"
+            git push origin main
+          fi
