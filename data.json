@@ -1,21 +1,21 @@
 {
-  "updated_at": "2026-11-04 12:51:20",
+  "updated_at": "2026-11-04 12:58:29",
   "macro": {
     "TSM": {
       "price": 404.8,
       "chg_pct": 1.55
     },
     "NQ_F": {
-      "price": 27740.75,
-      "chg_pct": -1.37
+      "price": 27831.5,
+      "chg_pct": -1.05
     },
     "ES_F": {
-      "price": 7507.5,
-      "chg_pct": -0.88
+      "price": 7520.75,
+      "chg_pct": -0.71
     },
     "GOLD": {
-      "price": 3953.5,
-      "chg_pct": -0.41
+      "price": 3961.8,
+      "chg_pct": -0.2
     },
     "VIX": {
       "price": 20.83,
@@ -26,8 +26,8 @@
       "chg_pct": 1.19
     },
     "DXY": {
-      "price": 101.28,
-      "chg_pct": -0.46
+      "price": 101.33,
+      "chg_pct": -0.41
     }
   },
   "summary": {
@@ -35,10 +35,10 @@
     "usd_cost": 23562.963964000002,
     "usd_pnl": 1601.0524399999995,
     "usd_pnl_pct": 6.794783722651028,
-    "twd_val": 70284.55,
+    "twd_val": 70236.65,
     "twd_cost": 79822.76,
-    "twd_pnl": -9538.209999999992,
-    "twd_pnl_pct": -11.94923603242984
+    "twd_pnl": -9586.11,
+    "twd_pnl_pct": -12.009243980037775
   },
   "is_gold_panic": false,
   "stocks": [
@@ -284,19 +284,19 @@
       "shares": 1000.0,
       "cost_price": 25.0,
       "curr_symbol": "NT$",
-      "price": 19.1,
+      "price": 19.05,
       "ma20": 19.37,
-      "rsi": 39.5,
+      "rsi": 38.5,
       "atr": 0.27,
       "atr_pct": 1.4,
       "score": 1.5,
-      "diff_pct": -18.723404255319142,
+      "diff_pct": -18.936170212765955,
       "signal_badge": "🟢 逢低加碼",
       "badge_color": "#34D399",
       "header_color": "#065F46",
-      "action_advice": "【性價比充足】回測支撐有守，可分批承接。防守停損 NT$18.56 (2.0×ATR動態防守)。",
-      "stop_loss": 18.56,
-      "rr_ratio": 8.1,
+      "action_advice": "【性價比充足】回測支撐有守，可分批承接。防守停損 NT$18.51 (2.0×ATR動態防守)。",
+      "stop_loss": 18.51,
+      "rr_ratio": 8.2,
       "dynamic_fair": 23.5,
       "val_source": "基準錨定",
       "is_stop_loss_breached": false,
@@ -310,20 +310,20 @@
       "shares": 50.0,
       "cost_price": 144.0,
       "curr_symbol": "NT$",
-      "price": 164.5,
-      "ma20": 156.82,
-      "rsi": 69.6,
+      "price": 165.5,
+      "ma20": 156.88,
+      "rsi": 72.7,
       "atr": 2.86,
       "atr_pct": 1.7,
       "score": 0.0,
-      "diff_pct": 14.946544616029616,
+      "diff_pct": 14.946520350048626,
       "signal_badge": "⚪ 觀望續抱",
       "badge_color": "#94A3B8",
       "header_color": "#1E293B",
       "action_advice": "【常態區間】未達顯著買賣標準，持股續抱，耐心等待趨勢明朗。防守停損點 NT$153.5。",
       "stop_loss": 153.5,
       "rr_ratio": null,
-      "dynamic_fair": 143.11,
+      "dynamic_fair": 143.98,
       "val_source": "證交所殖利率折算",
       "is_stop_loss_breached": false,
       "is_extreme_crash": false
@@ -336,19 +336,19 @@
       "shares": 1.0,
       "cost_price": 25.75,
       "curr_symbol": "NT$",
-      "price": 24.15,
+      "price": 24.25,
       "ma20": 24.85,
-      "rsi": 23.7,
+      "rsi": 24.6,
       "atr": 0.44,
       "atr_pct": 1.8,
       "score": 1.2,
-      "diff_pct": -16.724137931034488,
+      "diff_pct": -16.379310344827587,
       "signal_badge": "🟢 逢低加碼",
       "badge_color": "#34D399",
       "header_color": "#065F46",
-      "action_advice": "⚠️ [大盤偏空] 買進降級為少量試單\n【性價比充足】回測支撐有守，可分批承接。防守停損 NT$23.27 (2.0×ATR動態防守)。",
-      "stop_loss": 23.27,
-      "rr_ratio": 5.5,
+      "action_advice": "⚠️ [大盤偏空] 買進降級為少量試單\n【性價比充足】回測支撐有守，可分批承接。防守停損 NT$23.37 (2.0×ATR動態防守)。",
+      "stop_loss": 23.37,
+      "rr_ratio": 5.4,
       "dynamic_fair": 29.0,
       "val_source": "基準錨定",
       "is_stop_loss_breached": false,
@@ -414,18 +414,18 @@
       "shares": 120.0,
       "cost_price": 120.5,
       "curr_symbol": "NT$",
-      "price": 81.0,
-      "ma20": 108.29,
-      "rsi": 16.9,
+      "price": 80.6,
+      "ma20": 108.27,
+      "rsi": 16.8,
       "atr": 6.7,
       "atr_pct": 8.3,
       "score": 0.0,
-      "diff_pct": -37.69230769230769,
+      "diff_pct": -38.00000000000001,
       "signal_badge": "⚪ 觀望續抱",
       "badge_color": "#94A3B8",
       "header_color": "#1E293B",
-      "action_advice": "⚠️ [大盤偏空] 買進降級為少量試單 | ⚠️ [防接刀保護] 股價破線且20MA下彎，強制等待右側站回！\n【常態區間】未達顯著買賣標準，持股續抱，耐心等待趨勢明朗。防守停損點 NT$67.6。",
-      "stop_loss": 67.6,
+      "action_advice": "⚠️ [大盤偏空] 買進降級為少量試單 | ⚠️ [防接刀保護] 股價破線且20MA下彎，強制等待右側站回！\n【常態區間】未達顯著買賣標準，持股續抱，耐心等待趨勢明朗。防守停損點 NT$67.2。",
+      "stop_loss": 67.2,
       "rr_ratio": 3.7,
       "dynamic_fair": 130.0,
       "val_source": "基準錨定",
