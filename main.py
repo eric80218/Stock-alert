@@ -25,12 +25,12 @@ CACHE_FILE = "state_cache.json"
 DATA_EXPORT_FILE = "data.json"
 
 # ==========================================
-# 2. 國泰證券最新台股庫存 (直接內建優先覆蓋，免改試算表)
+# 2. 台美雙市場完整持股內建覆蓋清單 (免改試算表)
 # ==========================================
-# 自動過濾不追蹤的紀念品股與已出清標的
 EXCLUDED_TICKERS = {"1904.TW", "2616.TW", "2337.TW", "6182.TW", "6182.TWO", "VRT"}
 
-TW_PORTFOLIO_OVERRIDES = {
+PORTFOLIO_OVERRIDES = {
+    # ── 🇹🇼 台股部位 (國泰證券) ──
     "0050.TW": {
         "ticker": "0050.TW", "name": "元大台灣50", "currency": "TWD", "broker": "國泰證券",
         "shares": 1386.0, "cost_price": 84.96, "base_fair": 95.0, "val_model": "ETF_TREND",
@@ -60,13 +60,49 @@ TW_PORTFOLIO_OVERRIDES = {
         "ticker": "1232.TW", "name": "大統益", "currency": "TWD", "broker": "國泰證券",
         "shares": 50.0, "cost_price": 144.0, "base_fair": 150.0, "val_model": "DIVIDEND",
         "mos_buy": 0.12, "expensive_sell": 0.25
+    },
+
+    # ── 🇺🇸 美股部位 (Firstrade / UBS) ──
+    "AMZN": {
+        "ticker": "AMZN", "name": "Amazon 亞馬遜", "currency": "USD", "broker": "Firstrade",
+        "shares": 3.0, "cost_price": 254.55, "base_fair": 220.0, "val_model": "ANALYST",
+        "mos_buy": 0.15, "expensive_sell": 0.25
+    },
+    "NVDA": {
+        "ticker": "NVDA", "name": "NVIDIA 輝達", "currency": "USD", "broker": "Firstrade",
+        "shares": 22.01, "cost_price": 219.80, "base_fair": 140.0, "val_model": "ANALYST",
+        "mos_buy": 0.18, "expensive_sell": 0.30
+    },
+    "COST": {
+        "ticker": "COST", "name": "Costco 好市多", "currency": "USD", "broker": "Firstrade",
+        "shares": 8.01, "cost_price": 1044.55, "base_fair": 950.0, "val_model": "ANALYST",
+        "mos_buy": 0.12, "expensive_sell": 0.25
+    },
+    "BRK-B": {
+        "ticker": "BRK-B", "name": "Berkshire 波克夏B", "currency": "USD", "broker": "Firstrade",
+        "shares": 5.0, "cost_price": 492.03, "base_fair": 450.0, "val_model": "BASE",
+        "mos_buy": 0.10, "expensive_sell": 0.20
+    },
+    "LLY": {
+        "ticker": "LLY", "name": "Eli Lilly 禮來", "currency": "USD", "broker": "Firstrade",
+        "shares": 2.0, "cost_price": 1159.82, "base_fair": 1000.0, "val_model": "ANALYST",
+        "mos_buy": 0.15, "expensive_sell": 0.25
+    },
+    "NVO": {
+        "ticker": "NVO", "name": "Novo Nordisk 諾和諾德", "currency": "USD", "broker": "Firstrade",
+        "shares": 2.0, "cost_price": 39.10, "base_fair": 45.0, "val_model": "ANALYST",
+        "mos_buy": 0.15, "expensive_sell": 0.25
     }
 }
 
 def load_portfolio_watchlist() -> List[dict]:
     portfolio_map: Dict[str, dict] = {}
     
-    # 先讀取 Google 試算表 (主要取得美股與其他自選設定)
+    # 預先載入內建的台美股清單
+    for tk, data in PORTFOLIO_OVERRIDES.items():
+        portfolio_map[tk] = data
+
+    # 嘗試讀取 Google 試算表補充其他自選標的
     if PORTFOLIO_SHEET_URL:
         try:
             res = requests.get(PORTFOLIO_SHEET_URL, timeout=10)
@@ -75,7 +111,7 @@ def load_portfolio_watchlist() -> List[dict]:
                 df = pd.read_csv(io.StringIO(res.text))
                 for _, r in df.iterrows():
                     ticker = str(r.get("ticker", "")).strip().upper()
-                    if not ticker or ticker == "NAN" or ticker in EXCLUDED_TICKERS:
+                    if not ticker or ticker == "NAN" or ticker in EXCLUDED_TICKERS or ticker in portfolio_map:
                         continue
                     
                     shares = pd.to_numeric(r.get("shares"), errors='coerce')
@@ -97,19 +133,10 @@ def load_portfolio_watchlist() -> List[dict]:
                         "expensive_sell": float(expensive_sell) if pd.notna(expensive_sell) else 0.25
                     }
         except Exception as e:
-            print(f"⚠️ 讀取 Google 試算表異常，改用內建清單: {e}")
+            print(f"⚠️ 讀取 Google 試算表異常，使用內建主清單: {e}")
 
-    # 強制以最新國泰台股庫存覆蓋/新增
-    for tw_ticker, tw_data in TW_PORTFOLIO_OVERRIDES.items():
-        portfolio_map[tw_ticker] = tw_data
-
-    # 若試算表中有其他舊的 TWD 紀念品股但不在 TW_PORTFOLIO_OVERRIDES 內，自動移除
-    final_portfolio = [
-        item for tk, item in portfolio_map.items()
-        if not (item["currency"] == "TWD" and tk not in TW_PORTFOLIO_OVERRIDES)
-    ]
-
-    print(f"✅ 成功載入並整合 {len(final_portfolio)} 檔最新台美股持股資料！")
+    final_portfolio = list(portfolio_map.values())
+    print(f"✅ 成功載入台美雙市場共 {len(final_portfolio)} 檔核心持股資料！")
     return final_portfolio
 
 # ==========================================
