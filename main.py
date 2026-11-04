@@ -25,49 +25,92 @@ CACHE_FILE = "state_cache.json"
 DATA_EXPORT_FILE = "data.json"
 
 # ==========================================
-# 2. Google 試算表動態同步模組
+# 2. 國泰證券最新台股庫存 (直接內建優先覆蓋，免改試算表)
 # ==========================================
-def load_portfolio_watchlist() -> List[dict]:
-    if not PORTFOLIO_SHEET_URL:
-        print("⚠️ 未設定 PORTFOLIO_SHEET_URL")
-        return []
-    
-    try:
-        res = requests.get(PORTFOLIO_SHEET_URL, timeout=10)
-        res.encoding = 'utf-8'
-        
-        if res.status_code == 200:
-            df = pd.read_csv(io.StringIO(res.text))
-            portfolio = []
-            for _, r in df.iterrows():
-                ticker = str(r.get("ticker", "")).strip()
-                if not ticker or ticker == "nan":
-                    continue
-                
-                shares = pd.to_numeric(r.get("shares"), errors='coerce')
-                cost_price = pd.to_numeric(r.get("cost_price"), errors='coerce')
-                base_fair = pd.to_numeric(r.get("base_fair"), errors='coerce')
-                mos_buy = pd.to_numeric(r.get("mos_buy"), errors='coerce')
-                expensive_sell = pd.to_numeric(r.get("expensive_sell"), errors='coerce')
+# 自動過濾不追蹤的紀念品股與已出清標的
+EXCLUDED_TICKERS = {"1904.TW", "2616.TW", "2337.TW", "6182.TW", "6182.TWO", "VRT"}
 
-                portfolio.append({
-                    "ticker": ticker,
-                    "name": str(r.get("name", ticker)).strip(),
-                    "currency": str(r.get("currency", "USD")).strip().upper(),
-                    "broker": str(r.get("broker", "一般")).strip(),
-                    "shares": float(shares) if pd.notna(shares) else 0.0,
-                    "cost_price": float(cost_price) if pd.notna(cost_price) else 0.0,
-                    "base_fair": float(base_fair) if pd.notna(base_fair) else 100.0,
-                    "val_model": str(r.get("val_model", "BASE")).strip().upper(),
-                    "mos_buy": float(mos_buy) if pd.notna(mos_buy) else 0.15,
-                    "expensive_sell": float(expensive_sell) if pd.notna(expensive_sell) else 0.25
-                })
-            print(f"✅ 成功從 Google 試算表載入 {len(portfolio)} 檔持股資料！")
-            return portfolio
-    except Exception as e:
-        print(f"❌ 讀取 Google 試算表異常: {e}")
+TW_PORTFOLIO_OVERRIDES = {
+    "0050.TW": {
+        "ticker": "0050.TW", "name": "元大台灣50", "currency": "TWD", "broker": "國泰證券",
+        "shares": 1386.0, "cost_price": 84.96, "base_fair": 95.0, "val_model": "ETF_TREND",
+        "mos_buy": 0.10, "expensive_sell": 0.25
+    },
+    "009816.TW": {
+        "ticker": "009816.TW", "name": "凱基台灣TOP50", "currency": "TWD", "broker": "國泰證券",
+        "shares": 1569.0, "cost_price": 15.81, "base_fair": 15.5, "val_model": "ETF_TREND",
+        "mos_buy": 0.10, "expensive_sell": 0.25
+    },
+    "2317.TW": {
+        "ticker": "2317.TW", "name": "鴻海", "currency": "TWD", "broker": "國泰證券",
+        "shares": 60.0, "cost_price": 245.5, "base_fair": 220.0, "val_model": "PE_EPS",
+        "mos_buy": 0.15, "expensive_sell": 0.25
+    },
+    "2330.TW": {
+        "ticker": "2330.TW", "name": "台積電", "currency": "TWD", "broker": "國泰證券",
+        "shares": 2.0, "cost_price": 2405.0, "base_fair": 2100.0, "val_model": "PE_EPS",
+        "mos_buy": 0.15, "expensive_sell": 0.25
+    },
+    "2002.TW": {
+        "ticker": "2002.TW", "name": "中鋼", "currency": "TWD", "broker": "國泰證券",
+        "shares": 1000.0, "cost_price": 21.05, "base_fair": 21.0, "val_model": "DIVIDEND",
+        "mos_buy": 0.15, "expensive_sell": 0.25
+    },
+    "1232.TW": {
+        "ticker": "1232.TW", "name": "大統益", "currency": "TWD", "broker": "國泰證券",
+        "shares": 50.0, "cost_price": 144.0, "base_fair": 150.0, "val_model": "DIVIDEND",
+        "mos_buy": 0.12, "expensive_sell": 0.25
+    }
+}
+
+def load_portfolio_watchlist() -> List[dict]:
+    portfolio_map: Dict[str, dict] = {}
     
-    return []
+    # 先讀取 Google 試算表 (主要取得美股與其他自選設定)
+    if PORTFOLIO_SHEET_URL:
+        try:
+            res = requests.get(PORTFOLIO_SHEET_URL, timeout=10)
+            res.encoding = 'utf-8'
+            if res.status_code == 200:
+                df = pd.read_csv(io.StringIO(res.text))
+                for _, r in df.iterrows():
+                    ticker = str(r.get("ticker", "")).strip().upper()
+                    if not ticker or ticker == "NAN" or ticker in EXCLUDED_TICKERS:
+                        continue
+                    
+                    shares = pd.to_numeric(r.get("shares"), errors='coerce')
+                    cost_price = pd.to_numeric(r.get("cost_price"), errors='coerce')
+                    base_fair = pd.to_numeric(r.get("base_fair"), errors='coerce')
+                    mos_buy = pd.to_numeric(r.get("mos_buy"), errors='coerce')
+                    expensive_sell = pd.to_numeric(r.get("expensive_sell"), errors='coerce')
+
+                    portfolio_map[ticker] = {
+                        "ticker": ticker,
+                        "name": str(r.get("name", ticker)).strip(),
+                        "currency": str(r.get("currency", "USD")).strip().upper(),
+                        "broker": str(r.get("broker", "一般")).strip(),
+                        "shares": float(shares) if pd.notna(shares) else 0.0,
+                        "cost_price": float(cost_price) if pd.notna(cost_price) else 0.0,
+                        "base_fair": float(base_fair) if pd.notna(base_fair) else 100.0,
+                        "val_model": str(r.get("val_model", "BASE")).strip().upper(),
+                        "mos_buy": float(mos_buy) if pd.notna(mos_buy) else 0.15,
+                        "expensive_sell": float(expensive_sell) if pd.notna(expensive_sell) else 0.25
+                    }
+        except Exception as e:
+            print(f"⚠️ 讀取 Google 試算表異常，改用內建清單: {e}")
+
+    # 強制以最新國泰台股庫存覆蓋/新增
+    for tw_ticker, tw_data in TW_PORTFOLIO_OVERRIDES.items():
+        portfolio_map[tw_ticker] = tw_data
+
+    # 若試算表中有其他舊的 TWD 紀念品股但不在 TW_PORTFOLIO_OVERRIDES 內，自動移除
+    final_portfolio = [
+        item for tk, item in portfolio_map.items()
+        if not (item["currency"] == "TWD" and tk not in TW_PORTFOLIO_OVERRIDES)
+    ]
+
+    print(f"✅ 成功載入並整合 {len(final_portfolio)} 檔最新台美股持股資料！")
+    return final_portfolio
 
 # ==========================================
 # 3. 台灣證交所 (TWSE) 官方指標
