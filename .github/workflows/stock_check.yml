@@ -15,6 +15,7 @@ on:
     - cron: '0 13 * * 1-5'
     # 5. 23:30 CST (UTC 15:30) - 美股開盤波動確認
     - cron: '30 15 * * 1-5'
+
   workflow_dispatch:
     inputs:
       run_mode:
@@ -43,7 +44,6 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # 1. 先設定 Git 身分並在跑 Python 前先 Pull 遠端變更（此時工作目錄乾淨，不會報錯）
       - name: Git Pull Latest Changes
         run: |
           git config --global user.name "github-actions[bot]"
@@ -59,7 +59,6 @@ jobs:
         run: |
           pip install requests pandas yfinance
 
-      # 2. 執行 Python 產生最新數據
       - name: Run Quantitative Engine
         env:
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
@@ -71,7 +70,6 @@ jobs:
         run: |
           python main.py
 
-      # 3. 提交並推送更新後的資料檔
       - name: Auto-commit state cache & dashboard data
         run: |
           git add state_cache.json data.json || true
