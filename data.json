@@ -1,40 +1,40 @@
 {
-  "updated_at": "2026-11-05 05:17:44",
+  "updated_at": "2026-11-05 05:26:35",
   "macro": {
     "TSM": {
       "price": 395.75,
       "chg_pct": -2.24
     },
     "NQ_F": {
-      "price": 28574.5,
-      "chg_pct": 0.95
+      "price": 28633.0,
+      "chg_pct": 1.16
     },
     "ES_F": {
-      "price": 7723.25,
-      "chg_pct": 1.67
+      "price": 7733.75,
+      "chg_pct": 1.8
     },
     "GOLD": {
-      "price": 4073.5,
-      "chg_pct": 3.38
+      "price": 4075.5,
+      "chg_pct": 3.43
     },
     "VIX": {
-      "price": 16.71,
-      "chg_pct": -19.78
+      "price": 16.7,
+      "chg_pct": -19.83
     },
     "TNX": {
       "price": 4.89,
       "chg_pct": -1.17
     },
     "DXY": {
-      "price": 101.52,
-      "chg_pct": -0.34
+      "price": 101.51,
+      "chg_pct": -0.35
     }
   },
   "summary": {
-    "usd_val": 26419.025999999998,
+    "usd_val": 26419.566,
     "usd_cost": 24836.933500000003,
-    "usd_pnl": 1582.0924999999952,
-    "usd_pnl_pct": 6.369918814655581,
+    "usd_pnl": 1582.632499999996,
+    "usd_pnl_pct": 6.372092996101938,
     "twd_val": 209974.36000000002,
     "twd_cost": 190350.45,
     "twd_pnl": 19623.910000000003,
@@ -310,13 +310,13 @@
       "shares": 2.0,
       "cost_price": 1159.82,
       "curr_symbol": "$",
-      "price": 1417.72,
-      "ma20": 1283.45,
+      "price": 1417.99,
+      "ma20": 1283.46,
       "rsi": 77.0,
       "atr": 46.5,
       "atr_pct": 3.3,
       "score": 0.0,
-      "diff_pct": -1.6899083968406892,
+      "diff_pct": -1.671185570942168,
       "signal_badge": "⚪ 觀望續抱",
       "badge_color": "#94A3B8",
       "header_color": "#1E293B",
@@ -342,14 +342,14 @@
       "atr": 0.88,
       "atr_pct": 2.1,
       "score": 1.0,
-      "diff_pct": -6.784530386740332,
+      "diff_pct": -6.763925729442975,
       "signal_badge": "🟢 逢低加碼",
       "badge_color": "#34D399",
       "header_color": "#065F46",
       "action_advice": "【性價比充足】回測支撐有守，可分批承接。防守停損 $37.96 (2.0×ATR動態防守)。 (建議於 Firstrade 掛設 GTC 停損限價單)",
       "stop_loss": 37.96,
       "rr_ratio": 0.7,
-      "dynamic_fair": 45.25,
+      "dynamic_fair": 45.24,
       "val_source": "Yahoo法人目標",
       "is_stop_loss_breached": false,
       "is_extreme_crash": false
