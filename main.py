@@ -15,13 +15,15 @@ DASHBOARD_URL = "https://eric80218.github.io/Stock-alert/"
 CACHE_FILE = "state_cache.json"
 DATA_EXPORT_FILE = "data.json"
 
-# 2. 台美雙市場完整持股清單 (目標價 100% 由市場機制浮動計算)
+# 2. 台美雙市場完整持股清單與核心底倉保護名單
 EXCLUDED_TICKERS = {"1904.TW", "2616.TW", "2337.TW", "6182.TW", "6182.TWO", "VRT"}
+# 核心長線底倉：豁免短線停損與月線洗盤減碼，只買不賣（除非估值極度泡沫）
+CORE_HOLD_TICKERS = {"0050.TW", "009816.TW", "BRK-B"}
 
 PORTFOLIO_OVERRIDES = {
-    # 🇹🇼 台股部位 (國泰證券)[span_0](start_span)[span_0](end_span)[span_1](start_span)[span_1](end_span)
-    "0050.TW": {"ticker": "0050.TW", "name": "元大台灣50", "currency": "TWD", "broker": "國泰證券", "shares": 1386.0, "cost_price": 84.96, "val_model": "ETF_TREND", "mos_buy": 0.08, "expensive_sell": 0.25},
-    "009816.TW": {"ticker": "009816.TW", "name": "凱基台灣TOP50", "currency": "TWD", "broker": "國泰證券", "shares": 1569.0, "cost_price": 15.81, "val_model": "ETF_TREND", "mos_buy": 0.08, "expensive_sell": 0.25},
+    # 🇹🇼 台股部位 (國泰證券)
+    "0050.TW": {"ticker": "0050.TW", "name": "元大台灣50", "currency": "TWD", "broker": "國泰證券", "shares": 1386.0, "cost_price": 84.96, "val_model": "ETF_TREND", "mos_buy": 0.08, "expensive_sell": 0.35},
+    "009816.TW": {"ticker": "009816.TW", "name": "凱基台灣TOP50", "currency": "TWD", "broker": "國泰證券", "shares": 1569.0, "cost_price": 15.81, "val_model": "ETF_TREND", "mos_buy": 0.08, "expensive_sell": 0.35},
     "2317.TW": {"ticker": "2317.TW", "name": "鴻海", "currency": "TWD", "broker": "國泰證券", "shares": 60.0, "cost_price": 245.5, "val_model": "PE_EPS", "mos_buy": 0.15, "expensive_sell": 0.25},
     "2330.TW": {"ticker": "2330.TW", "name": "台積電", "currency": "TWD", "broker": "國泰證券", "shares": 2.0, "cost_price": 2405.0, "val_model": "PE_EPS", "mos_buy": 0.15, "expensive_sell": 0.25},
     "2002.TW": {"ticker": "2002.TW", "name": "中鋼", "currency": "TWD", "broker": "國泰證券", "shares": 1000.0, "cost_price": 21.05, "val_model": "DIVIDEND", "mos_buy": 0.12, "expensive_sell": 0.25},
@@ -30,7 +32,7 @@ PORTFOLIO_OVERRIDES = {
     "AMZN": {"ticker": "AMZN", "name": "Amazon 亞馬遜", "currency": "USD", "broker": "Firstrade", "shares": 3.0, "cost_price": 254.55, "val_model": "ANALYST", "mos_buy": 0.15, "expensive_sell": 0.25},
     "NVDA": {"ticker": "NVDA", "name": "NVIDIA 輝達", "currency": "USD", "broker": "Firstrade", "shares": 22.01, "cost_price": 219.80, "val_model": "ANALYST", "mos_buy": 0.18, "expensive_sell": 0.30},
     "COST": {"ticker": "COST", "name": "Costco 好市多", "currency": "USD", "broker": "Firstrade", "shares": 8.01, "cost_price": 1044.55, "val_model": "ANALYST", "mos_buy": 0.12, "expensive_sell": 0.25},
-    "BRK-B": {"ticker": "BRK-B", "name": "Berkshire 波克夏B", "currency": "USD", "broker": "Firstrade", "shares": 5.0, "cost_price": 492.03, "val_model": "ETF_TREND", "mos_buy": 0.10, "expensive_sell": 0.25},
+    "BRK-B": {"ticker": "BRK-B", "name": "Berkshire 波克夏B", "currency": "USD", "broker": "Firstrade", "shares": 5.0, "cost_price": 492.03, "val_model": "ANALYST", "mos_buy": 0.10, "expensive_sell": 0.35},
     "LLY": {"ticker": "LLY", "name": "Eli Lilly 禮來", "currency": "USD", "broker": "Firstrade", "shares": 2.0, "cost_price": 1159.82, "val_model": "ANALYST", "mos_buy": 0.15, "expensive_sell": 0.25},
     "NVO": {"ticker": "NVO", "name": "Novo Nordisk 諾和諾德", "currency": "USD", "broker": "Firstrade", "shares": 2.0, "cost_price": 39.10, "val_model": "ANALYST", "mos_buy": 0.15, "expensive_sell": 0.25},
     "AMAT": {"ticker": "AMAT", "name": "Applied Materials 應材", "currency": "USD", "broker": "UBS ESPP", "shares": 0.0, "cost_price": 0.0, "val_model": "ANALYST", "mos_buy": 0.15, "expensive_sell": 0.25}
@@ -98,7 +100,7 @@ def calculate_dynamic_fair_value(item: dict, yf_info: dict, twse_data: dict, pri
                 fh_t = r.get("targetMean") or r.get("targetMedian")
                 if fh_t and float(fh_t) > 0: return round(float(fh_t), 2), "Finnhub法人目標"
             except Exception: pass
-        return round(float(ma120), 2), "120MA市場均值"
+        return round(float(ma120) * 1.08, 2), "120MA長線成長錨點"
     elif model == "PE_EPS":
         yf_t = yf_info.get("targetMeanPrice") or yf_info.get("targetMedianPrice")
         if yf_t and float(yf_t) > 0: return round(float(yf_t), 2), "法人目標共識"
@@ -108,7 +110,7 @@ def calculate_dynamic_fair_value(item: dict, yf_info: dict, twse_data: dict, pri
             return round((fair_pe_p * 0.5) + (ma120 * 0.5), 2), "證交所EPS×均值浮動"
         eps = yf_info.get("forwardEps") or yf_info.get("trailingEps")
         if eps and float(eps) > 0: return round((float(eps) * 20.0 + ma120) / 2.0, 2), "動態EPS均值"
-        return round(float(ma120), 2), "120MA市場均值"
+        return round(float(ma120) * 1.05, 2), "120MA市場均值"
     elif model == "DIVIDEND":
         tw_m = twse_data.get(tk.replace(".TW", "").replace(".TWO", ""))
         if tw_m and tw_m.get("yield") and tw_m["yield"] >= 1.5:
@@ -116,8 +118,8 @@ def calculate_dynamic_fair_value(item: dict, yf_info: dict, twse_data: dict, pri
             return round((y_fair * 0.5) + (ma120 * 0.5), 2), "殖利率×半年線浮動"
         div_r = yf_info.get("dividendRate") or 0.0
         if div_r > 0: return round(((float(div_r) / 0.045) * 0.5) + (ma120 * 0.5), 2), "配息×半年線浮動"
-        return round(float(ma120), 2), "120MA半年通道"
-    return round(float(ma120), 2), "120MA半年通道"
+        return round(float(ma120) * 1.05, 2), "120MA半年通道"
+    return round(float(ma120) * 1.08, 2), "120MA長線成長錨點"
 
 # 4. 快取、總經雷達與技術分析
 def load_state_cache() -> dict:
@@ -186,21 +188,30 @@ def analyze_stock(ticker: str) -> Optional[dict]:
     return None
 
 def evaluate_decision(item: dict, data: dict, regime: dict, macro: dict, fair_val: float, val_src: str, gold_panic: bool) -> dict:
-    p, sh = data["price"], item["shares"]
+    p, sh, tk = data["price"], item["shares"], item["ticker"]
+    is_core = tk in CORE_HOLD_TICKERS
     fv = fair_val if fair_val > 0 else p
     diff_pct = ((p - fv) / fv) * 100
     score = 0.0
+
     if diff_pct <= -(item["mos_buy"] * 100): score += 2.0
     elif diff_pct < 0: score += 0.5
     elif diff_pct >= (item["expensive_sell"] * 100): score -= 2.0
-    elif diff_pct > 10: score -= 0.5
+    elif diff_pct > 15 and not is_core: score -= 0.5
 
-    if data["prev_price"] <= data["prev_ma20"] and p > data["ma20"]: score += 1.5
-    elif p > data["ma20"]: score += 0.5
-    if data["prev_price"] >= data["prev_ma20"] and p < data["ma20"]: score -= 1.5
-    elif p < data["ma20"]: score -= 0.5
-    if data["rsi"] <= 30: score += 1.0
-    elif data["rsi"] >= 75: score -= 1.0
+    # 防假跌破過濾器：必須實質跌破 20MA 超過 1.5% 且 20MA 下彎才扣分；核心底倉不因破月線扣分
+    if data["prev_price"] <= data["prev_ma20"] and p > data["ma20"] * 1.005:
+        score += 1.5
+    elif p > data["ma20"]:
+        score += 0.5
+    elif not is_core:
+        if data["prev_price"] >= data["prev_ma20"] and p < data["ma20"] * 0.985 and data["ma20"] < data["prev_ma20"]:
+            score -= 1.2
+        elif p < data["ma20"] * 0.98:
+            score -= 0.5
+
+    if data["rsi"] <= 32: score += 1.0
+    elif data["rsi"] >= 78 and not is_core: score -= 1.0
 
     warns = []
     if gold_panic:
@@ -209,41 +220,44 @@ def evaluate_decision(item: dict, data: dict, regime: dict, macro: dict, fair_va
     if macro.get("VIX", {}).get("price", 15.0) >= 24.0 or not regime["is_bull"]:
         if score >= 2.0: score = 1.2; warns.append("⚠️ [大盤偏空] 買進降級為少量試單")
 
-    knife = (p < data["ma20"]) and (data["ma20"] < data["prev_ma20"])
+    knife = (p < data["ma20"] * 0.985) and (data["ma20"] < data["prev_ma20"])
     crash = (data["prev_price"] - p) >= (2.5 * data["atr"])
-    if (knife or crash) and score >= 1.0:
+    if (knife or crash) and score >= 1.0 and not is_core:
         score = 0.0
-        warns.append(f"🚨 [黑天鵝異動] 重挫逾2.5×ATR，嚴禁接刀！" if crash else "⚠️ [防接刀保護] 破線下彎，等待站回！")
+        warns.append("🚨 [黑天鵝異動] 重挫逾2.5×ATR，嚴禁接刀！" if crash else "⚠️ [防接刀保護] 破線下彎，等待站回！")
 
-    vol_stop = p - (2.0 * data["atr"])
-    stop_loss = round(min(data["low_10d"], vol_stop), 2)
+    # 放寬動態停損至 2.5×ATR (核心底倉放寬至 3.5×ATR 並豁免觸發破線賣出)
+    atr_mult = 3.5 if is_core else 2.5
+    vol_stop = p - (atr_mult * data["atr"])
+    stop_loss = round(vol_stop if is_core else min(data["low_10d"], vol_stop), 2)
     if stop_loss >= p or stop_loss <= (p * 0.75): stop_loss = round(vol_stop, 2)
-    if stop_loss >= p: stop_loss = round(p * 0.95, 2)
+    if stop_loss >= p: stop_loss = round(p * 0.94, 2)
     rr = round((fv - p) / (p - stop_loss), 1) if (p - stop_loss) > 0 and (fv - p) > 0 else None
 
     sym = "$" if item["currency"] == "USD" else "NT$"
-    buf = 0.005 if item["currency"] == "TWD" else 0.0
-    breached = (sh > 0) and (p <= stop_loss * (1.0 - buf))
-    b_note = f" (建議於 {item['broker']} 掛設 GTC 停損單)" if item["currency"] == "USD" and sh > 0 else ""
+    # 增加 1% 防洗盤容錯緩衝區，且核心底倉豁免短線停損出場
+    breached = (sh > 0) and (not is_core) and (p <= stop_loss * 0.99)
+    b_note = f" (建議於 {item['broker']} 掛設 GTC 停損單)" if item["currency"] == "USD" and sh > 0 and not is_core else ""
 
     if breached:
         badge, b_col, h_col = "🚨 跌破停損", "#DC2626", "#7F1D1D"
-        adv = f"【停損破線】市價跌破 2.0×ATR 停損價 {sym}{stop_loss}！請執行防守減碼或停損！{b_note}"
+        adv = f"【停損破線】市價實質跌破 2.5×ATR 防守價 {sym}{stop_loss}！請執行紀律減碼或停損！{b_note}"
     elif score >= 2.5:
         badge, b_col, h_col = "🔥 立即買進", "#10B981", "#064E3B"
-        adv = f"【右側買點】落入安全邊際且翻多。停損 {sym}{stop_loss}，風報比 1:{rr or '優'}。{b_note}"
+        adv = f"【右側買點】落入安全邊際且翻多。防守支撐 {sym}{stop_loss}，風報比 1:{rr or '優'}。{b_note}"
     elif score >= 1.0:
         badge, b_col, h_col = "🟢 逢低加碼", "#34D399", "#065F46"
-        adv = f"【性價比佳】支撐有守可分批承接。防守停損 {sym}{stop_loss}。{b_note}"
+        adv = f"【性價比佳】回測支撐有守可分批承接。防守支撐 {sym}{stop_loss}。{b_note}"
     elif score <= -2.5:
         badge, b_col, h_col = "🔴 立即賣出", "#EF4444", "#7F1D1D"
-        adv = "【估值透支】價格超越市場共識目標，建議分批停利鎖定獲利。"
-    elif score <= -1.0:
+        adv = "【估值透支】價格大幅超越市場共識目標，建議分批停利鎖定獲利。"
+    elif score <= -1.2 and not is_core:
         badge, b_col, h_col = "🟠 建議減碼", "#F97316", "#7C2D12"
-        adv = "【轉弱防守】摜破防線或受壓抑，建議多單部分減碼。"
+        adv = "【轉弱防守】實質跌破月線防線或受壓抑，建議多單部分減碼。"
     else:
         badge, b_col, h_col = "⚪ 觀望續抱", "#94A3B8", "#1E293B"
-        adv = f"【常態區間】持股續抱，等待趨勢明朗。防守停損點 {sym}{stop_loss}。{b_note}"
+        hold_tag = "【核心底倉長抱】豁免短線洗盤，長線續抱等待低接買點。" if is_core else f"【常態區間】持股續抱，忽略微幅震盪。防守支撐 {sym}{stop_loss}。{b_note}"
+        adv = hold_tag
 
     return {
         "score": round(score, 1), "diff_pct": diff_pct, "signal_badge": badge,
@@ -293,7 +307,7 @@ def build_stock_bubble(d: dict, regime: dict) -> dict:
         flex_row("當前市價", f"{d['curr_symbol']}{d['price']}", "#FFFFFF", True),
         flex_row(f"浮動合理價 ({d['val_source']})", f"{d['curr_symbol']}{d['dynamic_fair']}", "#38BDF8", True),
         flex_row("20MA / RSI", f"{d['ma20']} | RSI: {d['rsi']}"),
-        flex_row("動態停損 (2.0×ATR)", f"{d['curr_symbol']}{d['stop_loss']}", "#FCA5A5", True)
+        flex_row("動態防守支撐", f"{d['curr_symbol']}{d['stop_loss']}", "#FCA5A5", True)
     ]
     if d["shares"] > 0 and d["cost_price"] > 0:
         pnl = (d["price"] - d["cost_price"]) * d["shares"]
