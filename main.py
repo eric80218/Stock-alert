@@ -15,8 +15,8 @@ DASHBOARD_URL = "https://eric80218.github.io/Stock-alert/"
 CACHE_FILE = "state_cache.json"
 DATA_EXPORT_FILE = "data.json"
 
-# 2. 台美雙市場完整持股清單與核心底倉保護名單 (已將 AMZN 加入長線底倉)
-EXCLUDED_TICKERS = {"1904.TW", "2616.TW", "2337.TW", "6182.TW", "6182.TWO", "VRT"}
+# 2. 台美雙市場完整持股清單與核心底倉保護名單
+EXCLUDED_TICKERS = {"1904.TW", "2616.TW", "2337.TW", "6182.TW", "6182.TWO", "VRT", "NVO"}
 CORE_HOLD_TICKERS = {"0050.TW", "009816.TW", "BRK-B", "COST", "2330.TW", "1232.TW", "AMZN"}
 
 PORTFOLIO_OVERRIDES = {
@@ -24,16 +24,16 @@ PORTFOLIO_OVERRIDES = {
     "0050.TW": {"ticker": "0050.TW", "name": "元大台灣50", "currency": "TWD", "broker": "國泰證券", "shares": 1386.0, "cost_price": 84.96, "val_model": "ETF_TREND", "mos_buy": 0.08, "expensive_sell": 0.35},
     "009816.TW": {"ticker": "009816.TW", "name": "凱基台灣TOP50", "currency": "TWD", "broker": "國泰證券", "shares": 1569.0, "cost_price": 15.81, "val_model": "ETF_TREND", "mos_buy": 0.08, "expensive_sell": 0.35},
     "2317.TW": {"ticker": "2317.TW", "name": "鴻海", "currency": "TWD", "broker": "國泰證券", "shares": 60.0, "cost_price": 245.5, "val_model": "PE_EPS", "mos_buy": 0.15, "expensive_sell": 0.25},
-    "2330.TW": {"ticker": "2330.TW", "name": "台積電", "currency": "TWD", "broker": "國泰證券", "shares": 2.0, "cost_price": 2405.0, "val_model": "PE_EPS", "mos_buy": 0.15, "expensive_sell": 0.35},
-    "2002.TW": {"ticker": "2002.TW", "name": "中鋼", "currency": "TWD", "broker": "國泰證券", "shares": 1000.0, "cost_price": 21.05, "val_model": "DIVIDEND", "mos_buy": 0.12, "expensive_sell": 0.25},
+    "2330.TW": {"ticker": "2330.TW", "name": "台積電", "currency": "TWD", "broker": "國泰證券", "shares": 8.0, "cost_price": 2191.25, "val_model": "PE_EPS", "mos_buy": 0.15, "expensive_sell": 0.35},
     "1232.TW": {"ticker": "1232.TW", "name": "大統益", "currency": "TWD", "broker": "國泰證券", "shares": 50.0, "cost_price": 144.0, "val_model": "DIVIDEND", "mos_buy": 0.12, "expensive_sell": 0.35},
+    # 中鋼保留追蹤 (待未來買回)
+    "2002.TW": {"ticker": "2002.TW", "name": "中鋼", "currency": "TWD", "broker": "觀望追蹤", "shares": 0.0, "cost_price": 0.0, "val_model": "DIVIDEND", "mos_buy": 0.12, "expensive_sell": 0.25},
     # 🇺🇸 美股部位 (Firstrade / UBS)
     "AMZN": {"ticker": "AMZN", "name": "Amazon 亞馬遜", "currency": "USD", "broker": "Firstrade", "shares": 3.0, "cost_price": 254.55, "val_model": "ANALYST", "mos_buy": 0.15, "expensive_sell": 0.35},
-    "NVDA": {"ticker": "NVDA", "name": "NVIDIA 輝達", "currency": "USD", "broker": "Firstrade", "shares": 22.01, "cost_price": 219.80, "val_model": "ANALYST", "mos_buy": 0.18, "expensive_sell": 0.30},
-    "COST": {"ticker": "COST", "name": "Costco 好市多", "currency": "USD", "broker": "Firstrade", "shares": 8.01, "cost_price": 1044.55, "val_model": "ANALYST", "mos_buy": 0.12, "expensive_sell": 0.35},
-    "BRK-B": {"ticker": "BRK-B", "name": "Berkshire 波克夏B", "currency": "USD", "broker": "Firstrade", "shares": 5.0, "cost_price": 492.03, "val_model": "ANALYST", "mos_buy": 0.10, "expensive_sell": 0.35},
-    "LLY": {"ticker": "LLY", "name": "Eli Lilly 禮來", "currency": "USD", "broker": "Firstrade", "shares": 2.0, "cost_price": 1159.82, "val_model": "ANALYST", "mos_buy": 0.15, "expensive_sell": 0.25},
-    "NVO": {"ticker": "NVO", "name": "Novo Nordisk 諾和諾德", "currency": "USD", "broker": "Firstrade", "shares": 2.0, "cost_price": 39.10, "val_model": "ANALYST", "mos_buy": 0.15, "expensive_sell": 0.25},
+    "NVDA": {"ticker": "NVDA", "name": "NVIDIA 輝達", "currency": "USD", "broker": "Firstrade", "shares": 19.0136, "cost_price": 219.80, "val_model": "ANALYST", "mos_buy": 0.18, "expensive_sell": 0.30},
+    "COST": {"ticker": "COST", "name": "Costco 好市多", "currency": "USD", "broker": "Firstrade", "shares": 8.0162, "cost_price": 1044.55, "val_model": "ANALYST", "mos_buy": 0.12, "expensive_sell": 0.35},
+    "BRK-B": {"ticker": "BRK-B", "name": "Berkshire 波克夏B", "currency": "USD", "broker": "Firstrade", "shares": 6.0, "cost_price": 492.03, "val_model": "ANALYST", "mos_buy": 0.10, "expensive_sell": 0.35},
+    "LLY": {"ticker": "LLY", "name": "Eli Lilly 禮來", "currency": "USD", "broker": "Firstrade", "shares": 2.00322, "cost_price": 1159.82, "val_model": "ANALYST", "mos_buy": 0.15, "expensive_sell": 0.25},
     "AMAT": {"ticker": "AMAT", "name": "Applied Materials 應材", "currency": "USD", "broker": "UBS ESPP", "shares": 0.0, "cost_price": 0.0, "val_model": "ANALYST", "mos_buy": 0.15, "expensive_sell": 0.25}
 }
 
