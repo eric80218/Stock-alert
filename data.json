@@ -1,21 +1,21 @@
 {
-  "updated_at": "2026-11-19 15:41:37",
+  "updated_at": "2026-11-19 15:46:54",
   "macro": {
     "TSM": {
       "price": 362.62,
       "chg_pct": 0.81
     },
     "NQ_F": {
-      "price": 27689.25,
-      "chg_pct": 1.85
+      "price": 27683.75,
+      "chg_pct": 1.83
     },
     "ES_F": {
-      "price": 7421.0,
-      "chg_pct": 1.1
+      "price": 7419.0,
+      "chg_pct": 1.07
     },
     "GOLD": {
-      "price": 3737.1,
-      "chg_pct": -0.13
+      "price": 3735.1,
+      "chg_pct": -0.18
     },
     "VIX": {
       "price": 24.56,
@@ -26,19 +26,19 @@
       "chg_pct": -0.73
     },
     "DXY": {
-      "price": 103.79,
-      "chg_pct": -0.06
+      "price": 103.81,
+      "chg_pct": -0.05
     }
   },
   "summary": {
-    "usd_val": 25320.935800000003,
-    "usd_cost": 24836.933500000003,
-    "usd_pnl": 484.0023000000001,
-    "usd_pnl_pct": 1.948720038244657,
-    "twd_val": 189403.7,
-    "twd_cost": 190350.45,
-    "twd_pnl": -946.75,
-    "twd_pnl_pct": -0.4973720839640778
+    "usd_val": 25375.610754999998,
+    "usd_cost": 24602.3656104,
+    "usd_pnl": 773.2451445999977,
+    "usd_pnl_pct": 3.1429707079595985,
+    "twd_val": 184403.7,
+    "twd_cost": 182020.45,
+    "twd_pnl": 2383.25,
+    "twd_pnl_pct": 1.3093309021046808
   },
   "is_gold_panic": false,
   "stocks": [
@@ -125,8 +125,8 @@
       "ticker": "2330.TW",
       "currency": "TWD",
       "broker": "國泰證券",
-      "shares": 2.0,
-      "cost_price": 2405.0,
+      "shares": 8.0,
+      "cost_price": 2191.25,
       "curr_symbol": "NT$",
       "price": 2100.0,
       "ma20": 2295.25,
@@ -143,32 +143,6 @@
       "rr_ratio": 3.9,
       "dynamic_fair": 3402.51,
       "val_source": "法人目標共識",
-      "is_stop_loss_breached": false,
-      "is_extreme_crash": false
-    },
-    {
-      "name": "中鋼",
-      "ticker": "2002.TW",
-      "currency": "TWD",
-      "broker": "國泰證券",
-      "shares": 1000.0,
-      "cost_price": 21.05,
-      "curr_symbol": "NT$",
-      "price": 17.6,
-      "ma20": 18.86,
-      "rsi": 16.3,
-      "atr": 0.44,
-      "atr_pct": 2.5,
-      "score": -1.5,
-      "diff_pct": 58.13117699910153,
-      "signal_badge": "🟠 建議減碼",
-      "badge_color": "#F97316",
-      "header_color": "#7C2D12",
-      "action_advice": "【轉弱防守】實質跌破月線防線或受壓抑，建議多單部分減碼。",
-      "stop_loss": 16.5,
-      "rr_ratio": null,
-      "dynamic_fair": 11.13,
-      "val_source": "配息×半年線浮動",
       "is_stop_loss_breached": false,
       "is_extreme_crash": false
     },
@@ -195,6 +169,32 @@
       "rr_ratio": null,
       "dynamic_fair": 155.41,
       "val_source": "殖利率×半年線浮動",
+      "is_stop_loss_breached": false,
+      "is_extreme_crash": false
+    },
+    {
+      "name": "中鋼",
+      "ticker": "2002.TW",
+      "currency": "TWD",
+      "broker": "觀望追蹤",
+      "shares": 0.0,
+      "cost_price": 0.0,
+      "curr_symbol": "NT$",
+      "price": 17.6,
+      "ma20": 18.86,
+      "rsi": 16.3,
+      "atr": 0.44,
+      "atr_pct": 2.5,
+      "score": -1.5,
+      "diff_pct": 58.13117699910153,
+      "signal_badge": "🟠 建議減碼",
+      "badge_color": "#F97316",
+      "header_color": "#7C2D12",
+      "action_advice": "【轉弱防守】實質跌破月線防線或受壓抑，建議多單部分減碼。",
+      "stop_loss": 16.5,
+      "rr_ratio": null,
+      "dynamic_fair": 11.13,
+      "val_source": "配息×半年線浮動",
       "is_stop_loss_breached": false,
       "is_extreme_crash": false
     },
@@ -229,7 +229,7 @@
       "ticker": "NVDA",
       "currency": "USD",
       "broker": "Firstrade",
-      "shares": 22.01,
+      "shares": 19.0136,
       "cost_price": 219.8,
       "curr_symbol": "$",
       "price": 150.96,
@@ -255,7 +255,7 @@
       "ticker": "COST",
       "currency": "USD",
       "broker": "Firstrade",
-      "shares": 8.01,
+      "shares": 8.0162,
       "cost_price": 1044.55,
       "curr_symbol": "$",
       "price": 1096.62,
@@ -281,7 +281,7 @@
       "ticker": "BRK-B",
       "currency": "USD",
       "broker": "Firstrade",
-      "shares": 5.0,
+      "shares": 6.0,
       "cost_price": 492.03,
       "curr_symbol": "$",
       "price": 574.62,
@@ -307,7 +307,7 @@
       "ticker": "LLY",
       "currency": "USD",
       "broker": "Firstrade",
-      "shares": 2.0,
+      "shares": 2.00322,
       "cost_price": 1159.82,
       "curr_symbol": "$",
       "price": 1382.75,
@@ -324,32 +324,6 @@
       "stop_loss": 1266.65,
       "rr_ratio": 0.7,
       "dynamic_fair": 1468.57,
-      "val_source": "Yahoo法人共識",
-      "is_stop_loss_breached": false,
-      "is_extreme_crash": false
-    },
-    {
-      "name": "Novo Nordisk 諾和諾德",
-      "ticker": "NVO",
-      "currency": "USD",
-      "broker": "Firstrade",
-      "shares": 2.0,
-      "cost_price": 39.1,
-      "curr_symbol": "$",
-      "price": 39.43,
-      "ma20": 40.22,
-      "rsi": 51.3,
-      "atr": 1.28,
-      "atr_pct": 3.2,
-      "score": 0.5,
-      "diff_pct": -13.663236260127002,
-      "signal_badge": "⚪ 觀望續抱",
-      "badge_color": "#94A3B8",
-      "header_color": "#1E293B",
-      "action_advice": "【常態區間】持股續抱，忽略微幅震盪。防守支撐 $36.23。 (建議於 Firstrade 掛設 GTC 停損單)",
-      "stop_loss": 36.23,
-      "rr_ratio": 1.9,
-      "dynamic_fair": 45.67,
       "val_source": "Yahoo法人共識",
       "is_stop_loss_breached": false,
       "is_extreme_crash": false
