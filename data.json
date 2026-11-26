@@ -1,33 +1,33 @@
 {
-  "updated_at": "2026-11-26 19:11:23",
+  "updated_at": "2026-11-26 23:48:08",
   "macro": {
     "TSM": {
       "price": 342.34,
       "chg_pct": -1.96
     },
     "NQ_F": {
-      "price": 26141.25,
-      "chg_pct": 0.16
+      "price": 26287.25,
+      "chg_pct": 0.72
     },
     "ES_F": {
-      "price": 7218.75,
-      "chg_pct": 0.32
+      "price": 7250.0,
+      "chg_pct": 0.75
     },
     "GOLD": {
-      "price": 3584.7,
-      "chg_pct": 1.38
+      "price": 3600.9,
+      "chg_pct": 1.84
     },
     "VIX": {
-      "price": 27.52,
-      "chg_pct": -2.72
+      "price": 26.83,
+      "chg_pct": -5.16
     },
     "TNX": {
       "price": 4.85,
       "chg_pct": -1.14
     },
     "DXY": {
-      "price": 103.74,
-      "chg_pct": 0.06
+      "price": 103.77,
+      "chg_pct": 0.1
     }
   },
   "summary": {
@@ -108,14 +108,14 @@
       "atr": 13.0,
       "atr_pct": 6.0,
       "score": 0.0,
-      "diff_pct": -36.10553653641836,
+      "diff_pct": -36.49163977706072,
       "signal_badge": "⚪ 觀望續抱",
       "badge_color": "#94A3B8",
       "header_color": "#1E293B",
       "action_advice": "⚠️ [防接刀保護] 破線下彎，等待站回！\n【常態區間】持股續抱，忽略微幅震盪。防守支撐 NT$184.0。",
       "stop_loss": 184.0,
       "rr_ratio": 3.8,
-      "dynamic_fair": 338.84,
+      "dynamic_fair": 340.9,
       "val_source": "法人目標共識",
       "is_stop_loss_breached": false,
       "is_extreme_crash": false
