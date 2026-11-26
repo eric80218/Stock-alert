@@ -1,33 +1,33 @@
 {
-  "updated_at": "2026-11-26 16:40:36",
+  "updated_at": "2026-11-26 19:11:23",
   "macro": {
     "TSM": {
       "price": 342.34,
       "chg_pct": -1.96
     },
     "NQ_F": {
-      "price": 26184.0,
-      "chg_pct": 0.32
+      "price": 26141.25,
+      "chg_pct": 0.16
     },
     "ES_F": {
-      "price": 7220.75,
-      "chg_pct": 0.35
+      "price": 7218.75,
+      "chg_pct": 0.32
     },
     "GOLD": {
-      "price": 3592.8,
-      "chg_pct": 1.61
+      "price": 3584.7,
+      "chg_pct": 1.38
     },
     "VIX": {
-      "price": 27.05,
-      "chg_pct": -4.38
+      "price": 27.52,
+      "chg_pct": -2.72
     },
     "TNX": {
       "price": 4.85,
       "chg_pct": -1.14
     },
     "DXY": {
-      "price": 103.75,
-      "chg_pct": 0.07
+      "price": 103.74,
+      "chg_pct": 0.06
     }
   },
   "summary": {
@@ -51,19 +51,19 @@
       "cost_price": 84.96,
       "curr_symbol": "NT$",
       "price": 92.85,
-      "ma20": 97.25,
-      "rsi": 45.8,
-      "atr": 5.14,
-      "atr_pct": 5.5,
+      "ma20": 96.4,
+      "rsi": 50.3,
+      "atr": 4.99,
+      "atr_pct": 5.4,
       "score": 1.2,
-      "diff_pct": -17.99876357855693,
+      "diff_pct": -17.889989388043865,
       "signal_badge": "🟢 逢低加碼",
       "badge_color": "#34D399",
       "header_color": "#065F46",
-      "action_advice": "⚠️ [大盤偏空] 買進降級為少量試單\n【性價比佳】回測支撐有守可分批承接。防守支撐 NT$74.86。",
-      "stop_loss": 74.86,
-      "rr_ratio": 1.1,
-      "dynamic_fair": 113.23,
+      "action_advice": "⚠️ [大盤偏空] 買進降級為少量試單\n【性價比佳】回測支撐有守可分批承接。防守支撐 NT$75.38。",
+      "stop_loss": 75.38,
+      "rr_ratio": 1.2,
+      "dynamic_fair": 113.08,
       "val_source": "120MA長線成長錨點",
       "is_stop_loss_breached": false,
       "is_extreme_crash": false
@@ -77,19 +77,19 @@
       "cost_price": 15.81,
       "curr_symbol": "NT$",
       "price": 13.71,
-      "ma20": 14.5,
-      "rsi": 44.4,
-      "atr": 0.74,
-      "atr_pct": 5.4,
+      "ma20": 14.36,
+      "rsi": 48.8,
+      "atr": 0.72,
+      "atr_pct": 5.3,
       "score": 1.2,
-      "diff_pct": -17.45936183022275,
+      "diff_pct": -17.359855334538874,
       "signal_badge": "🟢 逢低加碼",
       "badge_color": "#34D399",
       "header_color": "#065F46",
-      "action_advice": "⚠️ [大盤偏空] 買進降級為少量試單\n【性價比佳】回測支撐有守可分批承接。防守支撐 NT$11.12。",
-      "stop_loss": 11.12,
+      "action_advice": "⚠️ [大盤偏空] 買進降級為少量試單\n【性價比佳】回測支撐有守可分批承接。防守支撐 NT$11.19。",
+      "stop_loss": 11.19,
       "rr_ratio": 1.1,
-      "dynamic_fair": 16.61,
+      "dynamic_fair": 16.59,
       "val_source": "120MA長線成長錨點",
       "is_stop_loss_breached": false,
       "is_extreme_crash": false
