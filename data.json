@@ -1,21 +1,21 @@
 {
-  "updated_at": "2026-11-27 06:05:40",
+  "updated_at": "2026-11-27 07:57:12",
   "macro": {
     "TSM": {
       "price": 342.34,
       "chg_pct": -1.96
     },
     "NQ_F": {
-      "price": 26221.25,
-      "chg_pct": 0.46
+      "price": 26235.75,
+      "chg_pct": 0.52
     },
     "ES_F": {
-      "price": 7234.5,
-      "chg_pct": 0.54
+      "price": 7240.75,
+      "chg_pct": 0.63
     },
     "GOLD": {
-      "price": 3593.4,
-      "chg_pct": 1.63
+      "price": 3594.6,
+      "chg_pct": 1.66
     },
     "VIX": {
       "price": 26.8,
@@ -27,7 +27,7 @@
     },
     "DXY": {
       "price": 103.78,
-      "chg_pct": 0.11
+      "chg_pct": 0.1
     }
   },
   "summary": {
