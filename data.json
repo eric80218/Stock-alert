@@ -1,33 +1,33 @@
 {
-  "updated_at": "2026-11-26 23:48:08",
+  "updated_at": "2026-11-27 06:05:40",
   "macro": {
     "TSM": {
       "price": 342.34,
       "chg_pct": -1.96
     },
     "NQ_F": {
-      "price": 26287.25,
-      "chg_pct": 0.72
+      "price": 26221.25,
+      "chg_pct": 0.46
     },
     "ES_F": {
-      "price": 7250.0,
-      "chg_pct": 0.75
+      "price": 7234.5,
+      "chg_pct": 0.54
     },
     "GOLD": {
-      "price": 3600.9,
-      "chg_pct": 1.84
+      "price": 3593.4,
+      "chg_pct": 1.63
     },
     "VIX": {
-      "price": 26.83,
-      "chg_pct": -5.16
+      "price": 26.8,
+      "chg_pct": -5.27
     },
     "TNX": {
       "price": 4.85,
       "chg_pct": -1.14
     },
     "DXY": {
-      "price": 103.77,
-      "chg_pct": 0.1
+      "price": 103.78,
+      "chg_pct": 0.11
     }
   },
   "summary": {
@@ -35,10 +35,10 @@
     "usd_cost": 24602.3656104,
     "usd_pnl": -140.99585999999908,
     "usd_pnl_pct": -0.5730987915259531,
-    "twd_val": 188401.09,
+    "twd_val": 184254.88,
     "twd_cost": 182020.45,
-    "twd_pnl": 6380.639999999985,
-    "twd_pnl_pct": 3.5054522719837165
+    "twd_pnl": 2234.429999999993,
+    "twd_pnl_pct": 1.2275708581096205
   },
   "is_gold_panic": false,
   "stocks": [
@@ -50,20 +50,20 @@
       "shares": 1386.0,
       "cost_price": 84.96,
       "curr_symbol": "NT$",
-      "price": 92.85,
-      "ma20": 96.4,
-      "rsi": 50.3,
-      "atr": 4.99,
-      "atr_pct": 5.4,
+      "price": 90.3,
+      "ma20": 97.12,
+      "rsi": 43.7,
+      "atr": 5.47,
+      "atr_pct": 6.1,
       "score": 1.2,
-      "diff_pct": -17.889989388043865,
+      "diff_pct": -20.23672820422224,
       "signal_badge": "🟢 逢低加碼",
       "badge_color": "#34D399",
       "header_color": "#065F46",
-      "action_advice": "⚠️ [大盤偏空] 買進降級為少量試單\n【性價比佳】回測支撐有守可分批承接。防守支撐 NT$75.38。",
-      "stop_loss": 75.38,
+      "action_advice": "⚠️ [大盤偏空] 買進降級為少量試單\n【性價比佳】回測支撐有守可分批承接。防守支撐 NT$71.16。",
+      "stop_loss": 71.16,
       "rr_ratio": 1.2,
-      "dynamic_fair": 113.08,
+      "dynamic_fair": 113.21,
       "val_source": "120MA長線成長錨點",
       "is_stop_loss_breached": false,
       "is_extreme_crash": false
@@ -76,20 +76,20 @@
       "shares": 1569.0,
       "cost_price": 15.81,
       "curr_symbol": "NT$",
-      "price": 13.71,
-      "ma20": 14.36,
-      "rsi": 48.8,
-      "atr": 0.72,
-      "atr_pct": 5.3,
+      "price": 13.32,
+      "ma20": 14.48,
+      "rsi": 42.1,
+      "atr": 0.78,
+      "atr_pct": 5.9,
       "score": 1.2,
-      "diff_pct": -17.359855334538874,
+      "diff_pct": -19.80734497290788,
       "signal_badge": "🟢 逢低加碼",
       "badge_color": "#34D399",
       "header_color": "#065F46",
-      "action_advice": "⚠️ [大盤偏空] 買進降級為少量試單\n【性價比佳】回測支撐有守可分批承接。防守支撐 NT$11.19。",
-      "stop_loss": 11.19,
-      "rr_ratio": 1.1,
-      "dynamic_fair": 16.59,
+      "action_advice": "⚠️ [大盤偏空] 買進降級為少量試單\n【性價比佳】回測支撐有守可分批承接。防守支撐 NT$10.59。",
+      "stop_loss": 10.59,
+      "rr_ratio": 1.2,
+      "dynamic_fair": 16.61,
       "val_source": "120MA長線成長錨點",
       "is_stop_loss_breached": false,
       "is_extreme_crash": false
@@ -160,14 +160,14 @@
       "atr": 3.71,
       "atr_pct": 2.3,
       "score": 0.0,
-      "diff_pct": 1.9051838723969812,
+      "diff_pct": 2.606589764833346,
       "signal_badge": "⚪ 觀望續抱",
       "badge_color": "#94A3B8",
       "header_color": "#1E293B",
       "action_advice": "【核心底倉長抱】豁免短線洗盤，長線續抱等待低接買點。",
       "stop_loss": 148.01,
       "rr_ratio": null,
-      "dynamic_fair": 157.99,
+      "dynamic_fair": 156.91,
       "val_source": "殖利率×半年線浮動",
       "is_stop_loss_breached": false,
       "is_extreme_crash": false
