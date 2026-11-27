@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-28 05:48:07",
+  "updated_at": "2026-11-28 07:39:24",
   "macro": {
     "TSM": {
       "price": 353.34,
@@ -368,14 +368,14 @@
       "atr": 4.75,
       "atr_pct": 8.3,
       "score": 1.2,
-      "diff_pct": -36.5184693651847,
+      "diff_pct": -36.15838060282505,
       "signal_badge": "🟢 逢低加碼",
       "badge_color": "#34D399",
       "header_color": "#065F46",
       "action_advice": "⚠️ [大盤偏空] 買進降級為少量試單\n【性價比佳】回測支撐有守可分批承接。防守支撐 $45.52。",
       "stop_loss": 45.52,
-      "rr_ratio": 2.8,
-      "dynamic_fair": 90.42,
+      "rr_ratio": 2.7,
+      "dynamic_fair": 89.91,
       "val_source": "Yahoo法人共識",
       "is_stop_loss_breached": false,
       "is_extreme_crash": false
